@@ -1,124 +1,201 @@
-import axios from "axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { useAppDispatch } from "./reduxHooks";
 import {
-	createUserWithEmailAndPassword,
-	GoogleAuthProvider,
-	onAuthStateChanged,
-	signInWithEmailAndPassword,
-	signInWithPopup,
-	signOut,
-} from "firebase/auth";
-import { useEffect, useState } from "react";
-import { auth } from "../config/firebase";
+	setLoading,
+	setError,
+	setCredentials,
+	clearCredentials,
+} from "../store/slices/authSlice";
+import authService from "../services/auth.service";
+import {
+	EmailLoginPayload,
+	EmailSignupPayload,
+	UserRole,
+} from "../types/auth.types";
 
-interface AuthUser {
-	id: string;
-	username: string;
-	email: string;
-	role: string;
-	displayName?: string;
-	photoURL?: string;
-}
+// Email Login Hook
+export const useEmailLogin = () => {
+	const dispatch = useAppDispatch();
+	const router = useRouter();
+	const queryClient = useQueryClient();
 
-export function useAuth() {
-	const [user, setUser] = useState<AuthUser | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-			if (firebaseUser) {
-				try {
-					// Get the ID token
-					const idToken = await firebaseUser.getIdToken();
-
-					// Send to your backend
-					const response = await axios.post("/api/auth/firebase", { idToken });
-
-					// Set user state from your backend's response
-					setUser(response.data.user);
-
-					// Store JWT token
-					localStorage.setItem("token", response.data.token);
-
-					setLoading(false);
-				} catch (err) {
-					console.error("Backend authentication error:", err);
-					setError("Failed to authenticate with backend");
-					setLoading(false);
-				}
-			} else {
-				setUser(null);
-				localStorage.removeItem("token");
-				setLoading(false);
+	return useMutation({
+		mutationFn: async (credentials: EmailLoginPayload) => {
+			dispatch(setLoading(true));
+			try {
+				const response = await authService.loginWithEmail(credentials);
+				dispatch(setCredentials(response));
+				return response;
+			} catch (error: any) {
+				dispatch(setError(error.message));
+				throw error;
 			}
-		});
+		},
+		onSuccess: (data) => {
+			toast.success("Login successful");
+			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
 
-		return () => unsubscribe();
-	}, []);
+			// Redirect based on user role
+			if (data.user.role === "donor") {
+				router.push("/donor/dashboard");
+			} else if (data.user.role === "organization") {
+				router.push("/organization/dashboard");
+			} else {
+				router.push("/dashboard");
+			}
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || "Login failed. Please try again.");
+		},
+	});
+};
 
-	const registerWithEmail = async (
-		email: string,
-		password: string,
-		role: string
-	) => {
-		try {
-			setError(null);
-			const userCredential = await createUserWithEmailAndPassword(
-				auth,
-				email,
-				password
-			);
-			const idToken = await userCredential.user.getIdToken();
+// Email Signup Hook
+export const useEmailSignup = () => {
+	const dispatch = useAppDispatch();
+	const router = useRouter();
+	const queryClient = useQueryClient();
 
-			// Register with your backend
-			await axios.post("/api/auth/firebase", { idToken, role });
-		} catch (err: any) {
-			setError(err.message);
-			throw err;
-		}
-	};
+	return useMutation({
+		mutationFn: async (userData: EmailSignupPayload) => {
+			dispatch(setLoading(true));
+			try {
+				const response = await authService.signupWithEmail(userData);
+				dispatch(setCredentials(response));
+				return response;
+			} catch (error: any) {
+				dispatch(setError(error.message));
+				throw error;
+			}
+		},
+		onSuccess: (data) => {
+			toast.success("Registration successful");
+			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
 
-	const loginWithEmail = async (email: string, password: string) => {
-		try {
-			setError(null);
-			await signInWithEmailAndPassword(auth, email, password);
-		} catch (err: any) {
-			setError(err.message);
-			throw err;
-		}
-	};
+			// Redirect based on user role
+			if (data.user.role === "donor") {
+				router.push("/donor/dashboard");
+			} else if (data.user.role === "organization") {
+				router.push("/organization/dashboard");
+			} else {
+				router.push("/dashboard");
+			}
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || "Registration failed. Please try again.");
+		},
+	});
+};
 
-	const loginWithGoogle = async (role?: string) => {
-		try {
-			setError(null);
-			const provider = new GoogleAuthProvider();
-			const result = await signInWithPopup(auth, provider);
-			const idToken = await result.user.getIdToken();
+// Google Login Hook
+export const useGoogleLogin = () => {
+	const dispatch = useAppDispatch();
+	const router = useRouter();
+	const queryClient = useQueryClient();
 
-			// Authenticate with your backend
-			await axios.post("/api/auth/firebase", { idToken, role });
-		} catch (err: any) {
-			setError(err.message);
-			throw err;
-		}
-	};
+	return useMutation({
+		mutationFn: async () => {
+			dispatch(setLoading(true));
+			try {
+				const response = await authService.loginWithGoogle();
+				dispatch(setCredentials(response));
+				return response;
+			} catch (error: any) {
+				// Special handling for 404 to redirect to signup
+				if (error.response && error.response.status === 404) {
+					router.push("/auth/signup?provider=google");
+					throw new Error("User not found. Please complete registration.");
+				}
+				dispatch(setError(error.message));
+				throw error;
+			}
+		},
+		onSuccess: (data) => {
+			toast.success("Google login successful");
+			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
 
-	const logout = async () => {
-		try {
-			await signOut(auth);
-		} catch (err: any) {
-			setError(err.message);
-			throw err;
-		}
-	};
+			// Redirect based on user role
+			if (data.user.role === "donor") {
+				router.push("/donor/dashboard");
+			} else if (data.user.role === "organization") {
+				router.push("/organization/dashboard");
+			} else {
+				router.push("/dashboard");
+			}
+		},
+		onError: (error: Error) => {
+			// Don't show error for redirection to signup
+			if (!error.message.includes("Please complete registration")) {
+				toast.error(error.message || "Google login failed. Please try again.");
+			}
+		},
+	});
+};
 
-	return {
-		user,
-		loading,
-		error,
-		registerWithEmail,
-		loginWithEmail,
-		loginWithGoogle,
-		logout,
-	};
-}
+// Google Signup Hook
+export const useGoogleSignup = () => {
+	const dispatch = useAppDispatch();
+	const router = useRouter();
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (role: UserRole) => {
+			dispatch(setLoading(true));
+			try {
+				const response = await authService.signupWithGoogle(role);
+				dispatch(setCredentials(response));
+				return response;
+			} catch (error: any) {
+				dispatch(setError(error.message));
+				throw error;
+			}
+		},
+		onSuccess: (data) => {
+			toast.success("Google signup successful");
+			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+
+			// Redirect based on user role
+			if (data.user.role === "donor") {
+				router.push("/donor/dashboard");
+			} else if (data.user.role === "organization") {
+				router.push("/organization/dashboard");
+			} else {
+				router.push("/dashboard");
+			}
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || "Google signup failed. Please try again.");
+		},
+	});
+};
+
+// Logout Hook
+export const useLogout = () => {
+	const dispatch = useAppDispatch();
+	const router = useRouter();
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async () => {
+			dispatch(setLoading(true));
+			try {
+				await authService.logout();
+				dispatch(clearCredentials());
+				return null;
+			} catch (error: any) {
+				dispatch(setError(error.message));
+				throw error;
+			}
+		},
+		onSuccess: () => {
+			toast.success("Logged out successfully");
+			queryClient.clear(); // Clear all React Query cache
+			router.push("/auth/login");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || "Logout failed. Please try again.");
+		},
+	});
+};
