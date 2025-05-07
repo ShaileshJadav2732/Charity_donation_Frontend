@@ -14,6 +14,7 @@ import {
 	EmailSignupPayload,
 	UserRole,
 } from "../types/auth.types";
+import { ApiError } from "../types/error.types";
 
 // Email Login Hook
 export const useEmailLogin = () => {
@@ -28,19 +29,26 @@ export const useEmailLogin = () => {
 				const response = await authService.loginWithEmail(credentials);
 				dispatch(setCredentials(response));
 				return response;
-			} catch (error: any) {
-				dispatch(setError(error.message));
-				throw error;
+			} catch (error: unknown) {
+				const err = error as ApiError;
+				dispatch(setError(err.message));
+				throw err;
 			}
 		},
 		onSuccess: (data) => {
 			toast.success("Login successful");
 			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
 
-			// Redirect based on user role
-			if (data.user.role === "donor") {
-				router.push("/donor/dashboard");
-			} else if (data.user.role === "organization") {
+			const { role } = data.user;
+			const { isProfileCompleted } = data.user;
+
+			if (role === "donor") {
+				if (!isProfileCompleted) {
+					router.push("/donor/complete-profile");
+				} else {
+					router.push("/donor/dashboard");
+				}
+			} else if (role === "organization") {
 				router.push("/organization/dashboard");
 			} else {
 				router.push("/dashboard");
@@ -65,19 +73,25 @@ export const useEmailSignup = () => {
 				const response = await authService.signupWithEmail(userData);
 				dispatch(setCredentials(response));
 				return response;
-			} catch (error: any) {
-				dispatch(setError(error.message));
-				throw error;
+			} catch (error: unknown) {
+				const err = error as ApiError;
+				dispatch(setError(err.message));
+				throw err;
 			}
 		},
 		onSuccess: (data) => {
 			toast.success("Registration successful");
 			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+			const { role } = data.user;
+			const { isProfileCompleted } = data.user;
 
-			// Redirect based on user role
-			if (data.user.role === "donor") {
-				router.push("/donor/dashboard");
-			} else if (data.user.role === "organization") {
+			if (role === "donor") {
+				if (!isProfileCompleted) {
+					router.push("/donor/complete-profile");
+				} else {
+					router.push("/donor/dashboard");
+				}
+			} else if (role === "organization") {
 				router.push("/organization/dashboard");
 			} else {
 				router.push("/dashboard");
@@ -102,31 +116,36 @@ export const useGoogleLogin = () => {
 				const response = await authService.loginWithGoogle();
 				dispatch(setCredentials(response));
 				return response;
-			} catch (error: any) {
-				// Special handling for 404 to redirect to signup
-				if (error.response && error.response.status === 404) {
-					router.push("/auth/signup?provider=google");
+			} catch (error: unknown) {
+				const err = error as ApiError;
+				if (err.response && err.response.status === 404) {
+					router.push("/auth/signup");
 					throw new Error("User not found. Please complete registration.");
 				}
-				dispatch(setError(error.message));
-				throw error;
+				dispatch(setError(err.message));
+				throw err;
 			}
 		},
 		onSuccess: (data) => {
 			toast.success("Google login successful");
 			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
 
-			// Redirect based on user role
-			if (data.user.role === "donor") {
-				router.push("/donor/dashboard");
-			} else if (data.user.role === "organization") {
+			const { role } = data.user;
+			const { isProfileCompleted } = data.user;
+
+			if (role === "donor") {
+				if (!isProfileCompleted) {
+					router.push("/donor/complete-profile");
+				} else {
+					router.push("/donor/dashboard");
+				}
+			} else if (role === "organization") {
 				router.push("/organization/dashboard");
 			} else {
 				router.push("/dashboard");
 			}
 		},
 		onError: (error: Error) => {
-			// Don't show error for redirection to signup
 			if (!error.message.includes("Please complete registration")) {
 				toast.error(error.message || "Google login failed. Please try again.");
 			}
@@ -147,19 +166,26 @@ export const useGoogleSignup = () => {
 				const response = await authService.signupWithGoogle(role);
 				dispatch(setCredentials(response));
 				return response;
-			} catch (error: any) {
-				dispatch(setError(error.message));
-				throw error;
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Something went wrong";
+				dispatch(setError(message));
+				throw new Error(message);
 			}
 		},
 		onSuccess: (data) => {
 			toast.success("Google signup successful");
 			queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+			const { role } = data.user;
+			const { isProfileCompleted } = data.user;
 
-			// Redirect based on user role
-			if (data.user.role === "donor") {
-				router.push("/donor/dashboard");
-			} else if (data.user.role === "organization") {
+			if (role === "donor") {
+				if (!isProfileCompleted) {
+					router.push("/donor/complete-profile");
+				} else {
+					router.push("/donor/dashboard");
+				}
+			} else if (role === "organization") {
 				router.push("/organization/dashboard");
 			} else {
 				router.push("/dashboard");
@@ -184,14 +210,15 @@ export const useLogout = () => {
 				await authService.logout();
 				dispatch(clearCredentials());
 				return null;
-			} catch (error: any) {
-				dispatch(setError(error.message));
-				throw error;
+			} catch (error: unknown) {
+				const err = error as ApiError;
+				dispatch(setError(err.message));
+				throw err;
 			}
 		},
 		onSuccess: () => {
 			toast.success("Logged out successfully");
-			queryClient.clear(); // Clear all React Query cache
+			queryClient.clear();
 			router.push("/auth/login");
 		},
 		onError: (error: Error) => {

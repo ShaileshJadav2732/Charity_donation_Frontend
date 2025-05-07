@@ -1,4 +1,3 @@
-import api from "./api.service";
 import {
 	LoginRequest,
 	SignupRequest,
@@ -16,6 +15,41 @@ import {
 } from "firebase/auth";
 import { auth } from "../config/firebase";
 import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
+import { AxiosError } from "axios";
+import api from "../services/api.service";
+// Firebase Authentication
+export const firebaseLogin = async (tokenId: string) => {
+	try {
+		const response = await api.post("/api/auth/firebase/login", { tokenId });
+		return response.data;
+	} catch (error) {
+		console.error("Firebase login error:", error);
+		throw error;
+	}
+};
+
+export const firebaseSignup = async (tokenId: string, role: string) => {
+	try {
+		const response = await api.post("/api/auth/firebase/signup", {
+			tokenId,
+			role,
+		});
+		return response.data;
+	} catch (error) {
+		console.error("Firebase signup error:", error);
+		throw error;
+	}
+};
+
+export const checkProfileStatus = async () => {
+	try {
+		const response = await api.get("/api/auth/profile-status");
+		return response.data;
+	} catch (error) {
+		console.error("Profile status check error:", error);
+		throw error;
+	}
+};
 
 // Auth service with class-based structure (MVC-like)
 class AuthService {
@@ -43,7 +77,7 @@ class AuthService {
 
 			// Login with backend (passing Firebase user data to store in MongoDB)
 			return this.loginWithToken({ idToken, userData });
-		} catch (error: any) {
+		} catch (error) {
 			const errorCode = error.code || "unknown";
 			throw new Error(getFirebaseErrorMessage(errorCode));
 		}
@@ -67,19 +101,20 @@ class AuthService {
 				uid: userCredential.user.uid,
 				email: userCredential.user.email,
 				emailVerified: userCredential.user.emailVerified,
-				displayName: userCredential.user.displayName || userData.username,
+				displayName: userCredential.user.displayName,
 				photoURL: userCredential.user.photoURL,
 			};
-
 			// Register with backend (MongoDB)
 			return this.signupWithToken({
 				idToken,
-				username: userData.username,
 				role: userData.role,
 				userData: firebaseUserData,
 			});
-		} catch (error: any) {
-			const errorCode = error.code || "unknown";
+		} catch (error: unknown) {
+			const errorCode =
+				typeof error === "object" && error !== null && "code" in error
+					? (error as { code: string }).code
+					: "unknown";
 			throw new Error(getFirebaseErrorMessage(errorCode));
 		}
 	}
@@ -125,11 +160,6 @@ class AuthService {
 			// Get ID token
 			const idToken = await result.user.getIdToken();
 
-			// Get username from email or display name
-			const username =
-				result.user.displayName ||
-				(result.user.email ? result.user.email.split("@")[0] : "user");
-
 			// Firebase user data to store in MongoDB
 			const userData = {
 				uid: result.user.uid,
@@ -142,7 +172,6 @@ class AuthService {
 			// Register with backend (MongoDB)
 			return this.signupWithToken({
 				idToken,
-				username,
 				role,
 				userData,
 			});
@@ -155,16 +184,27 @@ class AuthService {
 	// Backend login with token
 	async loginWithToken(loginRequest: LoginRequest): Promise<AuthResponse> {
 		try {
+			// Get a fresh Firebase ID token to use with all API requests
+			const currentUser = auth.currentUser;
+			const firebaseIdToken = currentUser
+				? await currentUser.getIdToken(true)
+				: null;
+
+			if (!firebaseIdToken) {
+				throw new Error("No authenticated Firebase user");
+			}
+
 			console.log("Sending login request to MongoDB:", loginRequest);
 			const response = await api.post<AuthResponse>(
-				"/auth/firebase/login",
+				"/api/auth/firebase/login",
 				loginRequest
 			);
 
-			// Store auth data
+			// Store both tokens - backend JWT for user info and Firebase ID token for API auth
 			if (typeof window !== "undefined") {
-				localStorage.setItem("token", response.data.token);
 				localStorage.setItem("user", JSON.stringify(response.data.user));
+				// Store Firebase ID token instead of backend JWT
+				localStorage.setItem("token", firebaseIdToken);
 			}
 
 			return response.data;
@@ -179,18 +219,18 @@ class AuthService {
 		try {
 			console.log("Sending signup request to MongoDB:", signupRequest);
 			const response = await api.post<AuthResponse>(
-				"/auth/firebase/signup",
+				"/api/auth/firebase/signup",
 				signupRequest
 			);
 
-			// Store auth data
 			if (typeof window !== "undefined") {
 				localStorage.setItem("token", response.data.token);
 				localStorage.setItem("user", JSON.stringify(response.data.user));
 			}
 
 			return response.data;
-		} catch (error: any) {
+		} catch (err) {
+			const error = err as AxiosError;
 			console.error("Signup error:", error.response?.data || error.message);
 			throw error;
 		}

@@ -1,6 +1,6 @@
 export interface IUser {
 	_id?: string; // MongoDB ObjectId
-	username: string;
+
 	email: string;
 	role: UserRole;
 	displayName?: string;
@@ -10,6 +10,7 @@ export interface IUser {
 	emailVerified?: boolean;
 	createdAt?: string;
 	updatedAt?: string;
+	isProfileCompleted?: boolean;
 }
 
 export type UserRole = "donor" | "organization" | "admin";
@@ -29,7 +30,6 @@ export interface LoginRequest {
 
 export interface SignupRequest {
 	idToken: string;
-	username: string;
 	role: UserRole;
 	userData?: FirebaseUserData; // Additional user data for MongoDB
 }
@@ -56,7 +56,6 @@ export interface EmailLoginPayload {
 export interface EmailSignupPayload {
 	email: string;
 	password: string;
-	username: string;
 	role: UserRole;
 }
 
