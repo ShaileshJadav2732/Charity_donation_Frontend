@@ -15,6 +15,25 @@ import { FaHandHoldingHeart, FaHandsHelping, FaHeart } from "react-icons/fa";
 import ProfileRouteGuard from "../../../components/guards/ProfileRouteGuard";
 import { getToken } from "@/utils/auth";
 export default function DonorCompleteProfilePage() {
+	const [timeoutOccurred, setTimeoutOccurred] = useState(false);
+
+	// Set a timeout to prevent infinite loading
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			console.log(
+				"DonorCompleteProfilePage: Timeout occurred, showing content anyway"
+			);
+			setTimeoutOccurred(true);
+		}, 15000); // 15 seconds timeout
+
+		return () => clearTimeout(timer);
+	}, []);
+
+	// If timeout occurred, bypass the guard
+	if (timeoutOccurred) {
+		return <DonorComplete />;
+	}
+
 	return (
 		<ProfileRouteGuard requireComplete={false}>
 			<DonorComplete />
@@ -39,29 +58,19 @@ export function DonorComplete() {
 	const { user } = useAppSelector((state) => state.auth);
 	const [isClient, setIsClient] = useState(false);
 
-	// Add token state
+	// Set client-side state
 	useEffect(() => {
 		setIsClient(true);
 	}, []);
 
-	const token =
-		typeof window !== "undefined" ? localStorage.getItem("token") : null;
 	// Skip query if user is not authenticated
 	const {
 		data: profileData,
-
+		isLoading: isProfileLoading,
 		error: profileError,
 	} = useGetDonorProfileQuery(undefined, {
 		skip: !user,
 		refetchOnMountOrArgChange: true,
-		// Only add headers if token exists
-		...(token
-			? {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-			  }
-			: {}),
 	});
 
 	const [
@@ -91,9 +100,13 @@ export function DonorComplete() {
 	// If profile data is loaded and profile is complete, redirect to dashboard
 	useEffect(() => {
 		if (profileData?.donor?.isProfileCompleted) {
+			console.log(
+				"DonorComplete: Profile already complete, redirecting to dashboard"
+			);
 			toast.info("Your profile is already complete");
 			router.push("/donor/dashboard");
 		} else if (profileData?.donor) {
+			console.log("DonorComplete: Pre-filling form with existing data");
 			// Pre-fill the form with existing data
 			setFormData({
 				fullAddress: profileData.donor.fullAddress || "",

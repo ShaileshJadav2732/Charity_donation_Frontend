@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
 			"firebasestorage.googleapis.com", // Alternative Firebase Storage domain
 		],
 	},
+	reactStrictMode: true,
+	server: {
+		port: 3001,
+	},
 	// Keep your existing configuration
 };
 

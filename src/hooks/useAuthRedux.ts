@@ -108,7 +108,8 @@ export const useRtkGoogleLogin = () => {
 
 			// Redirect based on role and profile completion
 			const { role, isProfileCompleted } = data.user;
-			console.log("Role and profile completion:", role, isProfileCompleted);
+			console.log("Login response:", { role, isProfileCompleted });
+
 			if (role === "donor") {
 				if (!isProfileCompleted) {
 					router.push("/donor/complete-profile");
@@ -116,7 +117,11 @@ export const useRtkGoogleLogin = () => {
 					router.push("/donor/dashboard");
 				}
 			} else if (role === "organization") {
-				router.push("/organization/dashboard");
+				if (!isProfileCompleted) {
+					router.push("/organization/complete-profile");
+				} else {
+					router.push("/organization/dashboard");
+				}
 			} else {
 				router.push("/dashboard");
 			}
@@ -124,10 +129,11 @@ export const useRtkGoogleLogin = () => {
 	}, [isSuccess, data, dispatch, router]);
 
 	return {
-		mutate: loginWithGoogle, // Add this line to match what you're using
+		mutate: loginWithGoogle,
 		loginWithGoogle,
 		isLoading,
 		error,
+		isPending: isLoading,
 	};
 };
 

@@ -8,7 +8,7 @@ import {
 	GoogleAuthProvider,
 	signOut,
 } from "firebase/auth";
-import { getToken } from "@/utils/auth";
+import { getToken, setToken, removeToken } from "@/utils/auth";
 
 // Define types
 export interface AuthResponse {
@@ -35,18 +35,20 @@ export interface SignupRequest extends EmailCredentials {
 export interface RoleRequest {
 	role: string;
 }
+// Instead of:
+// localStorage.setItem("token", idToken);
 
+// Use:
+// setToken(idToken);
 // Create the auth API
 export const authApi = createApi({
 	reducerPath: "authApi",
 	baseQuery: fetchBaseQuery({
 		baseUrl: `${API_URL}/api`,
 		prepareHeaders: (headers) => {
-			if (typeof window !== "undefined") {
-				const token = getToken();
-				if (token) {
-					headers.set("authorization", `Bearer ${token}`);
-				}
+			const token = getToken();
+			if (token) {
+				headers.set("authorization", `Bearer ${token}`);
 			}
 			return headers;
 		},
@@ -81,7 +83,7 @@ export const authApi = createApi({
 					const data = await response.json();
 
 					// Store Firebase ID token for API auth
-					localStorage.setItem("token", idToken);
+					setToken(idToken);
 
 					return { data };
 				} catch (error: any) {
@@ -124,7 +126,7 @@ export const authApi = createApi({
 					const data = await response.json();
 
 					// Store Firebase ID token for API auth
-					localStorage.setItem("token", idToken);
+					setToken(idToken);
 
 					return { data };
 				} catch (error: any) {
@@ -172,7 +174,7 @@ export const authApi = createApi({
 					const data = await response.json();
 
 					// Store Firebase ID token for API auth
-					localStorage.setItem("token", idToken);
+					setToken(idToken);
 
 					return { data };
 				} catch (error: any) {
@@ -202,7 +204,10 @@ export const authApi = createApi({
 						email: result.user.email,
 						displayName: result.user.displayName,
 						photoURL: result.user.photoURL,
+						emailVerified: result.user.emailVerified,
 					};
+
+					console.log("Google signup with role:", role);
 
 					// Backend signup with Firebase token
 					const response = await fetch(`${API_URL}/api/auth/firebase/signup`, {
@@ -210,20 +215,29 @@ export const authApi = createApi({
 						headers: {
 							"Content-Type": "application/json",
 						},
-						body: JSON.stringify({ idToken, role, userData }),
+						body: JSON.stringify({
+							idToken,
+							role,
+							userData,
+							action: "signup", // Add action explicitly
+						}),
 					});
 
 					if (!response.ok) {
-						throw new Error("Google signup failed");
+						const errorData = await response.json();
+						throw new Error(
+							errorData.message || "Failed to sign up with Google"
+						);
 					}
 
 					const data = await response.json();
 
 					// Store Firebase ID token for API auth
-					localStorage.setItem("token", idToken);
+					setToken(idToken);
 
 					return { data };
 				} catch (error: any) {
+					console.error("Google signup error:", error);
 					return {
 						error: {
 							status: error.code || "FETCH_ERROR",
@@ -245,8 +259,7 @@ export const authApi = createApi({
 			async queryFn() {
 				try {
 					await signOut(auth);
-					localStorage.removeItem("token");
-					localStorage.removeItem("user");
+					removeToken();
 					return { data: undefined };
 				} catch (error: any) {
 					return {

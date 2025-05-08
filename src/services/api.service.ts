@@ -1,12 +1,16 @@
 import axios from "axios";
-import { toast } from "react-toastify"; // Ensure toast is imported
-import { getToken } from "@/utils/auth";
+import { toast } from "react-toastify";
+import {
+	getToken,
+	isTokenExpired,
+	refreshToken,
+	removeToken,
+} from "@/utils/auth";
 
-// Base URL for API - make sure this matches your backend
 export const API_URL =
 	process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-// Create axios instance with the correct base URL (without /api)
+// Create axios instance
 const api = axios.create({
 	baseURL: API_URL,
 	headers: {
@@ -14,53 +18,73 @@ const api = axios.create({
 	},
 });
 
-// Request interceptor for API calls
+// Request interceptor with token refresh
 api.interceptors.request.use(
-	(config) => {
-		// Only access localStorage in browser environment
-		if (typeof window !== "undefined") {
-			const token = getToken();
-			if (token) {
-				config.headers.Authorization = `Bearer ${token}`;
+	async (config) => {
+		if (typeof window === "undefined") return config;
+
+		let token = getToken();
+
+		// If token exists but is expired, try to refresh it
+		if (token && isTokenExpired(token)) {
+			console.log("Token expired, attempting refresh");
+			token = await refreshToken();
+
+			// If refresh failed, handle logout
+			if (!token) {
+				console.log("Token refresh failed, redirecting to login");
+				if (typeof window !== "undefined") {
+					// Use next/navigation only on client side
+					const { useRouter } = await import("next/navigation");
+					const router = useRouter();
+					router.push("/auth/login");
+					toast.error("Session expired. Please log in again.");
+				}
+				return config;
 			}
 		}
 
-		console.log(
-			`Making ${config.method} request to: ${config.baseURL}${config.url}`
-		);
+		// Add token to request if it exists
+		if (token) {
+			config.headers.Authorization = `Bearer ${token}`;
+		}
+
 		return config;
 	},
-	(error) => {
-		return Promise.reject(error);
-	}
+	(error) => Promise.reject(error)
 );
 
-// Response interceptor for API calls
+// Response interceptor
 api.interceptors.response.use(
 	(response) => response,
-	(error) => {
-		const errorDetails = {
-			message: error.message,
-			status: error.response?.status,
-			data: error.response?.data,
-			url: error.config?.url,
-			method: error.config?.method,
-		};
-		console.error("API Error:", errorDetails);
-
-		// Handle errors like 401 Unauthorized
+	async (error) => {
+		// Handle 401 Unauthorized errors
 		if (error.response && error.response.status === 401) {
 			if (typeof window !== "undefined") {
-				localStorage.removeItem("token");
-				toast.error("Session expired. Please log in again.");
+				// Try to refresh token
+				const newToken = await refreshToken();
+
+				if (newToken) {
+					// Retry the original request with new token
+					const originalRequest = error.config;
+					originalRequest.headers.Authorization = `Bearer ${newToken}`;
+					return api(originalRequest);
+				} else {
+					// If refresh failed, redirect to login
+					removeToken();
+					toast.error("Session expired. Please log in again.");
+
+					// Use next/navigation only on client side
+					const { useRouter } = await import("next/navigation");
+					const router = useRouter();
+					router.push("/auth/login");
+				}
 			}
 		}
 
-		// Handle other specific status codes if needed
+		// Handle other errors
 		if (error.response && error.response.status >= 500) {
-			if (typeof window !== "undefined") {
-				toast.error("Server error. Please try again later.");
-			}
+			toast.error("Server error. Please try again later.");
 		}
 
 		return Promise.reject(error);

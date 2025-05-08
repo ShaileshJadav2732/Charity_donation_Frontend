@@ -71,11 +71,12 @@ export function SignupPage() {
 
 	const handleGoogleSignup = async () => {
 		try {
-			await signupWithGoogle({ role: selectedRole }).unwrap();
-			toast.success("Signed up with Google!");
-			router.push("/dashboard");
+			console.log("Starting Google signup with role:", selectedRole);
+			await signupWithGoogle({ role: selectedRole });
+			// Success handling is done in the hook
 		} catch (error) {
-			// handled below
+			console.error("Failed to signup with Google:", error);
+			// Error is already handled by the toast in the useEffect
 		}
 	};
 
