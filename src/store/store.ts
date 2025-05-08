@@ -1,24 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { setupListeners } from "@reduxjs/toolkit/query";
 import authReducer from "./slices/authSlice";
 import { donorApi } from "./services/donorApi";
-import { setupListeners } from "@reduxjs/toolkit/query";
+import { authApi } from "./services/authApi";
 
 export const store = configureStore({
 	reducer: {
 		auth: authReducer,
 		[donorApi.reducerPath]: donorApi.reducer,
+		[authApi.reducerPath]: authApi.reducer,
 	},
-
-	// and other useful features of RTK Query.
 	middleware: (getDefaultMiddleware) =>
-		getDefaultMiddleware({
-			serializableCheck: false, // Disable for Firebase objects
-		}).concat(donorApi.middleware),
+		getDefaultMiddleware().concat(donorApi.middleware, authApi.middleware),
 });
 
-// Optional, but required for refetchOnFocus/refetchOnReconnect behaviors
+// Enable refetchOnFocus and refetchOnReconnect
 setupListeners(store.dispatch);
 
-// Infer types from store
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

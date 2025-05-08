@@ -26,9 +26,9 @@ export function AppProviders({ children }: AppProvidersProps) {
 			})
 	);
 
-	useEffect(() => {
-		store.dispatch(loadUserFromStorage());
-	}, []);
+	// useEffect(() => {
+	// 	store.dispatch(loadUserFromStorage());
+	// }, []);
 
 	return (
 		<Provider store={store}>

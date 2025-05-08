@@ -5,15 +5,24 @@ import { useRouter } from "next/navigation";
 import { useAppSelector } from "../../../hooks/reduxHooks";
 import { useGetDonorProfileQuery } from "../../../store/services/donorApi";
 import { toast } from "react-toastify";
+import ProfileRouteGuard from "../../../components/guards/ProfileRouteGuard";
 
-export default function DonorDashboard() {
+export default function DonorDashboardPage() {
+	return (
+		<ProfileRouteGuard requireComplete={true}>
+			<DonorDashboard />
+		</ProfileRouteGuard>
+	);
+}
+
+export function DonorDashboard() {
 	const router = useRouter();
 	const { user } = useAppSelector((state) => state.auth);
 
 	// Get donor profile with RTK Query
 	const {
 		data: profileData,
-		isLoading,
+
 		error,
 	} = useGetDonorProfileQuery(undefined, {
 		// Skip this query if user is not logged in
@@ -22,11 +31,11 @@ export default function DonorDashboard() {
 
 	// Check if profile is complete, if not redirect to complete profile page
 	useEffect(() => {
-		if (!isLoading && !profileData?.donor?.isProfileCompleted) {
+		if (!profileData?.donor?.isProfileCompleted) {
 			toast.info("Please complete your profile first");
 			router.push("/donor/complete-profile");
 		}
-	}, [profileData, isLoading, router]);
+	}, [profileData, router]);
 
 	// Handle errors
 	useEffect(() => {
@@ -42,7 +51,7 @@ export default function DonorDashboard() {
 		}
 	}, [error]);
 
-	if (isLoading || !profileData?.donor) {
+	if (!profileData?.donor) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { toast } from "react-toastify"; // Ensure toast is imported
+import { getToken } from "@/utils/auth";
 
 // Base URL for API - make sure this matches your backend
 export const API_URL =
@@ -18,7 +19,7 @@ api.interceptors.request.use(
 	(config) => {
 		// Only access localStorage in browser environment
 		if (typeof window !== "undefined") {
-			const token = localStorage.getItem("token");
+			const token = getToken();
 			if (token) {
 				config.headers.Authorization = `Bearer ${token}`;
 			}

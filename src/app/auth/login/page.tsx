@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useEmailLogin, useGoogleLogin } from "../../../hooks/useAuth";
+import {
+	useRtkEmailLogin,
+	useRtkGoogleLogin,
+} from "../../../hooks/useAuthRedux";
 import { useAppSelector } from "../../../hooks/reduxHooks";
 import { FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
@@ -16,8 +19,8 @@ export default function LoginPage() {
 	const { error: authError, isLoading: authLoading } = useAppSelector(
 		(state) => state.auth
 	);
-	const emailLoginMutation = useEmailLogin();
-	const googleLoginMutation = useGoogleLogin();
+	const emailLoginMutation = useRtkEmailLogin();
+	const googleLoginMutation = useRtkGoogleLogin();
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -25,11 +28,15 @@ export default function LoginPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		emailLoginMutation.mutate(formData);
+		try {
+			await emailLoginMutation.mutate(formData);
+		} catch (error) {
+			console.error("Login error:", error);
+		}
 	};
 
 	const handleGoogleLogin = async () => {
-		googleLoginMutation.mutate();
+		await googleLoginMutation.mutate();
 	};
 
 	const isLoading =

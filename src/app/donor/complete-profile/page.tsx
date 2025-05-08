@@ -12,6 +12,15 @@ import { ProfileImage } from "../../../utils/imageUtils";
 import { FiUpload } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { FaHandHoldingHeart, FaHandsHelping, FaHeart } from "react-icons/fa";
+import ProfileRouteGuard from "../../../components/guards/ProfileRouteGuard";
+import { getToken } from "@/utils/auth";
+export default function DonorCompleteProfilePage() {
+	return (
+		<ProfileRouteGuard requireComplete={false}>
+			<DonorComplete />
+		</ProfileRouteGuard>
+	);
+}
 
 // Pre-generate random positions to avoid hydration mismatches
 const iconPositions = Array(15)
@@ -25,27 +34,22 @@ const iconPositions = Array(15)
 		isEven: Math.random() > 0.5,
 	}));
 
-export default function DonorCompleteProfilePage() {
+export function DonorComplete() {
 	const router = useRouter();
 	const { user } = useAppSelector((state) => state.auth);
 	const [isClient, setIsClient] = useState(false);
 
 	// Add token state
-	const [token, setToken] = useState<string | null>(null);
-
-	// Set isClient to true once component mounts and get token from localStorage
 	useEffect(() => {
 		setIsClient(true);
-		if (typeof window !== "undefined") {
-			const storedToken = localStorage.getItem("token");
-			setToken(storedToken);
-		}
 	}, []);
 
+	const token =
+		typeof window !== "undefined" ? localStorage.getItem("token") : null;
 	// Skip query if user is not authenticated
 	const {
 		data: profileData,
-		isLoading: isProfileLoading,
+
 		error: profileError,
 	} = useGetDonorProfileQuery(undefined, {
 		skip: !user,
@@ -255,8 +259,9 @@ export default function DonorCompleteProfilePage() {
 			console.log("Sending profile data to API:", JSON.stringify(formData));
 
 			// Check if user is authenticated
-			if (!user || !localStorage.getItem("token")) {
-				toast.error("You must be logged in to complete your profile");
+			const token = getToken();
+			if (!token) {
+				toast.error("Your session has expired. Please log in again.");
 				router.push("/auth/login");
 				return;
 			}
@@ -278,37 +283,9 @@ export default function DonorCompleteProfilePage() {
 			}
 
 			// Check for API errors
-			if (error && typeof error === "object") {
-				if ("data" in error && error.data) {
-					const errorData = error.data as any;
-					toast.error(
-						errorData?.message || "Server error: Failed to complete profile"
-					);
-				} else if ("status" in error) {
-					toast.error(
-						`Server error (${error.status}): Failed to complete profile`
-					);
-				} else if ("message" in error) {
-					toast.error((error as any).message);
-				} else {
-					toast.error("Unknown error: Failed to complete profile");
-				}
-			} else {
-				toast.error("Failed to complete profile. Please try again.");
-			}
+			toast.error("Failed to complete profile. Please try again.");
 		}
 	};
-
-	// Check if the page is loading
-	const isLoading = isProfileLoading || isSubmitting || !user;
-
-	if (isLoading && !profileData) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50">
-				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-			</div>
-		);
-	}
 
 	return (
 		<div className="min-h-screen relative py-12 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-br from-orange-50 to-amber-100">
