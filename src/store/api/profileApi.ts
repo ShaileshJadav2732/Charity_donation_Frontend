@@ -19,8 +19,10 @@ export const profileApi = apiSlice.injectEndpoints({
 
     // Get donor profile
     getDonorProfile: builder.query<{ profile: DonorProfile }, void>({
-      query: () => '/profile/donor',
-      providesTags: ['DonorProfile'],
+      query: () => ({
+        url: '/profile/donor',
+        method: 'GET',
+      }),
     }),
 
     // Complete organization profile
@@ -38,8 +40,31 @@ export const profileApi = apiSlice.injectEndpoints({
 
     // Get organization profile
     getOrganizationProfile: builder.query<{ profile: OrganizationProfile }, void>({
-      query: () => '/profile/organization',
-      providesTags: ['OrganizationProfile'],
+      query: () => ({
+        url: '/profile/organization',
+        method: 'GET',
+      }),
+    }),
+
+    // Update donor profile
+    updateDonorProfile: builder.mutation<{ message: string; profile: DonorProfile }, Partial<DonorProfile>>({
+      query: (data) => ({
+        url: '/profile/donor',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+
+    // Update organization profile
+    updateOrganizationProfile: builder.mutation<
+      { message: string; profile: OrganizationProfile },
+      Partial<OrganizationProfile>
+    >({
+      query: (data) => ({
+        url: '/profile/organization',
+        method: 'POST',
+        body: data,
+      }),
     }),
   }),
 });
@@ -49,4 +74,6 @@ export const {
   useGetDonorProfileQuery,
   useCompleteOrganizationProfileMutation,
   useGetOrganizationProfileQuery,
+  useUpdateDonorProfileMutation,
+  useUpdateOrganizationProfileMutation,
 } = profileApi;

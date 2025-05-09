@@ -1,46 +1,58 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-// Define protected routes that require authentication
-const protectedRoutes = [
-  '/dashboard',
-  '/complete-profile',
-];
+const protectedRoutes = ["/dashboard", "/complete-profile"];
+const publicRoutes = ["/", "/login", "/signup", "/select-role"];
 
-// Define public routes that don't require authentication
-const publicRoutes = [
-  '/login',
-  '/signup',
-  '/select-role',
-];
-
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get('token')?.value;
-  
-  // Check if the route is protected and user is not authenticated
-  if (protectedRoutes.some(route => pathname.startsWith(route)) && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  console.log(`Middleware: Processing request for ${pathname}`);
+
+  // Get token from cookies
+  const token = request.cookies.get("token")?.value;
+  const authToken = request.cookies.get("authToken")?.value;
+
+  // Use either token, with preference for the JWT token
+  const activeToken = token || authToken;
+
+  console.log(`Middleware: Token ${activeToken ? "present" : "missing"}`);
+
+  // Check if the route is protected
+  if (protectedRoutes.some((route) => pathname.startsWith(route))) {
+    if (!activeToken) {
+      console.log(
+        `Middleware: Token missing for ${pathname}, redirecting to /login`
+      );
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // For performance reasons, we'll just check if the token exists
+    // The actual verification will happen in the API calls
+    console.log(`Middleware: Token exists for ${pathname}, allowing access`);
+    return NextResponse.next();
   }
-  
-  // Check if the route is public and user is authenticated
-  if (publicRoutes.some(route => pathname === route) && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+
+  // Check if user is already logged in and trying to access public routes
+  if (publicRoutes.some((route) => pathname === route) && activeToken) {
+    // For login, signup, and select-role pages, redirect to dashboard if already logged in
+    if (["/login", "/signup", "/select-role"].includes(pathname)) {
+      console.log(
+        `Middleware: User already logged in, redirecting from ${pathname} to /dashboard`
+      );
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
-  
+
+  console.log(`Middleware: Allowing access to ${pathname}`);
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    "/",
+    "/login",
+    "/signup",
+    "/select-role",
+    "/dashboard/:path*",
+    "/complete-profile",
   ],
 };

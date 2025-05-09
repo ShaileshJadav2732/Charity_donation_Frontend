@@ -1,308 +1,356 @@
+"use client";
+
 import { auth, googleProvider } from "@/lib/firebase";
 import { RootState } from "@/store";
 import {
-	useLoginMutation,
-	useRegisterMutation,
-	useVerifyTokenMutation,
+  useLoginMutation,
+  useRegisterMutation,
+  useVerifyTokenMutation,
 } from "@/store/api/authApi";
 import {
-	clearCredentials,
-	setCredentials,
-	setError,
-	setLoading,
+  clearCredentials,
+  setCredentials,
+  setError,
+  setLoading,
 } from "@/store/slices/authSlice";
 import { ApiError, LoginFormData, parseError, SignupFormData } from "@/types";
 import {
-	createUserWithEmailAndPassword,
-	User as FirebaseUser,
-	onAuthStateChanged,
-	signInWithEmailAndPassword,
-	signInWithPopup,
-	signOut,
+  createUserWithEmailAndPassword,
+  User as FirebaseUser,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
 } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+// Public routes that don't require authentication
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/select-role"];
+
 export const useAuth = () => {
-	const dispatch = useDispatch();
-	const router = useRouter();
-	const { user, token, isAuthenticated, isLoading, error } = useSelector(
-		(state: RootState) => state.auth
-	);
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, token, isAuthenticated, isLoading, error } = useSelector(
+    (state: RootState) => state.auth
+  );
 
-	const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
-	// RTK Query mutations
-	const [register] = useRegisterMutation();
-	const [login] = useLoginMutation();
-	const [verifyToken] = useVerifyTokenMutation();
+  // RTK Query mutations
+  const [register] = useRegisterMutation();
+  const [login] = useLoginMutation();
+  const [verifyToken] = useVerifyTokenMutation();
 
-	const [authInitialized, setAuthInitialized] = useState(false);
+  // Debounce function to delay redirects
+  const debounce = (fn: (...args: any[]) => void, ms: number) => {
+    let timeoutId: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn(...args), ms);
+    };
+  };
 
-	// Listen for Firebase auth state changes - only in browser
-	useEffect(() => {
-		// Skip Firebase initialization during SSR
-		if (typeof window === "undefined") {
-			return;
-		}
+  // Listen for Firebase auth state changes
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      console.log("Skipping Firebase auth listener during SSR");
+      return;
+    }
 
-		console.log("Setting up Firebase auth listener");
-		const unsubscribe = onAuthStateChanged(auth, async (user) => {
-			console.log(
-				"Auth state changed:",
-				user ? "User logged in" : "User logged out"
-			);
-			setFirebaseUser(user);
-			setAuthInitialized(true);
+    console.log("Setting up Firebase auth listener");
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log(
+        "Auth state changed:",
+        user ? `User logged in: ${user.email}` : "User logged out"
+      );
+      setFirebaseUser(user);
+      setAuthInitialized(true);
 
-			if (user) {
-				try {
-					// Get Firebase ID token
-					const idToken = await user.getIdToken();
-					console.log("Got Firebase ID token");
+      const handleAuthState = debounce(async () => {
+        // Don't redirect if on a public route
+        if (PUBLIC_ROUTES.includes(pathname)) {
+          console.log("On public route, skipping redirect");
+          if (!user) {
+            dispatch(clearCredentials());
+          }
+          return;
+        }
 
-					// Verify token with backend
-					try {
-						console.log("Verifying token with backend");
-						const response = await verifyToken({ idToken }).unwrap();
-						console.log("Token verified successfully");
-						dispatch(
-							setCredentials({
-								user: response.user,
-								token: response.token,
-							})
-						);
-					} catch (error: unknown) {
-						console.error("Error verifying token:", error);
+        if (user) {
+          try {
+            const idToken = await user.getIdToken();
+            console.log("Got Firebase ID token");
 
-						const apiError = error as ApiError;
-						if (apiError.status === 404) {
-							console.log("User not found in backend, might be a new user");
-						}
-					}
-				} catch (error) {
-					console.error("Error getting ID token:", error);
-				}
-			} else {
-				// User is signed out
-				dispatch(clearCredentials());
-			}
-		});
+            // Set authToken cookie
+            document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+            console.log("Set authToken cookie");
 
-		return () => unsubscribe();
-	}, [dispatch, verifyToken]);
+            // Verify token with backend
+            console.log("Verifying token with backend");
+            const response = await verifyToken({ idToken }).unwrap();
+            console.log("Token verified successfully:", response);
 
-	// Signup with email and password
-	const signup = async (formData: SignupFormData) => {
-		const { email, password, role } = formData;
+            dispatch(
+              setCredentials({
+                user: response.user,
+                token: response.token,
+              })
+            );
 
-		dispatch(setLoading(true));
-		dispatch(setError(null));
+            // Redirect based on profile completion
+            if (!response.user.profileCompleted) {
+              console.log(
+                "Profile not completed, redirecting to /complete-profile"
+              );
+              router.push("/complete-profile");
+            } else if (pathname === "/login" || pathname === "/signup") {
+              console.log("Already authenticated, redirecting to /dashboard");
+              router.push("/dashboard");
+            }
+          } catch (error: unknown) {
+            console.error("Auth error:", error);
+            const apiError = error as ApiError;
+            if (apiError.status === 404) {
+              console.log(
+                "User not found in backend, redirecting to /select-role"
+              );
+              router.push("/select-role");
+            } else {
+              dispatch(clearCredentials());
+              if (!PUBLIC_ROUTES.includes(pathname)) {
+                console.log("Authentication failed, redirecting to /login");
+                router.push("/login");
+              }
+            }
+          }
+        } else {
+          dispatch(clearCredentials());
+          if (!PUBLIC_ROUTES.includes(pathname)) {
+            console.log("No user, redirecting to /login");
+            router.push("/login");
+          }
+        }
+      }, 200);
 
-		try {
-			// Create user in Firebase
-			const userCredential = await createUserWithEmailAndPassword(
-				auth,
-				email,
-				password
-			);
-			const firebaseUser = userCredential.user;
+      handleAuthState();
+    });
 
-			console.log("Firebase user created:", firebaseUser.uid);
+    return () => {
+      console.log("Cleaning up Firebase auth listener");
+      unsubscribe();
+    };
+  }, [dispatch, verifyToken, router, pathname]);
 
-			// Register user in backend
-			try {
-				const response = await register({
-					email,
-					firebaseUid: firebaseUser.uid,
-					role,
-				}).unwrap();
+  // Signup with email and password
+  const signup = async (formData: SignupFormData) => {
+    const { email, password, role } = formData;
 
-				console.log("Backend registration successful:", response);
+    dispatch(setLoading(true));
+    dispatch(setError(null));
 
-				// Set credentials in Redux store
-				dispatch(
-					setCredentials({
-						user: response.user,
-						token: response.token,
-					})
-				);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const firebaseUser = userCredential.user;
+      console.log("Firebase user created:", firebaseUser.uid);
 
-				return response;
-			} catch (backendError: unknown) {
-				console.error("Backend registration error:", backendError);
+      const idToken = await firebaseUser.getIdToken();
+      document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+      console.log("Set authToken cookie for signup");
 
-				// If there's an error with the backend, we should delete the Firebase user
-				// to maintain consistency
-				try {
-					await firebaseUser.delete();
-					console.log(
-						"Firebase user deleted due to backend registration failure"
-					);
-				} catch (deleteError) {
-					console.error("Error deleting Firebase user:", deleteError);
-				}
+      const response = await register({
+        email,
+        firebaseUid: firebaseUser.uid,
+        role,
+      }).unwrap();
 
-				throw backendError;
-			}
-		} catch (error: unknown) {
-			console.error("Signup error:", error);
-			const parsedError = parseError(error);
-			dispatch(setError(parsedError.message || "Failed to sign up"));
-			throw error;
-		} finally {
-			dispatch(setLoading(false));
-		}
-	};
+      console.log("Backend registration successful:", response);
 
-	// Login with email and password
-	const loginWithEmail = async (formData: LoginFormData) => {
-		const { email, password } = formData;
+      dispatch(
+        setCredentials({
+          user: response.user,
+          token: response.token,
+        })
+      );
 
-		dispatch(setLoading(true));
-		dispatch(setError(null));
+      if (!response.user.profileCompleted) {
+        console.log("Redirecting to /complete-profile after signup");
+        router.push("/complete-profile");
+      } else {
+        console.log("Redirecting to /dashboard after signup");
+        router.push("/dashboard");
+      }
 
-		try {
-			// Sign in with Firebase
-			const userCredential = await signInWithEmailAndPassword(
-				auth,
-				email,
-				password
-			);
-			const firebaseUser = userCredential.user;
+      return response;
+    } catch (error: unknown) {
+      console.error("Signup error:", error);
+      const parsedError = parseError(error);
+      dispatch(setError(parsedError.message || "Failed to sign up"));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
 
-			// Login user in backend
-			const response = await login({
-				firebaseUid: firebaseUser.uid,
-			}).unwrap();
+  // Login with email and password
+  const loginWithEmail = async (formData: LoginFormData) => {
+    const { email, password } = formData;
 
-			// Set credentials in Redux store
-			dispatch(
-				setCredentials({
-					user: response.user,
-					token: response.token,
-				})
-			);
+    dispatch(setLoading(true));
+    dispatch(setError(null));
 
-			return response;
-		} catch (error: unknown) {
-			console.error("Login error:", error);
-			const parsedError = parseError(error);
-			dispatch(setError(parsedError.message || "Failed to log in"));
-			throw error;
-		} finally {
-			dispatch(setLoading(false));
-		}
-	};
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const firebaseUser = userCredential.user;
+      console.log("Firebase login successful:", firebaseUser.uid);
 
-	// Login with Google
-	const loginWithGoogle = async () => {
-		dispatch(setLoading(true));
-		dispatch(setError(null));
+      const idToken = await firebaseUser.getIdToken();
+      document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+      console.log("Set authToken cookie for email login");
 
-		try {
-			// Sign in with Google
-			const result = await signInWithPopup(auth, googleProvider);
-			const firebaseUser = result.user;
+      const response = await login({
+        firebaseUid: firebaseUser.uid,
+      }).unwrap();
 
-			console.log(
-				"Google sign-in successful:",
-				firebaseUser.uid,
-				firebaseUser.email
-			);
+      console.log("Backend login successful:", response);
 
-			if (!firebaseUser.email) {
-				throw new Error("Google account must have an email address");
-			}
+      dispatch(
+        setCredentials({
+          user: response.user,
+          token: response.token,
+        })
+      );
 
-			// Check if user exists in backend
-			try {
-				// Try to login
-				const response = await login({
-					firebaseUid: firebaseUser.uid,
-				}).unwrap();
+      if (!response.user.profileCompleted) {
+        console.log("Redirecting to /complete-profile after email login");
+        router.push("/complete-profile");
+      } else {
+        console.log("Redirecting to /dashboard after email login");
+        router.push("/dashboard");
+      }
 
-				console.log("Backend login successful:", response);
+      return response;
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+      const parsedError = parseError(error);
+      dispatch(setError(parsedError.message || "Failed to log in"));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
 
-				// Set credentials in Redux store
-				dispatch(
-					setCredentials({
-						user: response.user,
-						token: response.token,
-					})
-				);
+  // Login with Google
+  const loginWithGoogle = async () => {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
 
-				// Redirect based on profile completion
-				if (!response.user.profileCompleted) {
-					router.push("/complete-profile");
-				} else {
-					router.push("/dashboard");
-				}
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      console.log(
+        "Google sign-in successful:",
+        firebaseUser.uid,
+        firebaseUser.email
+      );
 
-				return response;
-			} catch (error: unknown) {
-				console.log("Backend login error:", error);
+      if (!firebaseUser.email) {
+        throw new Error("Google account must have an email address");
+      }
 
-				// If error is 404, user doesn't exist in our backend yet
-				const apiError = error as ApiError;
-				if (apiError.status === 404) {
-					console.log(
-						"User not found in backend, redirecting to role selection"
-					);
+      const idToken = await firebaseUser.getIdToken();
+      document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+      console.log("Set authToken cookie for Google login");
 
-					// Store Firebase user info in sessionStorage for the select-role page
-					if (typeof window !== "undefined") {
-						sessionStorage.setItem(
-							"pendingGoogleUser",
-							JSON.stringify({
-								uid: firebaseUser.uid,
-								email: firebaseUser.email,
-							})
-						);
-					}
+      try {
+        const response = await login({
+          firebaseUid: firebaseUser.uid,
+        }).unwrap();
 
-					// Redirect to role selection page
-					router.push("/select-role");
-					return null;
-				} else {
-					// For other errors, throw them
-					throw error;
-				}
-			}
-		} catch (error: unknown) {
-			console.error("Google login error:", error);
-			const parsedError = parseError(error);
-			dispatch(setError(parsedError.message || "Failed to log in with Google"));
-			throw error;
-		} finally {
-			dispatch(setLoading(false));
-		}
-	};
+        console.log("Backend login successful:", response);
 
-	// Logout
-	const logout = async () => {
-		try {
-			await signOut(auth);
-			dispatch(clearCredentials());
-			router.push("/login");
-		} catch (error: unknown) {
-			console.error("Logout error:", error);
-			const parsedError = parseError(error);
-			dispatch(setError(parsedError.message || "Failed to log out"));
-		}
-	};
+        dispatch(
+          setCredentials({
+            user: response.user,
+            token: response.token,
+          })
+        );
 
-	return {
-		user,
-		firebaseUser,
-		token,
-		isAuthenticated,
-		isLoading,
-		error,
-		signup,
-		loginWithEmail,
-		loginWithGoogle,
-		logout,
-	};
+        if (!response.user.profileCompleted) {
+          console.log("Redirecting to /complete-profile after Google login");
+          router.push("/complete-profile");
+        } else {
+          console.log("Redirecting to /dashboard after Google login");
+          router.push("/dashboard");
+        }
+
+        return response;
+      } catch (error: unknown) {
+        console.log("Backend login error:", error);
+        const apiError = error as ApiError;
+        if (apiError.status === 404) {
+          console.log("User not found in backend, redirecting to /select-role");
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(
+              "pendingGoogleUser",
+              JSON.stringify({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+              })
+            );
+          }
+          router.push("/select-role");
+          return null;
+        }
+        throw error;
+      }
+    } catch (error: unknown) {
+      console.error("Google login error:", error);
+      const parsedError = parseError(error);
+      dispatch(setError(parsedError.message || "Failed to log in with Google"));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  // Logout
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      dispatch(clearCredentials());
+      document.cookie = "authToken=; path=/; max-age=0";
+      console.log("Cleared authToken cookie and logged out");
+      router.push("/login");
+    } catch (error: unknown) {
+      console.error("Logout error:", error);
+      const parsedError = parseError(error);
+      dispatch(setError(parsedError.message || "Failed to log out"));
+    }
+  };
+
+  return {
+    user,
+    firebaseUser,
+    token,
+    isAuthenticated,
+    isLoading,
+    error,
+    authInitialized,
+    signup,
+    loginWithEmail,
+    loginWithGoogle,
+    logout,
+  };
 };

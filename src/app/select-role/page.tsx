@@ -9,181 +9,219 @@ import { useRegisterMutation } from "@/store/api/authApi";
 import { setCredentials } from "@/store/slices/authSlice";
 import NoSSR from "@/components/common/NoSSR";
 import { FirebaseUserInfo, ApiError, parseError } from "@/types";
+import { FiUser, FiBriefcase } from "react-icons/fi";
 
 export default function SelectRolePage() {
-	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-			<NoSSR>
-				<SelectRoleContent />
-			</NoSSR>
-		</div>
-	);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100 py-12 px-4 sm:px-6 lg:px-8">
+      <NoSSR>
+        <SelectRoleContent />
+      </NoSSR>
+    </div>
+  );
 }
 
 function SelectRoleContent() {
-	const router = useRouter();
-	const dispatch = useDispatch();
-	const [role, setRole] = useState<"donor" | "organization">("donor");
-	const [isLoading, setIsLoading] = useState(false);
-	const [register] = useRegisterMutation();
-	const [pendingUser, setPendingUser] = useState<FirebaseUserInfo | null>(null);
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const [role, setRole] = useState<"donor" | "organization">("donor");
+  const [isLoading, setIsLoading] = useState(false);
+  const [register] = useRegisterMutation();
+  const [pendingUser, setPendingUser] = useState<FirebaseUserInfo | null>(null);
 
-	// Check for pending Google user in sessionStorage on component mount
-	useEffect(() => {
-		if (typeof window !== "undefined") {
-			const storedUser = sessionStorage.getItem("pendingGoogleUser");
-			if (storedUser) {
-				try {
-					const parsedUser = JSON.parse(storedUser);
-					setPendingUser(parsedUser);
-					console.log("Found pending Google user:", parsedUser);
-				} catch (e) {
-					console.error("Error parsing pending user:", e);
-				}
-			}
-		}
-	}, []);
+  // Check for pending Google user in sessionStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-	const handleRoleSelect = async () => {
-		setIsLoading(true);
+    console.log("Checking for pending Google user");
+    const storedUser = sessionStorage.getItem("pendingGoogleUser");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setPendingUser(parsedUser);
+        console.log("Found pending Google user:", parsedUser);
+      } catch (e) {
+        console.error("Error parsing pending user:", e);
+        toast.error("Invalid user data. Please log in again.");
+        router.push("/login");
+      }
+    } else {
+      console.log("No pending Google user found");
+    }
+  }, [router]);
 
-		try {
-			// First check if we have a pending Google user from sessionStorage
-			let userInfo: FirebaseUserInfo | null = null;
+  const handleRoleSelect = async () => {
+    setIsLoading(true);
+    console.log("Starting role selection process");
 
-			if (pendingUser) {
-				userInfo = pendingUser;
-				console.log("Using pending Google user:", userInfo);
-			} else {
-				// Otherwise get current Firebase user
-				const firebaseUser = auth.currentUser;
+    try {
+      let userInfo: FirebaseUserInfo | null = null;
 
-				if (!firebaseUser) {
-					toast.error("No user is signed in");
-					router.push("/login");
-					return;
-				}
+      if (pendingUser) {
+        userInfo = pendingUser;
+        console.log("Using pending Google user:", userInfo);
+      } else {
+        const firebaseUser = auth.currentUser;
+        console.log("Current Firebase user:", firebaseUser?.uid, firebaseUser?.email);
 
-				if (!firebaseUser.email) {
-					toast.error("User must have an email address");
-					return;
-				}
+        if (!firebaseUser) {
+          console.error("No Firebase user signed in");
+          toast.error("No user is signed in");
+          router.push("/login");
+          return;
+        }
 
-				userInfo = {
-					uid: firebaseUser.uid,
-					email: firebaseUser.email,
-				};
-			}
+        if (!firebaseUser.email) {
+          console.error("Firebase user has no email");
+          toast.error("User must have an email address");
+          return;
+        }
 
-			console.log("Registering user with role:", role);
-			console.log("Firebase user:", userInfo.uid, userInfo.email);
+        userInfo = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+        };
+      }
 
-			// Register user in backend with selected role
-			try {
-				const response = await register({
-					email: userInfo.email,
-					firebaseUid: userInfo.uid,
-					role,
-				}).unwrap();
+      console.log("Registering user with role:", role, "Email:", userInfo.email);
 
-				console.log("Backend registration successful:", response);
+      const response = await register({
+        email: userInfo.email,
+        firebaseUid: userInfo.uid,
+        role,
+      }).unwrap();
 
-				// Set credentials in Redux store
-				dispatch(
-					setCredentials({
-						user: response.user,
-						token: response.token,
-					})
-				);
+      console.log("Backend registration successful:", response);
 
-				// Clear the pending user from sessionStorage if it exists
-				if (typeof window !== "undefined" && pendingUser) {
-					sessionStorage.removeItem("pendingGoogleUser");
-				}
+      dispatch(
+        setCredentials({
+          user: response.user,
+          token: response.token,
+        })
+      );
 
-				toast.success("Account created successfully!");
+      if (typeof window !== "undefined" && pendingUser) {
+        sessionStorage.removeItem("pendingGoogleUser");
+        console.log("Cleared pendingGoogleUser from sessionStorage");
+      }
 
-				// Redirect to complete profile
-				router.push("/complete-profile");
-			} catch (error: unknown) {
-				console.error("Backend registration error:", error);
+      toast.success("Account created successfully!");
+      console.log("Redirecting to /complete-profile");
+      router.push("/complete-profile");
+    } catch (error: unknown) {
+      console.error("Role selection error:", error);
+      const backendError = error as ApiError;
+      let errorMessage = "Failed to create account";
 
-				const backendError = error as ApiError;
-				if (
-					backendError.status === 400 &&
-					backendError.data?.message?.includes("already exists")
-				) {
-					toast.error("An account with this email already exists");
-				} else {
-					toast.error(backendError.data?.message || "Failed to create account");
-				}
-			}
-		} catch (error: unknown) {
-			console.error("Role selection error:", error);
-			const parsedError = parseError(error);
-			toast.error(parsedError.message || "Failed to create account");
-		} finally {
-			setIsLoading(false);
-		}
-	};
+      if (backendError.status === 400 && backendError.data?.message?.includes("already exists")) {
+        errorMessage = "An account with this email already exists";
+      } else if (backendError.data?.message) {
+        errorMessage = backendError.data.message;
+      } else {
+        errorMessage = parseError(error).message || errorMessage;
+      }
 
-	return (
-		<div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-			<div className="text-center">
-				<h1 className="text-2xl font-bold">Select Your Role</h1>
-				<p className="mt-2 text-gray-600">
-					Choose how you want to use our platform
-				</p>
-			</div>
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-			<div className="mt-8 space-y-6">
-				<div className="space-y-4">
-					<div className="flex items-center">
-						<input
-							id="donor"
-							name="role"
-							type="radio"
-							checked={role === "donor"}
-							onChange={() => setRole("donor")}
-							className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-						/>
-						<label
-							htmlFor="donor"
-							className="ml-3 block text-sm font-medium text-gray-700"
-						>
-							I want to donate (Donor)
-						</label>
-					</div>
+  return (
+    <div className="w-full max-w-md">
+      <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
+        <div className="px-6 py-8 text-center">
+          <div className="flex justify-center mb-4">
+            <FiUser className="h-12 w-12 text-teal-600" aria-hidden="true" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Select Your Role</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Choose how you want to participate in GreenGive
+          </p>
+        </div>
 
-					<div className="flex items-center">
-						<input
-							id="organization"
-							name="role"
-							type="radio"
-							checked={role === "organization"}
-							onChange={() => setRole("organization")}
-							className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-						/>
-						<label
-							htmlFor="organization"
-							className="ml-3 block text-sm font-medium text-gray-700"
-						>
-							I represent an organization (Organization)
-						</label>
-					</div>
-				</div>
+        <div className="px-6 pb-6 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <input
+                id="donor"
+                name="role"
+                type="radio"
+                checked={role === "donor"}
+                onChange={() => setRole("donor")}
+                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                aria-label="Select Donor role"
+              />
+              <label
+                htmlFor="donor"
+                className="ml-3 block text-sm font-medium text-gray-700"
+              >
+                <div className="flex items-center">
+                  <FiUser className="h-5 w-5 text-teal-600 mr-2" aria-hidden="true" />
+                  Individual Donor
+                </div>
+              </label>
+            </div>
 
-				<div>
-					<button
-						type="button"
-						onClick={handleRoleSelect}
-						disabled={isLoading}
-						className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-					>
-						{isLoading ? "Processing..." : "Continue"}
-					</button>
-				</div>
-			</div>
-		</div>
-	);
+            <div className="flex items-center">
+              <input
+                id="organization"
+                name="role"
+                type="radio"
+                checked={role === "organization"}
+                onChange={() => setRole("organization")}
+                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                aria-label="Select Organization role"
+              />
+              <label
+                htmlFor="organization"
+                className="ml-3 block text-sm font-medium text-gray-700"
+              >
+                <div className="flex items-center">
+                  <FiBriefcase className="h-5 w-5 text-teal-600 mr-2" aria-hidden="true" />
+                  Organization
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRoleSelect}
+            disabled={isLoading}
+            className="w-full flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:bg-teal-400 disabled:cursor-not-allowed"
+            aria-label="Continue with selected role"
+          >
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              "Continue"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
