@@ -1,72 +1,133 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { AuthState, User } from "@/types";
+import { authApi } from "../api/authApi";
 
-export interface User {
-	id: string;
-	email: string;
-	role: string;
-	displayName?: string;
-	photoURL?: string;
-	isProfileCompleted?: boolean;
-}
+// Get token safely (only in browser)
+const getStoredToken = (): string | null => {
+	if (typeof window !== "undefined") {
+		return localStorage.getItem("token");
+	}
+	return null;
+};
 
-interface AuthState {
-	user: User | null;
-	isAuthenticated: boolean;
-	isLoading: boolean;
-	error: string | null;
-}
-
+// Initial state
 const initialState: AuthState = {
 	user: null,
+	token: getStoredToken(),
 	isAuthenticated: false,
 	isLoading: false,
 	error: null,
 };
 
+// Create auth slice
 const authSlice = createSlice({
 	name: "auth",
 	initialState,
 	reducers: {
-		loginStart: (state) => {
-			state.isLoading = true;
-			state.error = null;
-		},
-		loginSuccess: (state, action: PayloadAction<User>) => {
-			state.isLoading = false;
+		// Set credentials manually
+		setCredentials: (
+			state,
+			action: PayloadAction<{ user: User; token: string }>
+		) => {
+			const { user, token } = action.payload;
+			state.user = user;
+			state.token = token;
 			state.isAuthenticated = true;
-			state.user = action.payload;
-			state.error = null;
-		},
-		loginFailure: (state, action: PayloadAction<string>) => {
-			state.isLoading = false;
-			state.isAuthenticated = false;
-			state.error = action.payload;
-		},
-		logout: (state) => {
-			state.user = null;
-			state.isAuthenticated = false;
-			state.error = null;
-		},
-		updateUser: (state, action: PayloadAction<Partial<User>>) => {
-			if (state.user) {
-				state.user = { ...state.user, ...action.payload };
+
+			// Save token to localStorage
+			if (typeof window !== "undefined") {
+				localStorage.setItem("token", token);
 			}
 		},
-		clearErrors: (state) => {
-			state.error = null;
+
+		// Clear credentials (logout)
+		clearCredentials: (state) => {
+			state.user = null;
+			state.token = null;
+			state.isAuthenticated = false;
+
+			// Remove token from localStorage
+			if (typeof window !== "undefined") {
+				localStorage.removeItem("token");
+			}
 		},
+
+		// Set loading state
+		setLoading: (state, action: PayloadAction<boolean>) => {
+			state.isLoading = action.payload;
+		},
+
+		// Set error message
+		setError: (state, action: PayloadAction<string | null>) => {
+			state.error = action.payload;
+		},
+	},
+	extraReducers: (builder) => {
+		// Handle register success
+		builder.addMatcher(
+			authApi.endpoints.register.matchFulfilled,
+			(state, { payload }) => {
+				state.user = payload.user;
+				state.token = payload.token;
+				state.isAuthenticated = true;
+				state.isLoading = false;
+				state.error = null;
+
+				// Save token to localStorage
+				if (typeof window !== "undefined") {
+					localStorage.setItem("token", payload.token);
+				}
+			}
+		);
+
+		// Handle login success
+		builder.addMatcher(
+			authApi.endpoints.login.matchFulfilled,
+			(state, { payload }) => {
+				state.user = payload.user;
+				state.token = payload.token;
+				state.isAuthenticated = true;
+				state.isLoading = false;
+				state.error = null;
+
+				// Save token to localStorage
+				if (typeof window !== "undefined") {
+					localStorage.setItem("token", payload.token);
+				}
+			}
+		);
+
+		// Handle verify token success
+		builder.addMatcher(
+			authApi.endpoints.verifyToken.matchFulfilled,
+			(state, { payload }) => {
+				state.user = payload.user;
+				state.token = payload.token;
+				state.isAuthenticated = true;
+				state.isLoading = false;
+				state.error = null;
+
+				// Save token to localStorage
+				if (typeof window !== "undefined") {
+					localStorage.setItem("token", payload.token);
+				}
+			}
+		);
+
+		// Handle get current user success
+		builder.addMatcher(
+			authApi.endpoints.getCurrentUser.matchFulfilled,
+			(state, { payload }) => {
+				state.user = payload.user;
+				state.isAuthenticated = true;
+				state.isLoading = false;
+				state.error = null;
+			}
+		);
 	},
 });
 
-export const {
-	loginStart,
-	loginSuccess,
-	loginFailure,
-	logout,
-	updateUser,
-	clearErrors,
-} = authSlice.actions;
+export const { setCredentials, clearCredentials, setLoading, setError } =
+	authSlice.actions;
 
 export default authSlice.reducer;
-export const setCredentials = loginSuccess;
-export const clearCredentials = logout;

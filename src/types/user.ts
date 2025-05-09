@@ -1,18 +1,43 @@
-export interface ISignupData {
-	username: string;
-	password: string;
-	role: "admin" | "organization" | "donor";
+// Firebase user type
+export interface FirebaseUserInfo {
+  uid: string;
+  email: string;
 }
 
-export interface IUser {
-	_id: string;
-	username: string;
-	role: "admin" | "organization" | "donor";
+// Role type
+export type UserRole = 'donor' | 'organization' | 'admin';
+
+// Registration data type
+export interface RegistrationData {
+  email: string;
+  firebaseUid: string;
+  role: UserRole;
 }
 
-export interface AuthState {
-	user: IUser | null;
-	token: string | null;
-	loading: boolean;
-	error: string | null;
+// Registration response type
+export interface RegistrationResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    profileCompleted: boolean;
+  };
+  token: string;
 }
+
+// Login data type
+export interface LoginData {
+  firebaseUid: string;
+}
+
+// Login response type (same as registration response)
+export type LoginResponse = RegistrationResponse;
+
+// Token verification data type
+export interface TokenVerificationData {
+  idToken: string;
+}
+
+// Token verification response type (same as registration response)
+export type TokenVerificationResponse = RegistrationResponse;
