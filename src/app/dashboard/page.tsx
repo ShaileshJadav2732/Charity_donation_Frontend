@@ -1,247 +1,196 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useAuth } from "@/hooks/useAuth";
-import { motion } from "framer-motion";
-// Updated icon imports
-import {
-  FaHome,
-  FaUser,
-  FaSignOutAlt,
-  FaBars,
-  FaTimes,
-  FaHeart,
-  FaHandsHelping,
-  FaUsers,
-} from "react-icons/fa";
+import { FaHandsHelping, FaHeart, FaUsers, FaChartLine } from "react-icons/fa";
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-}
+export default function DashboardPage() {
+  const { user } = useSelector((state: RootState) => state.auth);
 
-const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const router = useRouter();
-  const { user, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
-  const { logout } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  // Debug state and icon rendering
-  useEffect(() => {
-    setIsClient(true);
-    console.log("DashboardLayout: State", {
-      isClient,
-      isAuthenticated,
-      user,
-      profileCompleted: user?.profileCompleted,
-      iconsLoaded: typeof FaHome !== "undefined",
-    });
-  }, [isClient, isAuthenticated, user]);
-
-  // Redirect if not authenticated or profile incomplete
-  useEffect(() => {
-    if (!isClient) return;
-
-    if (!isAuthenticated) {
-      console.log("DashboardLayout: Not authenticated, redirecting to /login");
-      router.push("/login");
-      return;
-    }
-
-    if (user && !user.profileCompleted) {
-      console.log(
-        "DashboardLayout: Profile not completed, redirecting to /complete-profile"
-      );
-      router.push("/complete-profile");
-    }
-  }, [isAuthenticated, user, router, isClient]);
-
-  const handleLogout = async () => {
-    console.log("DashboardLayout: Initiating logout");
-    await logout();
-    setIsMobileMenuOpen(false);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-    console.log("DashboardLayout: Mobile menu toggled", {
-      isMobileMenuOpen: !isMobileMenuOpen,
-    });
-  };
-
-  // Loading state
-  if (!isClient || !isAuthenticated || !user) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-100 via-teal-50 to-teal-200"
-      >
-        <div className="bg-white shadow-2xl rounded-2xl p-8 text-center max-w-sm w-full">
-          <svg
-            className="animate-spin h-10 w-10 text-teal-600 mx-auto"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <p className="mt-4 text-lg font-medium text-gray-600">
-            Loading dashboard...
-          </p>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-100 via-teal-50 to-teal-200">
-      {/* Mobile menu button */}
-      <motion.div
-        className="lg:hidden fixed top-4 right-4 z-50"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <button
-          onClick={toggleMobileMenu}
-          className="p-3 rounded-full text-teal-600 bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-        >
-          {isMobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-        </button>
-      </motion.div>
-
-      {/* Sidebar */}
-      <motion.aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-2xl transform ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out`}
-        initial={{ x: -288 }}
-        animate={{ x: isMobileMenuOpen ? 0 : -288 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="h-full flex flex-col">
-          {/* Sidebar header */}
-          <div className="px-6 py-8 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-teal-600">GreenGive</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              {user.role === "donor"
-                ? "Donor Dashboard"
-                : "Organization Dashboard"}
-            </p>
+  const DonorDashboard = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Stats Cards */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Donations</p>
+              <p className="text-2xl font-bold text-gray-900">$2,500</p>
+            </div>
+            <div className="bg-teal-100 p-3 rounded-full">
+              <FaHeart className="h-6 w-6 text-teal-600" />
+            </div>
           </div>
-
-          {/* Sidebar navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            <Link
-              href="/dashboard"
-              className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <FaHome className="mr-3 h-5 w-5 text-teal-600" />
-              Dashboard
-            </Link>
-            <Link
-              href="/dashboard/profile"
-              className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <FaUser className="mr-3 h-5 w-5 text-teal-600" />
-              Profile
-            </Link>
-            {user.role === "donor" && (
-              <>
-                <Link
-                  href="/causes"
-                  className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FaHandsHelping className="mr-3 h-5 w-5 text-teal-600" />
-                  Causes
-                </Link>
-                <Link
-                  href="/donations"
-                  className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FaHeart className="mr-3 h-5 w-5 text-teal-600" />
-                  My Donations
-                </Link>
-              </>
-            )}
-            {user.role === "organization" && (
-              <>
-                <Link
-                  href="/campaigns"
-                  className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FaUsers className="mr-3 h-5 w-5 text-teal-600" />
-                  Campaigns
-                </Link>
-                <Link
-                  href="/donors"
-                  className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FaHeart className="mr-3 h-5 w-5 text-teal-600" />
-                  Donors
-                </Link>
-              </>
-            )}
-          </nav>
-
-          {/* Sidebar footer */}
-          <div className="px-6 py-6 border-t border-gray-200">
-            <motion.button
-              onClick={handleLogout}
-              className="flex items-center w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <FaSignOutAlt className="mr-3 h-5 w-5 text-teal-600" />
-              Logout
-            </motion.button>
+          <div className="mt-4">
+            <p className="text-sm text-green-600">+12% from last month</p>
           </div>
         </div>
-      </motion.aside>
 
-      {/* Main content */}
-      <main className="lg:ml-72 min-h-screen">
-        <div className="p-8">{children}</div>
-      </main>
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Causes Supported</p>
+              <p className="text-2xl font-bold text-gray-900">8</p>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-full">
+              <FaHandsHelping className="h-6 w-6 text-purple-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-purple-600">Active in 3 categories</p>
+          </div>
+        </div>
 
-      {/* Overlay for mobile menu */}
-      {isMobileMenuOpen && (
-        <motion.div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        />
-      )}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Impact Score</p>
+              <p className="text-2xl font-bold text-gray-900">85</p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-full">
+              <FaChartLine className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-blue-600">Top 15% of donors</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Organizations</p>
+              <p className="text-2xl font-bold text-gray-900">5</p>
+            </div>
+            <div className="bg-orange-100 p-3 rounded-full">
+              <FaUsers className="h-6 w-6 text-orange-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-orange-600">Supporting 5 organizations</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+        <div className="space-y-4">
+          {[1, 2, 3].map((_, index) => (
+            <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
+              <div className="bg-teal-100 p-2 rounded-full mr-4">
+                <FaHeart className="h-4 w-4 text-teal-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  Donated $50 to Save the Ocean Campaign
+                </p>
+                <p className="text-xs text-gray-500">2 days ago</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
-};
 
-export default DashboardLayout;
+  const OrganizationDashboard = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Stats Cards */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Raised</p>
+              <p className="text-2xl font-bold text-gray-900">$25,000</p>
+            </div>
+            <div className="bg-teal-100 p-3 rounded-full">
+              <FaHeart className="h-6 w-6 text-teal-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-green-600">+15% from last month</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Campaigns</p>
+              <p className="text-2xl font-bold text-gray-900">3</p>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-full">
+              <FaHandsHelping className="h-6 w-6 text-purple-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-purple-600">2 ending soon</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Donors</p>
+              <p className="text-2xl font-bold text-gray-900">156</p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-full">
+              <FaUsers className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-blue-600">12 new this month</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Success Rate</p>
+              <p className="text-2xl font-bold text-gray-900">92%</p>
+            </div>
+            <div className="bg-orange-100 p-3 rounded-full">
+              <FaChartLine className="h-6 w-6 text-orange-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-orange-600">Campaign completion rate</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Donations */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Donations</h2>
+        <div className="space-y-4">
+          {[1, 2, 3].map((_, index) => (
+            <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
+              <div className="bg-teal-100 p-2 rounded-full mr-4">
+                <FaUsers className="h-4 w-4 text-teal-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  John Doe donated $100 to Clean Water Initiative
+                </p>
+                <p className="text-xs text-gray-500">1 day ago</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome back, {user?.role === "donor" ? "Donor" : "Organization"}!
+        </h1>
+        <p className="text-gray-600">Here's an overview of your activities</p>
+      </div>
+
+      {user?.role === "donor" ? <DonorDashboard /> : <OrganizationDashboard />}
+    </div>
+  );
+}
