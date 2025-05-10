@@ -27,65 +27,28 @@ export interface Address {
 	country: string;
 }
 
+export interface Organization {
+	_id: string;
+	name: string;
+	address: string;
+}
+
 export interface DonationFormData {
 	organization: string;
-	type: DonationType;
-	amount?: string;
+	type: "monetary" | "in-kind";
+	amount?: number;
+	quantity?: number;
 	description: string;
-	quantity?: string;
-	unit?: string;
-	scheduledDate?: string;
-	scheduledTime?: string;
-	pickupAddress?: {
-		street: string;
-		city: string;
-		state: string;
-		zipCode: string;
-		country: string;
-	};
-	dropoffAddress?: {
-		street: string;
-		city: string;
-		state: string;
-		zipCode: string;
-		country: string;
-	};
-	isPickup: boolean;
-	contactPhone: string;
-	contactEmail: string;
-	notes?: string;
-	receiptImage?: string;
-	status: DonationStatus;
+	deliveryMethod: "pickup" | "dropoff";
+	receiptImage?: File;
 }
 
 export interface Donation {
-	_id: string;
-	donor: {
-		_id: string;
-		name: string;
-		email: string;
-	};
-	organization: {
-		_id: string;
-		name: string;
-		email: string;
-	};
-	type: DonationType;
-	status: DonationStatus;
-	amount?: number;
-	description: string;
-	quantity?: number;
-	unit?: string;
-	scheduledDate?: Date;
-	scheduledTime?: string;
-	pickupAddress?: Address;
-	dropoffAddress?: Address;
-	isPickup: boolean;
-	contactPhone: string;
-	contactEmail: string;
-	receiptImage?: string;
-	confirmationDate?: Date;
-	notes?: string;
-	createdAt: Date;
-	updatedAt: Date;
+	id: number;
+	causeTitle: string;
+	amount: number;
+	date: string;
+	status: "completed" | "pending";
+	receiptUrl?: string;
+	impact: string;
 }

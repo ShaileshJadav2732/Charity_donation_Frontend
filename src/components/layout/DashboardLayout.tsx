@@ -16,6 +16,7 @@ import {
 	FaHandsHelping,
 	FaUsers,
 	FaExclamationCircle,
+	FaHandHoldingHeart,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
@@ -182,6 +183,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 						{user.role === "donor" && (
 							<>
 								<Link
+									href="/dashboard/donations/new"
+									className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
+									onClick={() => setIsMobileMenuOpen(false)}
+								>
+									<FaHandHoldingHeart className="mr-3 h-5 w-5 text-teal-600" />
+									Donate Now
+								</Link>
+								<Link
 									href="/causes"
 									className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
 									onClick={() => setIsMobileMenuOpen(false)}
@@ -190,7 +199,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 									Causes
 								</Link>
 								<Link
-									href="/donations"
+									href="/dashboard/donations"
 									className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
 									onClick={() => setIsMobileMenuOpen(false)}
 								>
