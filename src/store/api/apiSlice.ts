@@ -24,7 +24,7 @@ export const apiSlice = createApi({
 			return headers;
 		},
 	}),
-	tagTypes: ["User", "DonorProfile", "OrganizationProfile"],
+	tagTypes: ["User", "DonorProfile", "OrganizationProfile", "Dashboard"],
 	endpoints: () => ({}),
 });
 

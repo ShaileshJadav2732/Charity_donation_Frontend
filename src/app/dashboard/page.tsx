@@ -1,196 +1,193 @@
 "use client";
 
+import { useGetDashboardDataQuery } from "@/store/api/dashboardApi";
+import { FiTrendingUp, FiUsers, FiAward, FiHome } from "react-icons/fi";
+import { formatDistanceToNow } from "date-fns";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { FaHandsHelping, FaHeart, FaUsers, FaChartLine } from "react-icons/fa";
 
 export default function DashboardPage() {
-  const { user } = useSelector((state: RootState) => state.auth);
+	const router = useRouter();
+	const { user } = useSelector((state: RootState) => state.auth);
+	const { data: dashboardData, isLoading, error } = useGetDashboardDataQuery();
 
-  const DonorDashboard = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Stats Cards */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Donations</p>
-              <p className="text-2xl font-bold text-gray-900">$2,500</p>
-            </div>
-            <div className="bg-teal-100 p-3 rounded-full">
-              <FaHeart className="h-6 w-6 text-teal-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-green-600">+12% from last month</p>
-          </div>
-        </div>
+	useEffect(() => {
+		if (!user) {
+			router.push("/login");
+		}
+	}, [user, router]);
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Causes Supported</p>
-              <p className="text-2xl font-bold text-gray-900">8</p>
-            </div>
-            <div className="bg-purple-100 p-3 rounded-full">
-              <FaHandsHelping className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-purple-600">Active in 3 categories</p>
-          </div>
-        </div>
+	const { stats, recentActivity } = dashboardData || {
+		stats: {
+			totalDonations: 0,
+			donationGrowth: 0,
+			causesSupported: 0,
+			activeCategories: 0,
+			impactScore: 0,
+			impactPercentile: 0,
+			organizationsCount: 0,
+			supportingOrganizations: 0,
+		},
+		recentActivity: [],
+	};
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Impact Score</p>
-              <p className="text-2xl font-bold text-gray-900">85</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <FaChartLine className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-blue-600">Top 15% of donors</p>
-          </div>
-        </div>
+	return (
+		<div className="h-screen overflow-hidden">
+			<div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
+				<h1 className="text-3xl font-bold text-gray-900 mb-8">
+					{user?.role === "donor"
+						? "Donor Dashboard"
+						: "Organization Dashboard"}
+				</h1>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Organizations</p>
-              <p className="text-2xl font-bold text-gray-900">5</p>
-            </div>
-            <div className="bg-orange-100 p-3 rounded-full">
-              <FaUsers className="h-6 w-6 text-orange-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-orange-600">Supporting 5 organizations</p>
-          </div>
-        </div>
-      </div>
+				{/* Stats Grid */}
+				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+					{/* Total Donations */}
+					<div className="bg-white rounded-lg shadow p-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">
+									{user?.role === "donor"
+										? "Total Donations"
+										: "Total Received"}
+								</p>
+								<p className="text-2xl font-semibold text-gray-900">
+									${stats.totalDonations.toLocaleString()}
+								</p>
+							</div>
+							<div className="p-3 bg-emerald-50 rounded-full">
+								<FiTrendingUp className="h-6 w-6 text-emerald-600" />
+							</div>
+						</div>
+						<div className="mt-4">
+							<span
+								className={`text-sm font-medium ${
+									stats.donationGrowth >= 0
+										? "text-emerald-600"
+										: "text-red-600"
+								}`}
+							>
+								{stats.donationGrowth >= 0 ? "+" : ""}
+								{stats.donationGrowth.toFixed(1)}% from last month
+							</span>
+						</div>
+					</div>
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {[1, 2, 3].map((_, index) => (
-            <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
-              <div className="bg-teal-100 p-2 rounded-full mr-4">
-                <FaHeart className="h-4 w-4 text-teal-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  Donated $50 to Save the Ocean Campaign
-                </p>
-                <p className="text-xs text-gray-500">2 days ago</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+					{/* Causes/Campaigns */}
+					<div className="bg-white rounded-lg shadow p-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">
+									{user?.role === "donor"
+										? "Causes Supported"
+										: "Active Campaigns"}
+								</p>
+								<p className="text-2xl font-semibold text-gray-900">
+									{stats.causesSupported}
+								</p>
+							</div>
+							<div className="p-3 bg-blue-50 rounded-full">
+								<FiUsers className="h-6 w-6 text-blue-600" />
+							</div>
+						</div>
+						<div className="mt-4">
+							<span className="text-sm text-gray-600">
+								Active in {stats.activeCategories} categories
+							</span>
+						</div>
+					</div>
 
-  const OrganizationDashboard = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Stats Cards */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Raised</p>
-              <p className="text-2xl font-bold text-gray-900">$25,000</p>
-            </div>
-            <div className="bg-teal-100 p-3 rounded-full">
-              <FaHeart className="h-6 w-6 text-teal-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-green-600">+15% from last month</p>
-          </div>
-        </div>
+					{/* Impact Score */}
+					<div className="bg-white rounded-lg shadow p-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">
+									{user?.role === "donor"
+										? "Impact Score"
+										: "Organization Score"}
+								</p>
+								<p className="text-2xl font-semibold text-gray-900">
+									{stats.impactScore}
+								</p>
+							</div>
+							<div className="p-3 bg-purple-50 rounded-full">
+								<FiAward className="h-6 w-6 text-purple-600" />
+							</div>
+						</div>
+						<div className="mt-4">
+							<span className="text-sm text-gray-600">
+								Top {stats.impactPercentile}%{" "}
+								{user?.role === "donor" ? "of donors" : "of organizations"}
+							</span>
+						</div>
+					</div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active Campaigns</p>
-              <p className="text-2xl font-bold text-gray-900">3</p>
-            </div>
-            <div className="bg-purple-100 p-3 rounded-full">
-              <FaHandsHelping className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-purple-600">2 ending soon</p>
-          </div>
-        </div>
+					{/* Organizations/Donors */}
+					<div className="bg-white rounded-lg shadow p-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">
+									{user?.role === "donor" ? "Organizations" : "Active Donors"}
+								</p>
+								<p className="text-2xl font-semibold text-gray-900">
+									{stats.organizationsCount}
+								</p>
+							</div>
+							<div className="p-3 bg-orange-50 rounded-full">
+								<FiHome className="h-6 w-6 text-orange-600" />
+							</div>
+						</div>
+						<div className="mt-4">
+							<span className="text-sm text-gray-600">
+								{user?.role === "donor"
+									? `Supporting ${stats.supportingOrganizations} organizations`
+									: `${stats.supportingOrganizations} regular donors`}
+							</span>
+						</div>
+					</div>
+				</div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Donors</p>
-              <p className="text-2xl font-bold text-gray-900">156</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <FaUsers className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-blue-600">12 new this month</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Success Rate</p>
-              <p className="text-2xl font-bold text-gray-900">92%</p>
-            </div>
-            <div className="bg-orange-100 p-3 rounded-full">
-              <FaChartLine className="h-6 w-6 text-orange-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm text-orange-600">Campaign completion rate</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Donations */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Donations</h2>
-        <div className="space-y-4">
-          {[1, 2, 3].map((_, index) => (
-            <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
-              <div className="bg-teal-100 p-2 rounded-full mr-4">
-                <FaUsers className="h-4 w-4 text-teal-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  John Doe donated $100 to Clean Water Initiative
-                </p>
-                <p className="text-xs text-gray-500">1 day ago</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user?.role === "donor" ? "Donor" : "Organization"}!
-        </h1>
-        <p className="text-gray-600">Here's an overview of your activities</p>
-      </div>
-
-      {user?.role === "donor" ? <DonorDashboard /> : <OrganizationDashboard />}
-    </div>
-  );
+				{/* Recent Activity */}
+				<div className="bg-white rounded-lg shadow">
+					<div className="px-6 py-5 border-b border-gray-200">
+						<h2 className="text-lg font-medium text-gray-900">
+							Recent Activity
+						</h2>
+					</div>
+					<div className="divide-y divide-gray-200">
+						{recentActivity.length > 0 ? (
+							recentActivity.map((activity) => (
+								<div key={activity.id} className="px-6 py-4">
+									<div className="flex items-center justify-between">
+										<div>
+											<p className="text-sm font-medium text-gray-900">
+												{user?.role === "donor"
+													? `Donated $${activity.amount?.toLocaleString()} to ${
+															activity.campaignName
+													  }`
+													: `Received $${activity.amount?.toLocaleString()} from ${
+															activity.organizationName
+													  }`}
+											</p>
+											<p className="text-sm text-gray-500">
+												{formatDistanceToNow(new Date(activity.timestamp), {
+													addSuffix: true,
+												})}
+											</p>
+										</div>
+									</div>
+								</div>
+							))
+						) : (
+							<div className="px-6 py-4">
+								<p className="text-sm text-gray-500">No recent activity</p>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
 }
