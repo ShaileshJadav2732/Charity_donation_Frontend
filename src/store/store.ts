@@ -5,6 +5,7 @@ import apiSlice from "./api/apiSlice";
 import { donationApi } from "./api/donationApi";
 import { profileApi } from "./api/profileApi";
 import { dashboardApi } from "./api/dashboardApi";
+import { causesApi } from "./api/causesApi";
 
 // Configure Redux store
 export const store = configureStore({
@@ -13,19 +14,23 @@ export const store = configureStore({
 		[apiSlice.reducerPath]: apiSlice.reducer,
 		[donationApi.reducerPath]: donationApi.reducer,
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
+		[causesApi.reducerPath]: causesApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
-		getDefaultMiddleware().concat(
+		getDefaultMiddleware({
+			serializableCheck: false,
+		}).concat(
 			apiSlice.middleware,
 			donationApi.middleware,
 			profileApi.middleware,
-			dashboardApi.middleware
+			dashboardApi.middleware,
+			causesApi.middleware
 		),
 	devTools: process.env.NODE_ENV !== "production",
 });
 
-// Setup listeners for RTK Query
+// Enable listener behavior for the store
 setupListeners(store.dispatch);
 
 // Export types

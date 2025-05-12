@@ -1,177 +1,165 @@
 "use client";
 
 import { useState } from "react";
-import { FaPlus, FaClock, FaCheckCircle, FaHeart } from "react-icons/fa";
 import Link from "next/link";
-
-interface Campaign {
-   id: number;
-   title: string;
-   description: string;
-   goal: number;
-   raised: number;
-   daysLeft?: number;
-   completedDate?: string;
-   donors: number;
-}
-
-interface CampaignCardProps {
-   campaign: Campaign;
-   isActive?: boolean;
-}
+import { useGetCampaignsQuery } from "@/store/api/campaignApi";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CampaignsPage() {
-   const [activeTab, setActiveTab] = useState("active");
+   const [page, setPage] = useState(1);
+   const [search, setSearch] = useState("");
+   const [status, setStatus] = useState("all");
+   const [tag, setTag] = useState("");
 
-   // Mock data - replace with actual API calls
-   const activeCampaigns: Campaign[] = [
-      {
-         id: 1,
-         title: "Clean Water Initiative",
-         description: "Providing clean water to rural communities",
-         goal: 50000,
-         raised: 25000,
-         daysLeft: 15,
-         donors: 156,
-      },
-      {
-         id: 2,
-         title: "Education for All",
-         description: "Supporting education in underprivileged areas",
-         goal: 30000,
-         raised: 28000,
-         daysLeft: 5,
-         donors: 234,
-      },
-   ];
+   const { data, isLoading, error } = useGetCampaignsQuery({
+      page,
+      limit: 10,
+      search,
+      status,
+      tag,
+   });
 
-   const pastCampaigns: Campaign[] = [
-      {
-         id: 3,
-         title: "Food Security Program",
-         description: "Ensuring food security for vulnerable families",
-         goal: 25000,
-         raised: 25000,
-         completedDate: "2024-02-15",
-         donors: 189,
-      },
-   ];
+   // Protect route for organizations only
+   useRouteGuard("organization");
 
-   const CampaignCard = ({ campaign, isActive = true }: CampaignCardProps) => (
-      <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-         <div className="flex justify-between items-start mb-4">
-            <div>
-               <h3 className="text-lg font-semibold text-gray-900">{campaign.title}</h3>
-               <p className="text-sm text-gray-600 mt-1">{campaign.description}</p>
-            </div>
-            {isActive ? (
-               <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                  Active
-               </span>
-            ) : (
-               <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                  Completed
-               </span>
-            )}
-         </div>
-
-         <div className="space-y-3">
-            <div>
-               <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>Progress</span>
-                  <span>{Math.round((campaign.raised / campaign.goal) * 100)}%</span>
-               </div>
-               <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                     className="bg-teal-600 h-2 rounded-full"
-                     style={{
-                        width: `${Math.min(
-                           100,
-                           Math.round((campaign.raised / campaign.goal) * 100)
-                        )}%`,
-                     }}
-                  ></div>
-               </div>
-            </div>
-
-            <div className="flex justify-between text-sm">
-               <span className="text-gray-600">
-                  Raised: <span className="font-semibold text-gray-900">${campaign.raised.toLocaleString()}</span>
-               </span>
-               <span className="text-gray-600">
-                  Goal: <span className="font-semibold text-gray-900">${campaign.goal.toLocaleString()}</span>
-               </span>
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t">
-               <div className="flex items-center text-sm text-gray-600">
-                  <FaHeart className="h-4 w-4 text-teal-600 mr-2" />
-                  {campaign.donors} donors
-               </div>
-               {isActive ? (
-                  <div className="flex items-center text-sm text-gray-600">
-                     <FaClock className="h-4 w-4 text-teal-600 mr-2" />
-                     {campaign.daysLeft} days left
-                  </div>
-               ) : (
-                  <div className="flex items-center text-sm text-gray-600">
-                     <FaCheckCircle className="h-4 w-4 text-teal-600 mr-2" />
-                     Completed {new Date(campaign.completedDate!).toLocaleDateString()}
-                  </div>
-               )}
+   if (error) {
+      return (
+         <div className="container mx-auto px-4 py-8">
+            <div className="text-center text-red-500">
+               Error loading campaigns. Please try again later.
             </div>
          </div>
-      </div>
-   );
+      );
+   }
 
    return (
-      <div className="space-y-6">
-         <div className="flex justify-between items-center">
-            <div>
-               <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
-               <p className="text-gray-600">Manage your fundraising campaigns</p>
-            </div>
-            <Link
-               href="/dashboard/campaigns/new"
-               className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-            >
-               <FaPlus className="mr-2" />
-               New Campaign
+      <div className="container mx-auto px-4 py-8">
+         <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Campaigns</h1>
+            <Link href="/dashboard/campaigns/create">
+               <Button>Create Campaign</Button>
             </Link>
          </div>
 
-         <div className="border-b border-gray-200">
-            <nav className="flex space-x-8">
-               <button
-                  onClick={() => setActiveTab("active")}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "active"
-                     ? "border-teal-600 text-teal-600"
-                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                     }`}
-               >
-                  Active Campaigns
-               </button>
-               <button
-                  onClick={() => setActiveTab("past")}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "past"
-                     ? "border-teal-600 text-teal-600"
-                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                     }`}
-               >
-                  Past Campaigns
-               </button>
-            </nav>
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Input
+               placeholder="Search campaigns..."
+               value={search}
+               onChange={(e) => setSearch(e.target.value)}
+            />
+            <Select value={status} onValueChange={setStatus}>
+               <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+               </SelectTrigger>
+               <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+               </SelectContent>
+            </Select>
+            <Input
+               placeholder="Filter by tag..."
+               value={tag}
+               onChange={(e) => setTag(e.target.value)}
+            />
          </div>
 
-         <div className="grid gap-6 md:grid-cols-2">
-            {activeTab === "active"
-               ? activeCampaigns.map((campaign) => (
-                  <CampaignCard key={campaign.id} campaign={campaign} />
-               ))
-               : pastCampaigns.map((campaign) => (
-                  <CampaignCard key={campaign.id} campaign={campaign} isActive={false} />
+         {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-3">
+                     <Skeleton className="h-48 w-full" />
+                     <Skeleton className="h-4 w-3/4" />
+                     <Skeleton className="h-4 w-1/2" />
+                  </div>
                ))}
-         </div>
+            </div>
+         ) : (
+            <>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {data?.campaigns.map((campaign) => (
+                     <Link
+                        key={campaign.id}
+                        href={`/dashboard/campaigns/${campaign.id}`}
+                        className="block"
+                     >
+                        <div className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                           <div className="aspect-video relative">
+                              <img
+                                 src={campaign.imageUrl}
+                                 alt={campaign.title}
+                                 className="object-cover w-full h-full"
+                              />
+                              <div className="absolute top-2 right-2">
+                                 <span
+                                    className={`px-2 py-1 rounded-full text-xs font-medium ${campaign.status === "active"
+                                          ? "bg-green-100 text-green-800"
+                                          : campaign.status === "completed"
+                                             ? "bg-blue-100 text-blue-800"
+                                             : campaign.status === "cancelled"
+                                                ? "bg-red-100 text-red-800"
+                                                : "bg-gray-100 text-gray-800"
+                                       }`}
+                                 >
+                                    {campaign.status}
+                                 </span>
+                              </div>
+                           </div>
+                           <div className="p-4">
+                              <h3 className="font-semibold mb-2">{campaign.title}</h3>
+                              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                                 {campaign.description}
+                              </p>
+                              <div className="flex justify-between items-center text-sm">
+                                 <span>
+                                    ${campaign.totalRaisedAmount} / ${campaign.totalTargetAmount}
+                                 </span>
+                                 <span>{campaign.totalSupporters} supporters</span>
+                              </div>
+                           </div>
+                        </div>
+                     </Link>
+                  ))}
+               </div>
+
+               {data && data.total > 0 && (
+                  <div className="flex justify-center mt-8 gap-2">
+                     <Button
+                        variant="outline"
+                        onClick={() => setPage(page - 1)}
+                        disabled={page === 1}
+                     >
+                        Previous
+                     </Button>
+                     <Button
+                        variant="outline"
+                        onClick={() => setPage(page + 1)}
+                        disabled={page * 10 >= data.total}
+                     >
+                        Next
+                     </Button>
+                  </div>
+               )}
+
+               {data?.campaigns.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                     No campaigns found
+                  </div>
+               )}
+            </>
+         )}
       </div>
    );
 } 

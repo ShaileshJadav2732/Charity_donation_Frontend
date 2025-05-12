@@ -3,21 +3,28 @@
 import { useState } from "react";
 import { FaSearch, FaGlobe, FaHeart, FaHandHoldingHeart, FaBookOpen, FaTree, FaHandsHelping } from "react-icons/fa";
 import Link from "next/link";
-
-interface Cause {
-   id: number;
-   title: string;
-   description: string;
-   category: string;
-   targetAmount: number;
-   raisedAmount: number;
-   supporters: number;
-   imageUrl: string;
-}
+import { useGetCausesQuery } from "@/store/api/causesApi";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function CausesPage() {
    const [searchTerm, setSearchTerm] = useState("");
    const [selectedCategory, setSelectedCategory] = useState("all");
+   const [page, setPage] = useState(1);
+   const limit = 9; // 3x3 grid
+
+   // Protect route for donors only
+   const { isAuthorized } = useRouteGuard({
+      allowedRoles: ["donor"],
+      redirectTo: "/dashboard",
+   });
+
+   // Fetch causes with filters
+   const { data, isLoading, error } = useGetCausesQuery({
+      page,
+      limit,
+      category: selectedCategory === "all" ? undefined : selectedCategory,
+      search: searchTerm || undefined,
+   });
 
    const categories = [
       { id: "all", name: "All Causes", icon: FaGlobe },
@@ -26,53 +33,43 @@ export default function CausesPage() {
       { id: "humanitarian", name: "Humanitarian", icon: FaHandsHelping },
    ];
 
-   // Mock data - replace with actual API calls
-   const causes: Cause[] = [
-      {
-         id: 1,
-         title: "Education for Rural Children",
-         description: "Support education initiatives in rural communities to provide quality learning resources and opportunities.",
-         category: "education",
-         targetAmount: 50000,
-         raisedAmount: 35000,
-         supporters: 245,
-         imageUrl: "/images/education.jpg",
-      },
-      {
-         id: 2,
-         title: "Ocean Cleanup Initiative",
-         description: "Help remove plastic waste from our oceans and protect marine life for future generations.",
-         category: "environment",
-         targetAmount: 75000,
-         raisedAmount: 45000,
-         supporters: 320,
-         imageUrl: "/images/ocean.jpg",
-      },
-      {
-         id: 3,
-         title: "Emergency Relief Fund",
-         description: "Provide immediate assistance to communities affected by natural disasters and humanitarian crises.",
-         category: "humanitarian",
-         targetAmount: 100000,
-         raisedAmount: 82000,
-         supporters: 560,
-         imageUrl: "/images/relief.jpg",
-      },
-   ];
+   // If not authorized, don't render anything
+   if (!isAuthorized) {
+      return null;
+   }
 
-   const filteredCauses = causes.filter((cause) => {
-      const matchesSearch = cause.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || cause.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-   });
+   // Show loading state
+   if (isLoading) {
+      return (
+         <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+         </div>
+      );
+   }
 
-   const CauseCard = ({ cause }: { cause: Cause }) => (
+   // Show error state
+   if (error) {
+      return (
+         <div className="text-center py-12">
+            <p className="text-red-600">Failed to load causes. Please try again later.</p>
+         </div>
+      );
+   }
+
+   const CauseCard = ({ cause }: { cause: any }) => (
       <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
          <div className="h-48 bg-gray-200">
-            {/* Replace with actual image */}
-            <div className="w-full h-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-               <FaHandHoldingHeart className="h-16 w-16 text-white opacity-50" />
-            </div>
+            {cause.imageUrl ? (
+               <img
+                  src={cause.imageUrl}
+                  alt={cause.title}
+                  className="w-full h-full object-cover"
+               />
+            ) : (
+               <div className="w-full h-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                  <FaHandHoldingHeart className="h-16 w-16 text-white opacity-50" />
+               </div>
+            )}
          </div>
          <div className="p-6">
             <div className="flex justify-between items-start mb-4">
@@ -82,7 +79,7 @@ export default function CausesPage() {
                </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
                <div>
                   <div className="flex justify-between text-sm text-gray-600 mb-1">
                      <span>Progress</span>
@@ -139,7 +136,10 @@ export default function CausesPage() {
             {categories.map(({ id, name, icon: Icon }) => (
                <button
                   key={id}
-                  onClick={() => setSelectedCategory(id)}
+                  onClick={() => {
+                     setSelectedCategory(id);
+                     setPage(1); // Reset to first page when changing category
+                  }}
                   className={`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === id
                      ? "bg-teal-600 text-white"
                      : "bg-white text-gray-600 hover:bg-gray-50"
@@ -161,16 +161,39 @@ export default function CausesPage() {
                placeholder="Search causes..."
                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
                value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
+               onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1); // Reset to first page when searching
+               }}
             />
          </div>
 
          {/* Causes Grid */}
          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCauses.map((cause) => (
+            {data?.causes.map((cause) => (
                <CauseCard key={cause.id} cause={cause} />
             ))}
          </div>
+
+         {/* Pagination */}
+         {data && data.total > limit && (
+            <div className="flex justify-center space-x-2 mt-6">
+               <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                  Previous
+               </button>
+               <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page * limit >= data.total}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                  Next
+               </button>
+            </div>
+         )}
       </div>
    );
 } 
