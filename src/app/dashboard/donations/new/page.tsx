@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store";
+import { RootState } from "@/store/store";
 
 export default function NewDonationPage() {
 	const router = useRouter();

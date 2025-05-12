@@ -1,410 +1,534 @@
+// src/app/dashboard/campaigns/[id]/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-   useGetCampaignByIdQuery,
-   useUpdateCampaignMutation,
-   useDeleteCampaignMutation,
-   useAddCauseToCampaignMutation,
-   useRemoveCauseFromCampaignMutation,
-   useAddOrganizationToCampaignMutation,
-   useRemoveOrganizationFromCampaignMutation,
+	useGetCampaignByIdQuery,
+	useUpdateCampaignMutation,
+	useDeleteCampaignMutation,
 } from "@/store/api/campaignApi";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import {
-   Dialog,
-   DialogContent,
-   DialogHeader,
-   DialogTitle,
-   DialogTrigger,
-} from "@/components/ui/dialog";
+	FaHeart,
+	FaTag,
+	FaDonate,
+	FaEdit,
+	FaTrash,
+	FaTimes,
+} from "react-icons/fa";
+import { DonationType } from "@/types/donation";
 
-export default function CampaignPage({ params }: { params: { id: string } }) {
-   const router = useRouter();
-   const [isEditing, setIsEditing] = useState(false);
-   const [newCauseId, setNewCauseId] = useState("");
-   const [newOrganizationId, setNewOrganizationId] = useState("");
+export default function CampaignDetailsPage({
+	params,
+}: {
+	params: { id: string };
+}) {
+	const router = useRouter();
+	const { id } = params;
+	const { user } = useSelector((state: RootState) => state.auth);
+	const [isEditing, setIsEditing] = useState(false);
+	const [tags, setTags] = useState<string[]>([]);
+	const [tagInput, setTagInput] = useState("");
+	const [acceptedDonationTypes, setAcceptedDonationTypes] = useState<
+		DonationType[]
+	>([]);
+	const [notification, setNotification] = useState<{
+		type: "error" | "success";
+		message: string;
+	} | null>(null);
 
-   const { data: campaignData, isLoading, error } = useGetCampaignByIdQuery(params.id);
-   const [updateCampaign] = useUpdateCampaignMutation();
-   const [deleteCampaign] = useDeleteCampaignMutation();
-   const [addCause] = useAddCauseToCampaignMutation();
-   const [removeCause] = useRemoveCauseFromCampaignMutation();
-   const [addOrganization] = useAddOrganizationToCampaignMutation();
-   const [removeOrganization] = useRemoveOrganizationFromCampaignMutation();
+	const { data, isLoading, error } = useGetCampaignByIdQuery(id);
+	const [updateCampaign, { isLoading: isUpdating }] =
+		useUpdateCampaignMutation();
+	const [deleteCampaign, { isLoading: isDeleting }] =
+		useDeleteCampaignMutation();
 
-   // Protect route for organizations only
-   useRouteGuard("organization");
+	// Protect route for organizations only
+	useRouteGuard("organization");
 
-   if (isLoading) {
-      return (
-         <div className="container mx-auto px-4 py-8">
-            <div className="animate-pulse space-y-4">
-               <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-               <div className="h-64 bg-gray-200 rounded"></div>
-               <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
-         </div>
-      );
-   }
+	// Initialize form with campaign data
+	useEffect(() => {
+		if (data?.campaign) {
+			setTags(data.campaign.tags);
+			setAcceptedDonationTypes(data.campaign.acceptedDonationTypes);
+		}
+	}, [data]);
 
-   if (error || !campaignData) {
-      return (
-         <div className="container mx-auto px-4 py-8">
-            <div className="text-center text-red-500">
-               Error loading campaign. Please try again later.
-            </div>
-         </div>
-      );
-   }
+	const handleDonationTypeChange = (type: DonationType) => {
+		if (acceptedDonationTypes.includes(type)) {
+			setAcceptedDonationTypes(acceptedDonationTypes.filter((t) => t !== type));
+		} else {
+			setAcceptedDonationTypes([...acceptedDonationTypes, type]);
+		}
+	};
 
-   const { campaign } = campaignData;
+	const handleAddTag = () => {
+		if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+			setTags([...tags, tagInput.trim()]);
+			setTagInput("");
+		}
+	};
 
-   const handleUpdateCampaign = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
+	const handleRemoveTag = (tagToRemove: string) => {
+		setTags(tags.filter((tag) => tag !== tagToRemove));
+	};
 
-      try {
-         const updatedData = {
-            title: formData.get("title") as string,
-            description: formData.get("description") as string,
-            startDate: formData.get("startDate") as string,
-            endDate: formData.get("endDate") as string,
-            totalTargetAmount: Number(formData.get("totalTargetAmount")),
-            imageUrl: formData.get("imageUrl") as string,
-            status: formData.get("status") as string,
-         };
+	const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		const formData = new FormData(e.currentTarget);
 
-         await updateCampaign({ id: params.id, ...updatedData }).unwrap();
-         toast.success("Campaign updated successfully");
-         setIsEditing(false);
-      } catch (error) {
-         toast.error("Failed to update campaign");
-         console.error("Update campaign error:", error);
-      }
-   };
+		const title = formData.get("title") as string;
+		const description = formData.get("description") as string;
+		const startDate = formData.get("startDate") as string;
+		const endDate = formData.get("endDate") as string;
+		const totalTargetAmount = Number(formData.get("totalTargetAmount"));
+		const imageUrl = formData.get("imageUrl") as string;
+		const status = formData.get("status") as string;
 
-   const handleDeleteCampaign = async () => {
-      if (window.confirm("Are you sure you want to delete this campaign?")) {
-         try {
-            await deleteCampaign(params.id).unwrap();
-            toast.success("Campaign deleted successfully");
-            router.push("/dashboard/campaigns");
-         } catch (error) {
-            toast.error("Failed to delete campaign");
-            console.error("Delete campaign error:", error);
-         }
-      }
-   };
+		// Client-side validation
+		if (
+			!title ||
+			!description ||
+			!startDate ||
+			!endDate ||
+			!totalTargetAmount ||
+			!imageUrl
+		) {
+			setNotification({
+				type: "error",
+				message: "Please fill in all required fields",
+			});
+			return;
+		}
 
-   const handleAddCause = async () => {
-      if (!newCauseId) return;
+		if (new Date(startDate) >= new Date(endDate)) {
+			setNotification({
+				type: "error",
+				message: "End date must be after start date",
+			});
+			return;
+		}
 
-      try {
-         await addCause({ id: params.id, causeId: newCauseId }).unwrap();
-         toast.success("Cause added successfully");
-         setNewCauseId("");
-      } catch (error) {
-         toast.error("Failed to add cause");
-         console.error("Add cause error:", error);
-      }
-   };
+		if (totalTargetAmount <= 0) {
+			setNotification({
+				type: "error",
+				message: "Target amount must be greater than 0",
+			});
+			return;
+		}
 
-   const handleRemoveCause = async (causeId: string) => {
-      try {
-         await removeCause({ id: params.id, causeId }).unwrap();
-         toast.success("Cause removed successfully");
-      } catch (error) {
-         toast.error("Failed to remove cause");
-         console.error("Remove cause error:", error);
-      }
-   };
+		if (acceptedDonationTypes.length === 0) {
+			setNotification({
+				type: "error",
+				message: "Please select at least one donation type",
+			});
+			return;
+		}
 
-   const handleAddOrganization = async () => {
-      if (!newOrganizationId) return;
+		try {
+			await updateCampaign({
+				id,
+				data: {
+					title,
+					description,
+					startDate,
+					endDate,
+					totalTargetAmount,
+					imageUrl,
+					tags,
+					acceptedDonationTypes,
+					status,
+				},
+			}).unwrap();
+			setNotification({
+				type: "success",
+				message: "Campaign updated successfully",
+			});
+			setIsEditing(false);
+			setTimeout(() => setNotification(null), 5000);
+		} catch (error) {
+			setNotification({ type: "error", message: "Failed to update campaign" });
+			console.error("Update campaign error:", error);
+		}
+	};
 
-      try {
-         await addOrganization({ id: params.id, organizationId: newOrganizationId }).unwrap();
-         toast.success("Organization added successfully");
-         setNewOrganizationId("");
-      } catch (error) {
-         toast.error("Failed to add organization");
-         console.error("Add organization error:", error);
-      }
-   };
+	const handleDelete = async () => {
+		if (confirm("Are you sure you want to delete this campaign?")) {
+			try {
+				await deleteCampaign(id).unwrap();
+				router.push("/dashboard/campaigns");
+			} catch (error) {
+				setNotification({
+					type: "error",
+					message: "Failed to delete campaign",
+				});
+				console.error("Delete campaign error:", error);
+			}
+		}
+	};
 
-   const handleRemoveOrganization = async (organizationId: string) => {
-      try {
-         await removeOrganization({ id: params.id, organizationId }).unwrap();
-         toast.success("Organization removed successfully");
-      } catch (error) {
-         toast.error("Failed to remove organization");
-         console.error("Remove organization error:", error);
-      }
-   };
+	if (isLoading) {
+		return (
+			<div className="container mx-auto px-4 py-8">
+				<div className="bg-white rounded-xl shadow-md p-6 animate-pulse">
+					<div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+					<div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+					<div className="h-4 bg-gray-200 rounded w-1/2"></div>
+				</div>
+			</div>
+		);
+	}
 
-   return (
-      <div className="container mx-auto px-4 py-8">
-         <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">{campaign.title}</h1>
-            <div className="flex gap-2">
-               <Button
-                  variant="outline"
-                  onClick={() => setIsEditing(!isEditing)}
-               >
-                  {isEditing ? "Cancel Edit" : "Edit Campaign"}
-               </Button>
-               <Button
-                  variant="destructive"
-                  onClick={handleDeleteCampaign}
-               >
-                  Delete Campaign
-               </Button>
-            </div>
-         </div>
+	if (error || !data?.campaign) {
+		return (
+			<div className="container mx-auto px-4 py-8">
+				<div className="bg-red-100 text-red-800 p-4 rounded-lg text-center">
+					Campaign not found or error loading campaign.
+				</div>
+			</div>
+		);
+	}
 
-         {isEditing ? (
-            <form onSubmit={handleUpdateCampaign} className="max-w-2xl space-y-6">
-               <div className="space-y-2">
-                  <Label htmlFor="title">Campaign Title</Label>
-                  <Input
-                     id="title"
-                     name="title"
-                     defaultValue={campaign.title}
-                     required
-                  />
-               </div>
+	const campaign = data.campaign;
+	const isAuthorized =
+		user && campaign.organizations.some((org) => org._id === user._id);
 
-               <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                     id="description"
-                     name="description"
-                     defaultValue={campaign.description}
-                     required
-                     rows={4}
-                  />
-               </div>
+	return (
+		<div className="container mx-auto px-4 py-8 space-y-6">
+			{notification && (
+				<div
+					className={`p-4 rounded-lg ${
+						notification.type === "error"
+							? "bg-red-100 text-red-800"
+							: "bg-green-100 text-green-800"
+					}`}
+				>
+					{notification.message}
+				</div>
+			)}
 
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                     <Label htmlFor="startDate">Start Date</Label>
-                     <Input
-                        id="startDate"
-                        name="startDate"
-                        type="date"
-                        defaultValue={campaign.startDate}
-                        required
-                     />
-                  </div>
+			<div className="flex justify-between items-center">
+				<h1 className="text-2xl font-bold text-gray-900">{campaign.title}</h1>
+				{isAuthorized && (
+					<div className="flex gap-4">
+						<button
+							onClick={() => setIsEditing(!isEditing)}
+							className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center"
+						>
+							<FaEdit className="mr-2" />{" "}
+							{isEditing ? "Cancel Edit" : "Edit Campaign"}
+						</button>
+						<button
+							onClick={handleDelete}
+							disabled={isDeleting}
+							className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center"
+						>
+							<FaTrash className="mr-2" />{" "}
+							{isDeleting ? "Deleting..." : "Delete Campaign"}
+						</button>
+					</div>
+				)}
+			</div>
 
-                  <div className="space-y-2">
-                     <Label htmlFor="endDate">End Date</Label>
-                     <Input
-                        id="endDate"
-                        name="endDate"
-                        type="date"
-                        defaultValue={campaign.endDate}
-                        required
-                     />
-                  </div>
-               </div>
+			{isEditing ? (
+				<form
+					onSubmit={handleUpdate}
+					className="bg-white rounded-xl shadow-md p-6 space-y-6 max-w-2xl"
+				>
+					<div className="space-y-2">
+						<label
+							htmlFor="title"
+							className="text-sm font-medium text-gray-600"
+						>
+							Campaign Title
+						</label>
+						<input
+							id="title"
+							name="title"
+							required
+							defaultValue={campaign.title}
+							placeholder="Enter campaign title"
+							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						/>
+					</div>
 
-               <div className="space-y-2">
-                  <Label htmlFor="totalTargetAmount">Target Amount</Label>
-                  <Input
-                     id="totalTargetAmount"
-                     name="totalTargetAmount"
-                     type="number"
-                     defaultValue={campaign.totalTargetAmount}
-                     required
-                     min="0"
-                     step="0.01"
-                  />
-               </div>
+					<div className="space-y-2">
+						<label
+							htmlFor="description"
+							className="text-sm font-medium text-gray-600"
+						>
+							Description
+						</label>
+						<textarea
+							id="description"
+							name="description"
+							required
+							defaultValue={campaign.description}
+							placeholder="Enter campaign description"
+							rows={4}
+							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						/>
+					</div>
 
-               <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                     id="imageUrl"
-                     name="imageUrl"
-                     type="url"
-                     defaultValue={campaign.imageUrl}
-                     required
-                  />
-               </div>
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<label
+								htmlFor="startDate"
+								className="text-sm font-medium text-gray-600"
+							>
+								Start Date
+							</label>
+							<input
+								id="startDate"
+								name="startDate"
+								type="date"
+								required
+								defaultValue={campaign.startDate.split("T")[0]}
+								className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+							/>
+						</div>
+						<div className="space-y-2">
+							<label
+								htmlFor="endDate"
+								className="text-sm font-medium text-gray-600"
+							>
+								End Date
+							</label>
+							<input
+								id="endDate"
+								name="endDate"
+								type="date"
+								required
+								defaultValue={campaign.endDate.split("T")[0]}
+								className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+							/>
+						</div>
+					</div>
 
-               <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <select
-                     id="status"
-                     name="status"
-                     defaultValue={campaign.status}
-                     className="w-full rounded-md border border-input bg-background px-3 py-2"
-                     required
-                  >
-                     <option value="draft">Draft</option>
-                     <option value="active">Active</option>
-                     <option value="completed">Completed</option>
-                     <option value="cancelled">Cancelled</option>
-                  </select>
-               </div>
+					<div className="space-y-2">
+						<label
+							htmlFor="totalTargetAmount"
+							className="text-sm font-medium text-gray-600"
+						>
+							Target Amount
+						</label>
+						<input
+							id="totalTargetAmount"
+							name="totalTargetAmount"
+							type="number"
+							required
+							min="0.01"
+							step="0.01"
+							defaultValue={campaign.totalTargetAmount}
+							placeholder="Enter target amount"
+							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						/>
+					</div>
 
-               <Button type="submit">Save Changes</Button>
-            </form>
-         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="space-y-6">
-                  <div className="aspect-video relative rounded-lg overflow-hidden">
-                     <img
-                        src={campaign.imageUrl}
-                        alt={campaign.title}
-                        className="object-cover w-full h-full"
-                     />
-                  </div>
+					<div className="space-y-2">
+						<label
+							htmlFor="imageUrl"
+							className="text-sm font-medium text-gray-600"
+						>
+							Image URL
+						</label>
+						<input
+							id="imageUrl"
+							name="imageUrl"
+							type="url"
+							required
+							defaultValue={campaign.imageUrl}
+							placeholder="Enter image URL"
+							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						/>
+					</div>
 
-                  <div>
-                     <h2 className="text-xl font-semibold mb-2">Description</h2>
-                     <p className="text-muted-foreground">{campaign.description}</p>
-                  </div>
+					<div className="space-y-2">
+						<label
+							htmlFor="status"
+							className="text-sm font-medium text-gray-600"
+						>
+							Status
+						</label>
+						<select
+							id="status"
+							name="status"
+							defaultValue={campaign.status}
+							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						>
+							<option value="draft">Draft</option>
+							<option value="active">Active</option>
+							<option value="completed">Completed</option>
+							<option value="cancelled">Cancelled</option>
+						</select>
+					</div>
 
-                  <div>
-                     <h2 className="text-xl font-semibold mb-2">Campaign Details</h2>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                           <p className="text-sm text-muted-foreground">Status</p>
-                           <p className="font-medium">{campaign.status}</p>
-                        </div>
-                        <div>
-                           <p className="text-sm text-muted-foreground">Start Date</p>
-                           <p className="font-medium">
-                              {new Date(campaign.startDate).toLocaleDateString()}
-                           </p>
-                        </div>
-                        <div>
-                           <p className="text-sm text-muted-foreground">End Date</p>
-                           <p className="font-medium">
-                              {new Date(campaign.endDate).toLocaleDateString()}
-                           </p>
-                        </div>
-                        <div>
-                           <p className="text-sm text-muted-foreground">Target Amount</p>
-                           <p className="font-medium">${campaign.totalTargetAmount}</p>
-                        </div>
-                     </div>
-                  </div>
-               </div>
+					<div className="space-y-2">
+						<label className="text-sm font-medium text-gray-600 flex items-center">
+							<FaDonate className="mr-2" /> Accepted Donation Types
+						</label>
+						<div className="grid grid-cols-2 gap-2">
+							{Object.values(DonationType).map((type) => (
+								<label key={type} className="flex items-center space-x-2">
+									<input
+										type="checkbox"
+										checked={acceptedDonationTypes.includes(type)}
+										onChange={() => handleDonationTypeChange(type)}
+										className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+									/>
+									<span className="text-sm text-gray-600">{type}</span>
+								</label>
+							))}
+						</div>
+					</div>
 
-               <div className="space-y-6">
-                  <div>
-                     <h2 className="text-xl font-semibold mb-4">Causes</h2>
-                     <div className="space-y-4">
-                        {campaign.causes.map((cause: any) => (
-                           <div
-                              key={cause._id}
-                              className="flex justify-between items-center p-4 bg-card rounded-lg"
-                           >
-                              <div>
-                                 <h3 className="font-medium">{cause.title}</h3>
-                                 <p className="text-sm text-muted-foreground">
-                                    ${cause.raisedAmount} / ${cause.targetAmount}
-                                 </p>
-                              </div>
-                              <Button
-                                 variant="destructive"
-                                 size="sm"
-                                 onClick={() => handleRemoveCause(cause._id)}
-                              >
-                                 Remove
-                              </Button>
-                           </div>
-                        ))}
+					<div className="space-y-2">
+						<label className="text-sm font-medium text-gray-600">Tags</label>
+						<div className="flex gap-2">
+							<input
+								value={tagInput}
+								onChange={(e) => setTagInput(e.target.value)}
+								placeholder="Add a tag"
+								onKeyPress={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										handleAddTag();
+									}
+								}}
+								className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+							/>
+							<button
+								type="button"
+								onClick={handleAddTag}
+								className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center"
+							>
+								<FaTag className="mr-2" /> Add
+							</button>
+						</div>
+						<div className="flex flex-wrap gap-2 mt-2">
+							{tags.map((tag) => (
+								<span
+									key={tag}
+									className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full flex items-center gap-2"
+								>
+									{tag}
+									<button
+										type="button"
+										onClick={() => handleRemoveTag(tag)}
+										className="text-teal-800 hover:text-teal-600"
+									>
+										<FaTimes />
+									</button>
+								</span>
+							))}
+						</div>
+					</div>
 
-                        <Dialog>
-                           <DialogTrigger asChild>
-                              <Button variant="outline" className="w-full">
-                                 Add Cause
-                              </Button>
-                           </DialogTrigger>
-                           <DialogContent>
-                              <DialogHeader>
-                                 <DialogTitle>Add Cause to Campaign</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                 <div className="space-y-2">
-                                    <Label htmlFor="causeId">Cause ID</Label>
-                                    <Input
-                                       id="causeId"
-                                       value={newCauseId}
-                                       onChange={(e) => setNewCauseId(e.target.value)}
-                                       placeholder="Enter cause ID"
-                                    />
-                                 </div>
-                                 <Button onClick={handleAddCause}>Add Cause</Button>
-                              </div>
-                           </DialogContent>
-                        </Dialog>
-                     </div>
-                  </div>
-
-                  <div>
-                     <h2 className="text-xl font-semibold mb-4">Organizations</h2>
-                     <div className="space-y-4">
-                        {campaign.organizations.map((org: any) => (
-                           <div
-                              key={org._id}
-                              className="flex justify-between items-center p-4 bg-card rounded-lg"
-                           >
-                              <div>
-                                 <h3 className="font-medium">{org.name}</h3>
-                              </div>
-                              <Button
-                                 variant="destructive"
-                                 size="sm"
-                                 onClick={() => handleRemoveOrganization(org._id)}
-                              >
-                                 Remove
-                              </Button>
-                           </div>
-                        ))}
-
-                        <Dialog>
-                           <DialogTrigger asChild>
-                              <Button variant="outline" className="w-full">
-                                 Add Organization
-                              </Button>
-                           </DialogTrigger>
-                           <DialogContent>
-                              <DialogHeader>
-                                 <DialogTitle>Add Organization to Campaign</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                 <div className="space-y-2">
-                                    <Label htmlFor="organizationId">Organization ID</Label>
-                                    <Input
-                                       id="organizationId"
-                                       value={newOrganizationId}
-                                       onChange={(e) => setNewOrganizationId(e.target.value)}
-                                       placeholder="Enter organization ID"
-                                    />
-                                 </div>
-                                 <Button onClick={handleAddOrganization}>
-                                    Add Organization
-                                 </Button>
-                              </div>
-                           </DialogContent>
-                        </Dialog>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         )}
-      </div>
-   );
-} 
+					<div className="flex gap-4">
+						<button
+							type="submit"
+							disabled={isUpdating}
+							className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center"
+						>
+							<FaHeart className="mr-2" />{" "}
+							{isUpdating ? "Updating..." : "Update Campaign"}
+						</button>
+						<button
+							type="button"
+							onClick={() => setIsEditing(false)}
+							className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center"
+						>
+							<FaTimes className="mr-2" /> Cancel
+						</button>
+					</div>
+				</form>
+			) : (
+				<div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+					<div className="relative">
+						<img
+							src={campaign.imageUrl || "/placeholder.png"}
+							alt={campaign.title}
+							className="w-full h-64 object-cover rounded-lg mb-4"
+						/>
+						<span
+							className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
+								campaign.status === "active"
+									? "bg-green-100 text-green-800"
+									: campaign.status === "completed"
+									? "bg-blue-100 text-blue-800"
+									: campaign.status === "cancelled"
+									? "bg-red-100 text-red-800"
+									: "bg-gray-100 text-gray-800"
+							}`}
+						>
+							{campaign.status}
+						</span>
+					</div>
+					<h2 className="text-xl font-semibold text-gray-900">
+						{campaign.title}
+					</h2>
+					<p className="text-gray-600">{campaign.description}</p>
+					<div className="flex flex-wrap gap-2 mb-4">
+						{campaign.acceptedDonationTypes.map((type) => (
+							<span
+								key={type}
+								className="bg-teal-100 text-teal-800 px-2 py-1 rounded-full text-xs flex items-center"
+							>
+								<FaDonate className="mr-1" /> {type}
+							</span>
+						))}
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<p className="text-sm text-gray-600">
+								<strong>Start Date:</strong>{" "}
+								{new Date(campaign.startDate).toLocaleDateString()}
+							</p>
+							<p className="text-sm text-gray-600">
+								<strong>End Date:</strong>{" "}
+								{new Date(campaign.endDate).toLocaleDateString()}
+							</p>
+							<p className="text-sm text-gray-600">
+								<strong>Target Amount:</strong> $
+								{campaign.totalTargetAmount.toLocaleString()}
+							</p>
+							<p className="text-sm text-gray-600">
+								<strong>Raised Amount:</strong> $
+								{campaign.totalRaisedAmount.toLocaleString()}
+							</p>
+							<p className="text-sm text-gray-600">
+								<strong>Supporters:</strong> {campaign.totalSupporters}
+							</p>
+						</div>
+						<div>
+							<p className="text-sm text-gray-600">
+								<strong>Organizations:</strong>{" "}
+								{campaign.organizations.map((org) => org.name).join(", ") ||
+									"None"}
+							</p>
+							<p className="text-sm text-gray-600">
+								<strong>Causes:</strong>{" "}
+								{campaign.causes.map((cause) => cause.title).join(", ") ||
+									"None"}
+							</p>
+							<p className="text-sm text-gray-600">
+								<strong>Tags:</strong>{" "}
+								{campaign.tags.map((tag) => (
+									<span
+										key={tag}
+										className="inline-block bg-teal-100 text-teal-800 px-2 py-1 rounded-full text-xs mr-2"
+									>
+										{tag}
+									</span>
+								))}
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { auth, googleProvider } from "@/lib/firebase";
-import { RootState } from "@/store";
+import { RootState } from "@/store/store";
 import {
 	useLoginMutation,
 	useRegisterMutation,

@@ -82,7 +82,8 @@ export const dashboardApi = createApi({
 				url: "/dashboard/donor/stats",
 				method: "GET",
 			}),
-			transformResponse: (response: DashboardResponse) => response.data.donorStats!,
+			transformResponse: (response: DashboardResponse) =>
+				response.data.donorStats!,
 			providesTags: ["Dashboard"],
 		}),
 
@@ -92,7 +93,8 @@ export const dashboardApi = createApi({
 				url: "/dashboard/organization/stats",
 				method: "GET",
 			}),
-			transformResponse: (response: DashboardResponse) => response.data.organizationStats!,
+			transformResponse: (response: DashboardResponse) =>
+				response.data.organizationStats!,
 			providesTags: ["Dashboard"],
 		}),
 
@@ -102,15 +104,19 @@ export const dashboardApi = createApi({
 				url: "/dashboard/recent-donations",
 				method: "GET",
 			}),
-			transformResponse: (response: DashboardResponse) => response.data.recentDonations,
+			transformResponse: (response: DashboardResponse) =>
+				response.data.recentDonations,
 			providesTags: ["Dashboard"],
 		}),
 
 		// Get donation analytics
-		getDonationAnalytics: builder.query<{
-			monthlyDonations: { month: string; amount: number }[];
-			categoryDistribution: { category: string; amount: number }[];
-		}, void>({
+		getDonationAnalytics: builder.query<
+			{
+				monthlyDonations: { month: string; amount: number }[];
+				categoryDistribution: { category: string; amount: number }[];
+			},
+			void
+		>({
 			query: () => ({
 				url: "/dashboard/analytics",
 				method: "GET",

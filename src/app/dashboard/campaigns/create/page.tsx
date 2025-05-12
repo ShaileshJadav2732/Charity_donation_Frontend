@@ -2,179 +2,251 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCreateCampaignMutation } from "@/store/api/campaignApi";
+import { useSelector } from "react-redux";
+import {
+	useCreateCampaignMutation,
+	useGetOrganizationCausesQuery,
+} from "@/store/api/campaignApi";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { RootState } from "@/store/store";
+import { FaHeart, FaTimes } from "react-icons/fa";
+import { DonationType } from "@/types/campaings";
 
 export default function CreateCampaignPage() {
-   const router = useRouter();
-   const [createCampaign, { isLoading }] = useCreateCampaignMutation();
-   const [tags, setTags] = useState<string[]>([]);
-   const [tagInput, setTagInput] = useState("");
+	const router = useRouter();
+	const { user } = useSelector((state: RootState) => state.auth);
+	const [createCampaign] = useCreateCampaignMutation();
+	const [title, setTitle] = useState("");
+	const [description, setDescription] = useState("");
+	const [causes, setCauses] = useState<string[]>([]);
+	const [acceptedDonationTypes, setAcceptedDonationTypes] = useState<
+		DonationType[]
+	>([]);
+	const [startDate, setStartDate] = useState("");
+	const [endDate, setEndDate] = useState("");
+	const [notification, setNotification] = useState<{
+		type: "error" | "success";
+		message: string;
+	} | null>(null);
 
-   // Protect route for organizations only
-   useRouteGuard("organization");
+	// Fetch organization causes
+	const {
+		data: causesData,
+		isLoading: causesLoading,
+		error: causesError,
+	} = useGetOrganizationCausesQuery(
+		{
+			organizationId: user?.id || "",
+			params: { limit: 100 },
+		},
+		{ skip: !user?.id }
+	);
 
-   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
+	useRouteGuard("organization");
 
-      try {
-         const campaignData = {
-            title: formData.get("title") as string,
-            description: formData.get("description") as string,
-            startDate: formData.get("startDate") as string,
-            endDate: formData.get("endDate") as string,
-            totalTargetAmount: Number(formData.get("totalTargetAmount")),
-            imageUrl: formData.get("imageUrl") as string,
-            tags,
-         };
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setNotification(null);
 
-         await createCampaign(campaignData).unwrap();
-         toast.success("Campaign created successfully");
-         router.push("/dashboard/campaigns");
-      } catch (error) {
-         toast.error("Failed to create campaign");
-         console.error("Create campaign error:", error);
-      }
-   };
+		// Client-side validation
+		if (!title || !description) {
+			setNotification({
+				type: "error",
+				message: "Title and description are required",
+			});
+			return;
+		}
+		if (!causes.length) {
+			setNotification({
+				type: "error",
+				message: "At least one cause is required",
+			});
+			return;
+		}
+		if (!acceptedDonationTypes.length) {
+			setNotification({
+				type: "error",
+				message: "At least one donation type is required",
+			});
+			return;
+		}
+		if (!Object.values(DonationType).includes(acceptedDonationTypes[0])) {
+			setNotification({ type: "error", message: "Invalid donation types" });
+			return;
+		}
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+		if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
+			setNotification({ type: "error", message: "Invalid date range" });
+			return;
+		}
 
-   const handleAddTag = () => {
-      if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-         setTags([...tags, tagInput.trim()]);
-         setTagInput("");
-      }
-   };
+		try {
+			await createCampaign({
+				title,
+				description,
+				causes,
+				acceptedDonationTypes,
+				startDate,
+				endDate,
+			}).unwrap();
+			setNotification({
+				type: "success",
+				message: "Campaign created successfully",
+			});
+			setTimeout(() => router.push("/dashboard/campaigns?new=true"), 1500);
+		} catch (error: any) {
+			const errorMessage =
+				error?.data?.message || error?.error || "Failed to create campaign";
+			setNotification({ type: "error", message: errorMessage });
+			console.error("Create campaign error:", {
+				error,
+				status: error?.status,
+				data: error?.data,
+				message: error?.data?.message,
+			});
+		}
+	};
 
-   const handleRemoveTag = (tagToRemove: string) => {
-      setTags(tags.filter((tag) => tag !== tagToRemove));
-   };
-
-   return (
-      <div className="container mx-auto px-4 py-8">
-         <h1 className="text-2xl font-bold mb-6">Create New Campaign</h1>
-         <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-            <div className="space-y-2">
-               <Label htmlFor="title">Campaign Title</Label>
-               <Input
-                  id="title"
-                  name="title"
-                  required
-                  placeholder="Enter campaign title"
-               />
-            </div>
-
-            <div className="space-y-2">
-               <Label htmlFor="description">Description</Label>
-               <Textarea
-                  id="description"
-                  name="description"
-                  required
-                  placeholder="Enter campaign description"
-                  rows={4}
-               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                     id="startDate"
-                     name="startDate"
-                     type="date"
-                     required
-                  />
-               </div>
-
-               <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                     id="endDate"
-                     name="endDate"
-                     type="date"
-                     required
-                  />
-               </div>
-            </div>
-
-            <div className="space-y-2">
-               <Label htmlFor="totalTargetAmount">Target Amount</Label>
-               <Input
-                  id="totalTargetAmount"
-                  name="totalTargetAmount"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  placeholder="Enter target amount"
-               />
-            </div>
-
-            <div className="space-y-2">
-               <Label htmlFor="imageUrl">Image URL</Label>
-               <Input
-                  id="imageUrl"
-                  name="imageUrl"
-                  type="url"
-                  required
-                  placeholder="Enter image URL"
-               />
-            </div>
-
-            <div className="space-y-2">
-               <Label>Tags</Label>
-               <div className="flex gap-2">
-                  <Input
-                     value={tagInput}
-                     onChange={(e) => setTagInput(e.target.value)}
-                     placeholder="Add a tag"
-                     onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                           e.preventDefault();
-                           handleAddTag();
-                        }
-                     }}
-                  />
-                  <Button type="button" onClick={handleAddTag}>
-                     Add
-                  </Button>
-               </div>
-               <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag) => (
-                     <span
-                        key={tag}
-                        className="bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center gap-2"
-                     >
-                        {tag}
-                        <button
-                           type="button"
-                           onClick={() => handleRemoveTag(tag)}
-                           className="text-primary hover:text-primary/80"
-                        >
-                           ×
-                        </button>
-                     </span>
-                  ))}
-               </div>
-            </div>
-
-            <div className="flex gap-4">
-               <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Creating..." : "Create Campaign"}
-               </Button>
-               <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-               >
-                  Cancel
-               </Button>
-            </div>
-         </form>
-      </div>
-   );
-} 
+	return (
+		<div className="container mx-auto px-4 py-8">
+			{notification && (
+				<div
+					className={`p-4 rounded-lg ${
+						notification.type === "error"
+							? "bg-red-100 text-red-800"
+							: "bg-green-100 text-green-800"
+					}`}
+				>
+					{notification.message}
+				</div>
+			)}
+			<h1 className="text-2xl font-bold text-gray-900 mb-6">Create Campaign</h1>
+			<form
+				onSubmit={handleSubmit}
+				className="bg-white rounded-xl shadow-md p-6 space-y-6"
+			>
+				<div>
+					<label className="block text-sm font-medium text-gray-700">
+						Title
+					</label>
+					<input
+						type="text"
+						value={title}
+						onChange={(e) => setTitle(e.target.value)}
+						className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						required
+					/>
+				</div>
+				<div>
+					<label className="block text-sm font-medium text-gray-700">
+						Description
+					</label>
+					<textarea
+						value={description}
+						onChange={(e) => setDescription(e.target.value)}
+						className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						rows={4}
+						required
+					/>
+				</div>
+				<div>
+					<label className="block text-sm font-medium text-gray-700">
+						Select Causes
+					</label>
+					{causesLoading ? (
+						<div className="text-gray-600">Loading causes...</div>
+					) : causesError ? (
+						<div className="text-red-600">Error loading causes</div>
+					) : (
+						<select
+							multiple
+							value={causes}
+							onChange={(e) =>
+								setCauses(
+									Array.from(e.target.selectedOptions, (option) => option.value)
+								)
+							}
+							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						>
+							{causesData?.causes?.map((cause) => (
+								<option key={cause.id} value={cause.id}>
+									{cause.title}
+								</option>
+							))}
+						</select>
+					)}
+					<p className="text-sm text-gray-500 mt-1">
+						Hold Ctrl (Windows) or Cmd (Mac) to select multiple causes.
+					</p>
+				</div>
+				<div>
+					<label className="block text-sm font-medium text-gray-700">
+						Accepted Donation Types
+					</label>
+					<select
+						multiple
+						value={acceptedDonationTypes}
+						onChange={(e) =>
+							setAcceptedDonationTypes(
+								Array.from(
+									e.target.selectedOptions,
+									(option) => option.value as DonationType
+								)
+							)
+						}
+						className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+					>
+						{Object.values(DonationType).map((type) => (
+							<option key={type} value={type}>
+								{type.charAt(0).toUpperCase() + type.slice(1)}
+							</option>
+						))}
+					</select>
+					<p className="text-sm text-gray-500 mt-1">
+						Hold Ctrl (Windows) or Cmd (Mac) to select multiple donation types.
+					</p>
+				</div>
+				<div>
+					<label className="block text-sm font-medium text-gray-700">
+						Start Date
+					</label>
+					<input
+						type="date"
+						value={startDate}
+						onChange={(e) => setStartDate(e.target.value)}
+						className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						required
+					/>
+				</div>
+				<div>
+					<label className="block text-sm font-medium text-gray-700">
+						End Date
+					</label>
+					<input
+						type="date"
+						value={endDate}
+						onChange={(e) => setEndDate(e.target.value)}
+						className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+						required
+					/>
+				</div>
+				<div className="flex justify-end gap-4">
+					<button
+						type="button"
+						onClick={() => router.push("/dashboard/campaigns")}
+						className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center"
+					>
+						<FaTimes className="mr-2" /> Cancel
+					</button>
+					<button
+						type="submit"
+						className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center"
+					>
+						<FaHeart className="mr-2" /> Create Campaign
+					</button>
+				</div>
+			</form>
+		</div>
+	);
+}

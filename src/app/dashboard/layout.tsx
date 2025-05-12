@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
 import { useAuth } from "@/hooks/useAuth";
-import { motion } from "framer-motion";
+import { RootState } from "@/store/store";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-	FaHome,
-	FaUser,
-	FaSignOutAlt,
 	FaBars,
-	FaTimes,
-	FaHeart,
 	FaHandsHelping,
+	FaHeart,
+	FaHome,
+	FaSignOutAlt,
+	FaTimes,
+	FaUser,
 	FaUsers,
 } from "react-icons/fa";
+import { useSelector } from "react-redux";
 
 export default function DashboardLayout({
 	children,
@@ -24,7 +23,9 @@ export default function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	const router = useRouter();
-	const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+	const { user, isAuthenticated } = useSelector(
+		(state: RootState) => state.auth
+	);
 	const { logout } = useAuth();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isClient, setIsClient] = useState(false);
@@ -100,15 +101,18 @@ export default function DashboardLayout({
 
 			{/* Sidebar */}
 			<aside
-				className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-2xl transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-					} lg:translate-x-0 transition-transform duration-300 ease-in-out`}
+				className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-2xl transform ${
+					isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+				} lg:translate-x-0 transition-transform duration-300 ease-in-out`}
 			>
 				<div className="h-full flex flex-col">
 					{/* Sidebar header */}
 					<div className="px-6 py-8 border-b border-gray-200">
 						<h2 className="text-2xl font-bold text-teal-600">GreenGive</h2>
 						<p className="mt-2 text-sm text-gray-600">
-							{user.role === "donor" ? "Donor Dashboard" : "Organization Dashboard"}
+							{user.role === "donor"
+								? "Donor Dashboard"
+								: "Organization Dashboard"}
 						</p>
 					</div>
 

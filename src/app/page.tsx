@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store";
+import { RootState } from "@/store/store";
 import { FiHeart, FiUser, FiGlobe, FiArrowRight } from "react-icons/fi";
 import { useAuth } from "@/hooks/useAuth";
 
