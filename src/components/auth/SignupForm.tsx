@@ -16,7 +16,6 @@ const SignupForm = () => {
   const [formData, setFormData] = useState<SignupFormData>({
     email: "",
     password: "",
-    confirmPassword: "",
     role: "donor",
   });
 
@@ -41,11 +40,7 @@ const SignupForm = () => {
   };
 
   const handleNextStage = () => {
-    if (formData.email && formData.password && formData.confirmPassword) {
-      if (formData.password !== formData.confirmPassword) {
-        toast.error("Passwords do not match");
-        return;
-      }
+    if (formData.email && formData.password) {
       setFormStage("role");
     } else {
       toast.error("Please fill in all fields");
@@ -55,13 +50,8 @@ const SignupForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
     try {
-      const response = await signup(formData);
+      const response = await signup(formData.email, formData.password, formData.role);
       toast.success("Account created successfully!");
 
       if (response.user.profileCompleted) {
@@ -271,77 +261,13 @@ const SignupForm = () => {
                   )}
                 </div>
 
-                {/* Confirm Password Field */}
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Confirm Password
-                  </label>
-                  <div className="mt-1 relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FiLock
-                        className="h-5 w-5 text-gray-400"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      onFocus={() => handleFocus("confirmPassword")}
-                      onBlur={handleBlur}
-                      required
-                      className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${
-                        focusedField === "confirmPassword"
-                          ? "border-teal-500 ring-1 ring-teal-200"
-                          : "border-gray-200"
-                      } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
-                      placeholder="••••••••"
-                      aria-describedby="confirmPassword"
-                    />
-                    {formData.password && formData.confirmPassword && (
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                        {formData.password === formData.confirmPassword ? (
-                          <FiCheck
-                            className="h-5 w-5 text-green-500"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <svg
-                            className="h-5 w-5 text-red-500"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {formData.password &&
-                    formData.confirmPassword &&
-                    formData.password !== formData.confirmPassword && (
-                      <p className="text-xs text-red-500 mt-1">
-                        Passwords do not match
-                      </p>
-                    )}
-                </div>
+                
 
                 {/* Next Button */}
                 <button
                   type="button"
                   onClick={handleNextStage}
-                  disabled={isLoading}
+                  // disabled={isLoading}
                   className="w-full flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:bg-teal-400 disabled:cursor-not-allowed"
                   aria-label="Continue to role selection"
                 >
@@ -497,11 +423,11 @@ const SignupForm = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isLoading}
+                    // disabled={isLoading}
                     className="w-2/3 flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:bg-teal-400 disabled:cursor-not-allowed"
                     aria-label="Create account"
                   >
-                    {isLoading ? (
+                    {/* {isLoading ? (
                       <>
                         <svg
                           className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -525,7 +451,7 @@ const SignupForm = () => {
                         </svg>
                         Creating Account...
                       </>
-                    ) : (
+                    ) : ( */}
                       <>
                         Create Account
                         <FiArrowRight
@@ -533,7 +459,7 @@ const SignupForm = () => {
                           aria-hidden="true"
                         />
                       </>
-                    )}
+                    {/* )} */}
                   </button>
                 </div>
               </>

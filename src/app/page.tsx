@@ -26,19 +26,19 @@ export default function HomePage() {
 			user,
 		});
 		if (isAuthenticated) {
-			if (user?.profileCompleted) {
-				console.log(
-					"HomePage: User profile completed, redirecting to /dashboard"
-				);
+			// if (user?.profileCompleted) {
+			// 	console.log(
+			// 		"HomePage: User profile completed, redirecting to /dashboard"
+			// 	);
 				router.push("/dashboard");
-			} else {
-				console.log(
-					"HomePage: User profile not completed, redirecting to /complete-profile"
-				);
-				router.push("/complete-profile");
-			}
-		} else {
-			console.log("HomePage: User not authenticated, staying on homepage");
+			// } else {
+			// 	console.log(
+			// 		"HomePage: User profile not completed, redirecting to /complete-profile"
+			// 	);
+			// 	router.push("/complete-profile");
+			// }
+		// } else {
+		// 	console.log("HomePage: User not authenticated, staying on homepage");
 		}
 	}, [isAuthenticated, user, router, authInitialized]);
 

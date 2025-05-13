@@ -1,16 +1,23 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { LoginFormData, parseError } from "@/types";
+import { LoginFormData } from "@/types";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FcGoogle } from "react-icons/fc";
 import { FiArrowRight, FiLock, FiMail, FiEye, FiEyeOff } from "react-icons/fi";
+import { parseError } from "@/types/errors";
+import { useRouter } from "next/navigation";
+import { useLoginWithEmailMutation, useLoginWithGoogleMutation } from "@/store/api/authApi";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/store/slices/authSlice";
 
 const LoginForm = () => {
-  const { loginWithEmail, loginWithGoogle, isLoading, authInitialized } =
-    useAuth();
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const [loginWithEmail, { isLoading: isEmailLoading }] = useLoginWithEmailMutation();
+  const [loginWithGoogle, { isLoading: isGoogleLoading }] = useLoginWithGoogleMutation();
+  const isLoading = isEmailLoading || isGoogleLoading;
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -41,14 +48,13 @@ const LoginForm = () => {
     e.preventDefault();
 
     try {
-      console.log("LoginForm: Attempting login with email", formData.email);
-      await loginWithEmail(formData);
-      console.log(
-        "LoginForm: Login successful, relying on useAuth for redirect"
-      );
+      const result = await loginWithEmail(formData).unwrap();
+      dispatch(setUser(result));
       toast.success("Logged in successfully!");
+
+      // Redirect is handled by the AuthProvider
     } catch (error: unknown) {
-      console.error("LoginForm: Login error:", error);
+      console.error("Login error:", error);
       const parsedError = parseError(error);
       toast.error(parsedError.message || "Failed to log in");
     }
@@ -56,23 +62,29 @@ const LoginForm = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      console.log("LoginForm: Attempting Google login");
       toast.loading("Signing in with Google...", { id: "google-login" });
-      await loginWithGoogle();
-      console.log(
-        "LoginForm: Google login successful, relying on useAuth for redirect"
-      );
+      const result = await loginWithGoogle().unwrap();
+      dispatch(setUser(result));
       toast.dismiss("google-login");
       toast.success("Logged in with Google!");
+
+      // Redirect is handled by the AuthProvider
     } catch (error: unknown) {
-      console.error("LoginForm: Google login error:", error);
+      console.error("Google login error:", error);
       toast.dismiss("google-login");
       const parsedError = parseError(error);
+
+      if (parsedError.status === 404) {
+        // User exists in Firebase but not in our backend
+        router.push("/select-role");
+        return;
+      }
+
       toast.error(parsedError.message || "Failed to log in with Google");
     }
   };
 
-  if (!authInitialized) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100">
         <div className="text-teal-600">Loading...</div>
@@ -138,11 +150,10 @@ const LoginForm = () => {
                   onFocus={() => handleFocus("email")}
                   onBlur={handleBlur}
                   required
-                  className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${
-                    focusedField === "email"
+                  className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${focusedField === "email"
                       ? "border-teal-500 ring-1 ring-teal-200"
                       : "border-gray-200"
-                  } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+                    } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
                   placeholder="you@example.com"
                   aria-describedby="email"
                   autoComplete="email"
@@ -182,11 +193,10 @@ const LoginForm = () => {
                   onFocus={() => handleFocus("password")}
                   onBlur={handleBlur}
                   required
-                  className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${
-                    focusedField === "password"
+                  className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${focusedField === "password"
                       ? "border-teal-500 ring-1 ring-teal-200"
                       : "border-gray-200"
-                  } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+                    } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
                   placeholder="••••••••"
                   aria-describedby="password"
                   autoComplete="current-password"
@@ -236,7 +246,7 @@ const LoginForm = () => {
               className="w-full flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:bg-teal-400 disabled:cursor-not-allowed"
               aria-label="Log in"
             >
-              {isLoading ? (
+              {isEmailLoading ? (
                 <>
                   <svg
                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"

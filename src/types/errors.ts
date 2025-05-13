@@ -129,3 +129,7 @@ export function isApiError(error: unknown): error is ApiError {
       ("response" in error && typeof (error as any).response === "object"))
   );
 }
+function extractAxiosErrorMessage(error: ApiError & Record<"response", unknown>): string {
+  throw new Error("Function not implemented.");
+}
+

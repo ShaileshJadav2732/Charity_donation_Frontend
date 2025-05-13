@@ -56,7 +56,6 @@ export interface OrganizationProfile {
 export interface SignupFormData {
 	email: string;
 	password: string;
-	confirmPassword: string;
 	role: "donor" | "organization";
 }
 
