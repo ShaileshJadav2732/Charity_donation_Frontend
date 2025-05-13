@@ -1,7 +1,7 @@
-import { DonationType } from "./donation";
+import { DonationType } from "./donations";
 
 export interface Cause {
-	id: string;
+	_id: string;
 	title: string;
 	description: string;
 	targetAmount: number;
@@ -9,40 +9,74 @@ export interface Cause {
 	imageUrl: string;
 	tags: string[];
 	organizationId: string;
-	organizationName?: string;
 	createdAt: string;
 	updatedAt: string;
 }
 
 export interface Campaign {
-	id: string;
+	_id: string;
 	title: string;
 	description: string;
-	causes: { id: string; title: string; organizationName?: string }[];
-	acceptedDonationTypes: DonationType[];
 	startDate: string;
 	endDate: string;
-	organizationId: string;
+	status: "draft" | "active" | "completed" | "cancelled";
+	causes: Cause[];
+	organizations: {
+		_id: string;
+		name: string;
+		logoUrl: string;
+	}[];
+	totalTargetAmount: number;
+	totalRaisedAmount: number;
+	totalSupporters: number;
+	imageUrl: string;
+	tags: string[];
+	acceptedDonationTypes: DonationType[];
 	createdAt: string;
 	updatedAt: string;
-}
-
-export interface CausesResponse {
-	causes: Cause[];
-	total: number;
-	page: number;
-	limit: number;
-}
-
-export interface CampaignResponse {
-	campaign: Campaign;
 }
 
 export interface CreateCampaignBody {
 	title: string;
 	description: string;
-	causes: string[];
-	acceptedDonationTypes: DonationType[];
 	startDate: string;
 	endDate: string;
+	causes: string[];
+	imageUrl: string;
+	tags: string[];
+	acceptedDonationTypes: DonationType[];
+}
+
+export interface UpdateCampaignBody extends Partial<CreateCampaignBody> {
+	status?: "draft" | "active" | "completed" | "cancelled";
+}
+
+export interface CampaignResponse {
+	success: boolean;
+	data: Campaign;
+	message: string;
+}
+
+export interface CampaignsResponse {
+	success: boolean;
+	data: {
+		campaigns: Campaign[];
+		total: number;
+		page: number;
+		limit: number;
+		totalPages: number;
+	};
+	message: string;
+}
+
+export interface CausesResponse {
+	success: boolean;
+	data: {
+		causes: Cause[];
+		total: number;
+		page: number;
+		limit: number;
+		totalPages: number;
+	};
+	message: string;
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -7,12 +9,22 @@ import {
 	FiMapPin,
 	FiPhone,
 	FiMail,
+	FiPackage,
+	FiDroplet,
+	FiShoppingBag,
+	FiBook,
+	FiHome,
+	FiCoffee,
 } from "react-icons/fi";
 import {
 	DonationType,
 	DonationStatus,
 	DonationFormData,
-} from "../../types/donation";
+	BloodType,
+	ClothesType,
+	FoodType,
+	Address,
+} from "@/types/donation";
 
 interface DonationFormProps {
 	organizations: Array<{
@@ -31,38 +43,13 @@ const DonationForm: React.FC<DonationFormProps> = ({
 		DonationType.MONEY
 	);
 	const [isPickup, setIsPickup] = useState(false);
-	const [formData, setFormData] = useState({
-		organization: "",
-		amount: "",
-		description: "",
-		quantity: "",
-		unit: "",
-		scheduledDate: "",
-		scheduledTime: "",
-		pickupAddress: {
-			street: "",
-			city: "",
-			state: "",
-			zipCode: "",
-			country: "",
-		},
-		dropoffAddress: {
-			street: "",
-			city: "",
-			state: "",
-			zipCode: "",
-			country: "",
-		},
-		contactPhone: "",
-		contactEmail: "",
-		notes: "",
-		receiptImage: "",
+	const [formData, setFormData] = useState<Partial<DonationFormData>>({
+		type: DonationType.MONEY,
+		isPickup: false,
 	});
 
 	const handleInputChange = (
-		e: React.ChangeEvent<
-			HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-		>
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
 	) => {
 		const { name, value } = e.target;
 		if (name.includes(".")) {
@@ -98,12 +85,455 @@ const DonationForm: React.FC<DonationFormProps> = ({
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		onSubmit({
-			...formData,
-			type: donationType,
-			isPickup,
-			status: DonationStatus.PENDING,
-		});
+		onSubmit(formData as DonationFormData);
+	};
+
+	const renderTypeSpecificFields = () => {
+		switch (donationType) {
+			case DonationType.MONEY:
+				return (
+					<div className="space-y-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Amount ($)
+							</label>
+							<div className="relative rounded-md shadow-sm">
+								<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<span className="text-gray-500 sm:text-sm">$</span>
+								</div>
+								<input
+									type="number"
+									name="amount"
+									value={formData.amount || ""}
+									onChange={handleInputChange}
+									className="block w-full pl-7 pr-12 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									placeholder="0.00"
+									step="0.01"
+									min="0"
+									required
+								/>
+							</div>
+						</div>
+					</div>
+				);
+
+			case DonationType.BLOOD:
+				return (
+					<div className="space-y-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Blood Type
+							</label>
+							<select
+								name="bloodType"
+								value={formData.bloodType || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								required
+							>
+								<option value="">Select blood type</option>
+								{Object.values(BloodType).map((type) => (
+									<option key={type} value={type}>
+										{type}
+									</option>
+								))}
+							</select>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Quantity
+								</label>
+								<input
+									type="number"
+									name="quantity"
+									value={formData.quantity || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									min="1"
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Unit
+								</label>
+								<select
+									name="unit"
+									value={formData.unit || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									required
+								>
+									<option value="">Select unit</option>
+									<option value="ml">Milliliters (ml)</option>
+									<option value="units">Units</option>
+								</select>
+							</div>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Last Donation Date
+							</label>
+							<input
+								type="date"
+								name="lastDonationDate"
+								value={formData.lastDonationDate || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Health Conditions
+							</label>
+							<textarea
+								name="healthConditions"
+								value={formData.healthConditions || ""}
+								onChange={handleInputChange}
+								rows={3}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								placeholder="Any health conditions or medications..."
+							/>
+						</div>
+					</div>
+				);
+
+			case DonationType.CLOTHES:
+				return (
+					<div className="space-y-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Clothes Type
+							</label>
+							<select
+								name="clothesType"
+								value={formData.clothesType || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								required
+							>
+								<option value="">Select clothes type</option>
+								{Object.values(ClothesType).map((type) => (
+									<option key={type} value={type}>
+										{type.replace(/_/g, " ")}
+									</option>
+								))}
+							</select>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Quantity
+								</label>
+								<input
+									type="number"
+									name="quantity"
+									value={formData.quantity || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									min="1"
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Unit
+								</label>
+								<select
+									name="unit"
+									value={formData.unit || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									required
+								>
+									<option value="">Select unit</option>
+									<option value="pieces">Pieces</option>
+									<option value="bags">Bags</option>
+								</select>
+							</div>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Condition
+							</label>
+							<select
+								name="condition"
+								value={formData.condition || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								required
+							>
+								<option value="">Select condition</option>
+								<option value="NEW">New</option>
+								<option value="LIKE_NEW">Like New</option>
+								<option value="GOOD">Good</option>
+								<option value="FAIR">Fair</option>
+							</select>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Size (Optional)
+							</label>
+							<input
+								type="text"
+								name="size"
+								value={formData.size || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								placeholder="e.g., M, L, XL, etc."
+							/>
+						</div>
+					</div>
+				);
+
+			case DonationType.FOOD:
+				return (
+					<div className="space-y-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Food Type
+							</label>
+							<select
+								name="foodType"
+								value={formData.foodType || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								required
+							>
+								<option value="">Select food type</option>
+								{Object.values(FoodType).map((type) => (
+									<option key={type} value={type}>
+										{type.replace(/_/g, " ")}
+									</option>
+								))}
+							</select>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Quantity
+								</label>
+								<input
+									type="number"
+									name="quantity"
+									value={formData.quantity || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									min="1"
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Unit
+								</label>
+								<select
+									name="unit"
+									value={formData.unit || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									required
+								>
+									<option value="">Select unit</option>
+									<option value="kg">Kilograms (kg)</option>
+									<option value="boxes">Boxes</option>
+									<option value="cans">Cans</option>
+								</select>
+							</div>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Expiry Date
+							</label>
+							<input
+								type="date"
+								name="expiryDate"
+								value={formData.expiryDate || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Storage Instructions
+							</label>
+							<textarea
+								name="storageInstructions"
+								value={formData.storageInstructions || ""}
+								onChange={handleInputChange}
+								rows={3}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								placeholder="Any special storage requirements..."
+							/>
+						</div>
+					</div>
+				);
+
+			default:
+				return (
+					<div className="space-y-4">
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Quantity
+								</label>
+								<input
+									type="number"
+									name="quantity"
+									value={formData.quantity || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									min="1"
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Unit
+								</label>
+								<input
+									type="text"
+									name="unit"
+									value={formData.unit || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									placeholder="e.g., pieces, boxes, etc."
+									required
+								/>
+							</div>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Condition
+							</label>
+							<select
+								name="condition"
+								value={formData.condition || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+							>
+								<option value="">Select condition</option>
+								<option value="NEW">New</option>
+								<option value="LIKE_NEW">Like New</option>
+								<option value="GOOD">Good</option>
+								<option value="FAIR">Fair</option>
+							</select>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Dimensions (Optional)
+								</label>
+								<input
+									type="text"
+									name="dimensions"
+									value={formData.dimensions || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									placeholder="e.g., 10x20x30 cm"
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Weight (kg) (Optional)
+								</label>
+								<input
+									type="number"
+									name="weight"
+									value={formData.weight || ""}
+									onChange={handleInputChange}
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+									min="0"
+									step="0.1"
+								/>
+							</div>
+						</div>
+					</div>
+				);
+		}
+	};
+
+	const renderAddressFields = (type: "pickup" | "dropoff") => {
+		const address = formData[`${type}Address`] as Address || {};
+		const prefix = type === "pickup" ? "pickup" : "dropoff";
+
+		return (
+			<div className="space-y-4">
+				<h3 className="text-lg font-medium text-gray-900">
+					{type === "pickup" ? "Pickup" : "Dropoff"} Address
+				</h3>
+				<div>
+					<label className="block text-sm font-medium text-gray-700 mb-2">
+						Street Address
+					</label>
+					<input
+						type="text"
+						name={`${prefix}Address.street`}
+						value={address.street || ""}
+						onChange={handleInputChange}
+						className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+						required
+					/>
+				</div>
+				<div className="grid grid-cols-2 gap-4">
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							City
+						</label>
+						<input
+							type="text"
+							name={`${prefix}Address.city`}
+							value={address.city || ""}
+							onChange={handleInputChange}
+							className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+							required
+						/>
+					</div>
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							State/Province
+						</label>
+						<input
+							type="text"
+							name={`${prefix}Address.state`}
+							value={address.state || ""}
+							onChange={handleInputChange}
+							className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+							required
+						/>
+					</div>
+				</div>
+				<div className="grid grid-cols-2 gap-4">
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							ZIP/Postal Code
+						</label>
+						<input
+							type="text"
+							name={`${prefix}Address.zipCode`}
+							value={address.zipCode || ""}
+							onChange={handleInputChange}
+							className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+							required
+						/>
+					</div>
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Country
+						</label>
+						<input
+							type="text"
+							name={`${prefix}Address.country`}
+							value={address.country || ""}
+							onChange={handleInputChange}
+							className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+							required
+						/>
+					</div>
+				</div>
+			</div>
+		);
 	};
 
 	return (
@@ -125,9 +555,9 @@ const DonationForm: React.FC<DonationFormProps> = ({
 					</label>
 					<select
 						name="organization"
-						value={formData.organization}
+						value={formData.organization || ""}
 						onChange={handleInputChange}
-						className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+						className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
 						required
 					>
 						<option value="">Select an organization</option>
@@ -146,76 +576,23 @@ const DonationForm: React.FC<DonationFormProps> = ({
 					</label>
 					<select
 						value={donationType}
-						onChange={(e) => setDonationType(e.target.value as DonationType)}
-						className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+						onChange={(e) => {
+							setDonationType(e.target.value as DonationType);
+							setFormData((prev) => ({ ...prev, type: e.target.value as DonationType }));
+						}}
+						className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
 						required
 					>
 						{Object.values(DonationType).map((type) => (
 							<option key={type} value={type}>
-								{type.charAt(0) + type.slice(1).toLowerCase()}
+								{type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
 							</option>
 						))}
 					</select>
 				</div>
 
-				{/* Amount for Monetary Donations */}
-				{donationType === DonationType.MONEY && (
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Amount ($)
-						</label>
-						<div className="relative rounded-md shadow-sm">
-							<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-								<span className="text-gray-500 sm:text-sm">$</span>
-							</div>
-							<input
-								type="number"
-								name="amount"
-								value={formData.amount}
-								onChange={handleInputChange}
-								className="block w-full pl-7 pr-12 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-								placeholder="0.00"
-								step="0.01"
-								min="0"
-								required
-							/>
-						</div>
-					</div>
-				)}
-
-				{/* Quantity and Unit for Non-Monetary Donations */}
-				{donationType !== DonationType.MONEY && (
-					<div className="grid grid-cols-2 gap-6">
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Quantity
-							</label>
-							<input
-								type="number"
-								name="quantity"
-								value={formData.quantity}
-								onChange={handleInputChange}
-								className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-								min="1"
-								required
-							/>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Unit
-							</label>
-							<input
-								type="text"
-								name="unit"
-								value={formData.unit}
-								onChange={handleInputChange}
-								className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-								placeholder="e.g., kg, pieces, boxes"
-								required
-							/>
-						</div>
-					</div>
-				)}
+				{/* Type-specific fields */}
+				{renderTypeSpecificFields()}
 
 				{/* Description */}
 				<div>
@@ -224,250 +601,126 @@ const DonationForm: React.FC<DonationFormProps> = ({
 					</label>
 					<textarea
 						name="description"
-						value={formData.description}
+						value={formData.description || ""}
 						onChange={handleInputChange}
 						rows={4}
-						className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+						className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
 						placeholder="Describe your donation..."
 						required
 					/>
 				</div>
 
-				{/* Pickup/Dropoff Toggle */}
-				{donationType !== DonationType.MONEY && (
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-3">
-							Delivery Method
+				{/* Delivery Method */}
+				<div>
+					<label className="block text-sm font-medium text-gray-700 mb-2">
+						Delivery Method
+					</label>
+					<div className="flex space-x-4">
+						<label className="inline-flex items-center">
+							<input
+								type="radio"
+								name="isPickup"
+								checked={isPickup}
+								onChange={() => setIsPickup(true)}
+								className="form-radio text-blue-600"
+							/>
+							<span className="ml-2">Pickup</span>
 						</label>
-						<div className="flex space-x-4">
-							<button
-								type="button"
-								onClick={() => setIsPickup(true)}
-								className={`flex-1 py-3 px-4 rounded-lg border ${
-									isPickup
-										? "border-blue-500 bg-blue-50 text-blue-700"
-										: "border-gray-300 text-gray-700 hover:bg-gray-50"
-								} flex items-center justify-center`}
-							>
-								<FiMapPin className="mr-2" />
-								Pickup
-							</button>
-							<button
-								type="button"
-								onClick={() => setIsPickup(false)}
-								className={`flex-1 py-3 px-4 rounded-lg border ${
-									!isPickup
-										? "border-blue-500 bg-blue-50 text-blue-700"
-										: "border-gray-300 text-gray-700 hover:bg-gray-50"
-								} flex items-center justify-center`}
-							>
-								<FiMapPin className="mr-2" />
-								Dropoff
-							</button>
-						</div>
+						<label className="inline-flex items-center">
+							<input
+								type="radio"
+								name="isPickup"
+								checked={!isPickup}
+								onChange={() => setIsPickup(false)}
+								className="form-radio text-blue-600"
+							/>
+							<span className="ml-2">Dropoff</span>
+						</label>
 					</div>
-				)}
+				</div>
 
 				{/* Address Fields */}
+				{isPickup ? renderAddressFields("pickup") : renderAddressFields("dropoff")}
+
+				{/* Schedule */}
 				{donationType !== DonationType.MONEY && (
 					<div className="space-y-4">
-						<h3 className="text-lg font-medium text-gray-900">
-							{isPickup ? "Pickup Address" : "Dropoff Address"}
-						</h3>
-						<div className="grid grid-cols-2 gap-6">
-							<div className="col-span-2">
+						<h3 className="text-lg font-medium text-gray-900">Schedule</h3>
+						<div className="grid grid-cols-2 gap-4">
+							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
-									Street Address
+									Date
 								</label>
 								<input
-									type="text"
-									name={
-										isPickup ? "pickupAddress.street" : "dropoffAddress.street"
-									}
-									value={
-										isPickup
-											? formData.pickupAddress.street
-											: formData.dropoffAddress.street
-									}
+									type="date"
+									name="scheduledDate"
+									value={formData.scheduledDate || ""}
 									onChange={handleInputChange}
-									className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
 									required
 								/>
 							</div>
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
-									City
+									Time
 								</label>
 								<input
-									type="text"
-									name={isPickup ? "pickupAddress.city" : "dropoffAddress.city"}
-									value={
-										isPickup
-											? formData.pickupAddress.city
-											: formData.dropoffAddress.city
-									}
+									type="time"
+									name="scheduledTime"
+									value={formData.scheduledTime || ""}
 									onChange={handleInputChange}
-									className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+									className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
 									required
 								/>
 							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
-									State
-								</label>
-								<input
-									type="text"
-									name={
-										isPickup ? "pickupAddress.state" : "dropoffAddress.state"
-									}
-									value={
-										isPickup
-											? formData.pickupAddress.state
-											: formData.dropoffAddress.state
-									}
-									onChange={handleInputChange}
-									className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-									required
-								/>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
-									ZIP Code
-								</label>
-								<input
-									type="text"
-									name={
-										isPickup
-											? "pickupAddress.zipCode"
-											: "dropoffAddress.zipCode"
-									}
-									value={
-										isPickup
-											? formData.pickupAddress.zipCode
-											: formData.dropoffAddress.zipCode
-									}
-									onChange={handleInputChange}
-									className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-									required
-								/>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
-									Country
-								</label>
-								<input
-									type="text"
-									name={
-										isPickup
-											? "pickupAddress.country"
-											: "dropoffAddress.country"
-									}
-									value={
-										isPickup
-											? formData.pickupAddress.country
-											: formData.dropoffAddress.country
-									}
-									onChange={handleInputChange}
-									className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-									required
-								/>
-							</div>
-						</div>
-					</div>
-				)}
-
-				{/* Scheduling for Non-Monetary Donations */}
-				{donationType !== DonationType.MONEY && (
-					<div className="grid grid-cols-2 gap-6">
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<FiCalendar className="inline-block mr-2" />
-								Scheduled Date
-							</label>
-							<input
-								type="date"
-								name="scheduledDate"
-								value={formData.scheduledDate}
-								onChange={handleInputChange}
-								className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-								required
-							/>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<FiClock className="inline-block mr-2" />
-								Scheduled Time
-							</label>
-							<input
-								type="time"
-								name="scheduledTime"
-								value={formData.scheduledTime}
-								onChange={handleInputChange}
-								className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-								required
-							/>
 						</div>
 					</div>
 				)}
 
 				{/* Contact Information */}
-				<div className="grid grid-cols-2 gap-6">
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							<FiPhone className="inline-block mr-2" />
-							Contact Phone
-						</label>
-						<input
-							type="tel"
-							name="contactPhone"
-							value={formData.contactPhone}
-							onChange={handleInputChange}
-							className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-							required
-						/>
+				<div className="space-y-4">
+					<h3 className="text-lg font-medium text-gray-900">Contact Information</h3>
+					<div className="grid grid-cols-2 gap-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Phone Number
+							</label>
+							<input
+								type="tel"
+								name="contactPhone"
+								value={formData.contactPhone || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								required
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Email
+							</label>
+							<input
+								type="email"
+								name="contactEmail"
+								value={formData.contactEmail || ""}
+								onChange={handleInputChange}
+								className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+								required
+							/>
+						</div>
 					</div>
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							<FiMail className="inline-block mr-2" />
-							Contact Email
-						</label>
-						<input
-							type="email"
-							name="contactEmail"
-							value={formData.contactEmail}
-							onChange={handleInputChange}
-							className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-							required
-						/>
-					</div>
-				</div>
-
-				{/* Receipt Image Upload */}
-				<div>
-					<label className="block text-sm font-medium text-gray-700 mb-2">
-						<FiUpload className="inline-block mr-2" />
-						Receipt Image (Optional)
-					</label>
-					<input
-						type="file"
-						name="receiptImage"
-						accept="image/*"
-						onChange={handleFileChange}
-						className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-					/>
 				</div>
 
 				{/* Additional Notes */}
 				<div>
 					<label className="block text-sm font-medium text-gray-700 mb-2">
-						Additional Notes (Optional)
+						Additional Notes
 					</label>
 					<textarea
 						name="notes"
-						value={formData.notes}
+						value={formData.notes || ""}
 						onChange={handleInputChange}
-						rows={4}
-						className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+						rows={3}
+						className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
 						placeholder="Any additional information..."
 					/>
 				</div>
@@ -476,7 +729,7 @@ const DonationForm: React.FC<DonationFormProps> = ({
 				<div>
 					<button
 						type="submit"
-						className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+						className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
 					>
 						Submit Donation
 					</button>

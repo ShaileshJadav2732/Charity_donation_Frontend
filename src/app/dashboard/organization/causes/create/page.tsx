@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCreateCauseMutation } from "@/store/api/causeApi";
+import { useCreateCauseMutation } from "@/store/api/causesApi";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { FaHeart, FaTimes, FaTag } from "react-icons/fa";
 
@@ -76,11 +76,10 @@ export default function CreateCausePage() {
 		<div className="container mx-auto px-4 py-8 space-y-6">
 			{notification && (
 				<div
-					className={`p-4 rounded-lg ${
-						notification.type === "error"
-							? "bg-red-100 text-red-800"
-							: "bg-green-100 text-green-800"
-					}`}
+					className={`p-4 rounded-lg ${notification.type === "error"
+						? "bg-red-100 text-red-800"
+						: "bg-green-100 text-green-800"
+						}`}
 				>
 					{notification.message}
 				</div>
