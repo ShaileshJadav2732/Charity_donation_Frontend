@@ -1,27 +1,117 @@
-// src/app/dashboard/campaigns/[id]/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+	Box,
+	Button,
+	Paper,
+	Typography,
+	Chip,
+	Grid,
+	Card,
+	CardContent,
+	Divider,
+	LinearProgress,
+	Alert,
+	CircularProgress,
+	Tabs,
+	Tab,
+	Avatar,
+	Stack,
+	List,
+	ListItem,
+	ListItemAvatar,
+	ListItemText,
+	IconButton,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+} from "@mui/material";
+import {
+	CalendarMonth as CalendarIcon,
+	Groups as DonorsIcon,
+	VolunteerActivism as DonationIcon,
+	Edit as EditIcon,
+	Delete as DeleteIcon,
+	ArrowBack as BackIcon,
+	Share as ShareIcon,
+	CheckCircle as CheckCircleIcon,
+	Cancel as CancelIcon,
+	Category as CategoryIcon,
+	Person as PersonIcon,
+} from "@mui/icons-material";
+import {
 	useGetCampaignByIdQuery,
-	useUpdateCampaignMutation,
 	useDeleteCampaignMutation,
 } from "@/store/api/campaignApi";
-import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import {
-	FaHeart,
-	FaTag,
-	FaDonate,
-	FaEdit,
-	FaTrash,
-	FaTimes,
-} from "react-icons/fa";
-import { DonationType } from "@/types/donation";
 
-export default function CampaignDetailsPage({
+interface TabPanelProps {
+	children?: React.ReactNode;
+	index: number;
+	value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+	const { children, value, index, ...other } = props;
+
+	return (
+		<div
+			role="tabpanel"
+			hidden={value !== index}
+			id={`campaign-tabpanel-${index}`}
+			aria-labelledby={`campaign-tab-${index}`}
+			{...other}
+		>
+			{value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+		</div>
+	);
+}
+
+function a11yProps(index: number) {
+	return {
+		id: `campaign-tab-${index}`,
+		"aria-controls": `campaign-tabpanel-${index}`,
+	};
+}
+
+// Format date to display in a readable format
+const formatDate = (dateString: string): string => {
+	const date = new Date(dateString);
+	return date.toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
+};
+
+// Calculate days left or status
+const getDaysRemaining = (
+	endDate: string
+): { days: number; status: string } => {
+	const end = new Date(endDate);
+	const today = new Date();
+
+	if (today > end) {
+		return { days: 0, status: "Completed" };
+	}
+
+	const diffTime = end.getTime() - today.getTime();
+	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+	return { days: diffDays, status: "Active" };
+};
+
+// Calculate progress percentage
+const getProgressPercentage = (raised: number, target: number): number => {
+	if (target === 0) return 0;
+	const percentage = (raised / target) * 100;
+	return Math.min(percentage, 100); // Cap at 100%
+};
+
+export default function CampaignDetailPage({
 	params,
 }: {
 	params: { id: string };
@@ -29,506 +119,542 @@ export default function CampaignDetailsPage({
 	const router = useRouter();
 	const { id } = params;
 	const { user } = useSelector((state: RootState) => state.auth);
-	const [isEditing, setIsEditing] = useState(false);
-	const [tags, setTags] = useState<string[]>([]);
-	const [tagInput, setTagInput] = useState("");
-	const [acceptedDonationTypes, setAcceptedDonationTypes] = useState<
-		DonationType[]
-	>([]);
-	const [notification, setNotification] = useState<{
-		type: "error" | "success";
-		message: string;
-	} | null>(null);
+	const [tabValue, setTabValue] = useState(0);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-	const { data, isLoading, error } = useGetCampaignByIdQuery(id);
-	const [updateCampaign, { isLoading: isUpdating }] =
-		useUpdateCampaignMutation();
+	const { data: campaignData, isLoading, error } = useGetCampaignByIdQuery(id);
 	const [deleteCampaign, { isLoading: isDeleting }] =
 		useDeleteCampaignMutation();
 
-	// Protect route for organizations only
-	useRouteGuard("organization");
-
-	// Initialize form with campaign data
-	useEffect(() => {
-		if (data?.campaign) {
-			setTags(data.campaign.tags);
-			setAcceptedDonationTypes(data.campaign.acceptedDonationTypes);
-		}
-	}, [data]);
-
-	const handleDonationTypeChange = (type: DonationType) => {
-		if (acceptedDonationTypes.includes(type)) {
-			setAcceptedDonationTypes(acceptedDonationTypes.filter((t) => t !== type));
-		} else {
-			setAcceptedDonationTypes([...acceptedDonationTypes, type]);
-		}
+	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+		setTabValue(newValue);
 	};
 
-	const handleAddTag = () => {
-		if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-			setTags([...tags, tagInput.trim()]);
-			setTagInput("");
-		}
+	const handleEditCampaign = () => {
+		router.push(`/dashboard/campaigns/${id}/edit`);
 	};
 
-	const handleRemoveTag = (tagToRemove: string) => {
-		setTags(tags.filter((tag) => tag !== tagToRemove));
+	const handleDeleteDialogOpen = () => {
+		setDeleteDialogOpen(true);
 	};
 
-	const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		const formData = new FormData(e.currentTarget);
+	const handleDeleteDialogClose = () => {
+		setDeleteDialogOpen(false);
+	};
 
-		const title = formData.get("title") as string;
-		const description = formData.get("description") as string;
-		const startDate = formData.get("startDate") as string;
-		const endDate = formData.get("endDate") as string;
-		const totalTargetAmount = Number(formData.get("totalTargetAmount"));
-		const imageUrl = formData.get("imageUrl") as string;
-		const status = formData.get("status") as string;
-
-		// Client-side validation
-		if (
-			!title ||
-			!description ||
-			!startDate ||
-			!endDate ||
-			!totalTargetAmount ||
-			!imageUrl
-		) {
-			setNotification({
-				type: "error",
-				message: "Please fill in all required fields",
-			});
-			return;
-		}
-
-		if (new Date(startDate) >= new Date(endDate)) {
-			setNotification({
-				type: "error",
-				message: "End date must be after start date",
-			});
-			return;
-		}
-
-		if (totalTargetAmount <= 0) {
-			setNotification({
-				type: "error",
-				message: "Target amount must be greater than 0",
-			});
-			return;
-		}
-
-		if (acceptedDonationTypes.length === 0) {
-			setNotification({
-				type: "error",
-				message: "Please select at least one donation type",
-			});
-			return;
-		}
-
+	const handleDeleteCampaign = async () => {
 		try {
-			await updateCampaign({
-				id,
-				data: {
-					title,
-					description,
-					startDate,
-					endDate,
-					totalTargetAmount,
-					imageUrl,
-					tags,
-					acceptedDonationTypes,
-					status,
-				},
-			}).unwrap();
-			setNotification({
-				type: "success",
-				message: "Campaign updated successfully",
-			});
-			setIsEditing(false);
-			setTimeout(() => setNotification(null), 5000);
+			await deleteCampaign(id).unwrap();
+			router.push("/dashboard/campaigns");
 		} catch (error) {
-			setNotification({ type: "error", message: "Failed to update campaign" });
-			console.error("Update campaign error:", error);
-		}
-	};
-
-	const handleDelete = async () => {
-		if (confirm("Are you sure you want to delete this campaign?")) {
-			try {
-				await deleteCampaign(id).unwrap();
-				router.push("/dashboard/campaigns");
-			} catch (error) {
-				setNotification({
-					type: "error",
-					message: "Failed to delete campaign",
-				});
-				console.error("Delete campaign error:", error);
-			}
+			console.error("Failed to delete campaign:", error);
 		}
 	};
 
 	if (isLoading) {
 		return (
-			<div className="container mx-auto px-4 py-8">
-				<div className="bg-white rounded-xl shadow-md p-6 animate-pulse">
-					<div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
-					<div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-					<div className="h-4 bg-gray-200 rounded w-1/2"></div>
-				</div>
-			</div>
+			<Box
+				display="flex"
+				justifyContent="center"
+				alignItems="center"
+				height="80vh"
+			>
+				<CircularProgress />
+			</Box>
 		);
 	}
 
-	if (error || !data?.campaign) {
+	if (error) {
 		return (
-			<div className="container mx-auto px-4 py-8">
-				<div className="bg-red-100 text-red-800 p-4 rounded-lg text-center">
-					Campaign not found or error loading campaign.
-				</div>
-			</div>
+			<Box p={4}>
+				<Alert severity="error">
+					Error loading campaign. Please try again later.
+				</Alert>
+			</Box>
 		);
 	}
 
-	const campaign = data.campaign;
+	if (!campaignData || !campaignData.campaign) {
+		return (
+			<Box p={4}>
+				<Alert severity="warning">Campaign not found.</Alert>
+			</Box>
+		);
+	}
+
+	const campaign = campaignData.campaign;
+	const progressPercentage = getProgressPercentage(
+		campaign.totalRaisedAmount,
+		campaign.totalTargetAmount
+	);
+	const { days: daysLeft, status: campaignTimeStatus } = getDaysRemaining(
+		campaign.endDate
+	);
+
+	// Check if user is authorized to edit/delete this campaign
 	const isAuthorized =
-		user && campaign.organizations.some((org) => org._id === user._id);
+		user &&
+		user.role === "organization" &&
+		(campaign.organizationId === user.id ||
+			(campaign.organizations && campaign.organizations.includes(user.id)));
 
 	return (
-		<div className="container mx-auto px-4 py-8 space-y-6">
-			{notification && (
-				<div
-					className={`p-4 rounded-lg ${
-						notification.type === "error"
-							? "bg-red-100 text-red-800"
-							: "bg-green-100 text-green-800"
-					}`}
+		<Box sx={{ p: 4, backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+			{/* Back Button */}
+			<Button
+				startIcon={<BackIcon />}
+				onClick={() => router.push("/dashboard/campaigns")}
+				sx={{ mb: 3 }}
+			>
+				Back to Campaigns
+			</Button>
+
+			{/* Campaign Header */}
+			<Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
+				{/* Campaign Image */}
+				<Box
+					sx={{
+						height: { xs: 200, md: 300 },
+						position: "relative",
+						background: `url(${
+							campaign.imageUrl || "https://placehold.co/1200x400?text=Campaign"
+						})`,
+						backgroundSize: "cover",
+						backgroundPosition: "center",
+					}}
 				>
-					{notification.message}
-				</div>
-			)}
-
-			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900">{campaign.title}</h1>
-				{isAuthorized && (
-					<div className="flex gap-4">
-						<button
-							onClick={() => setIsEditing(!isEditing)}
-							className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center"
-						>
-							<FaEdit className="mr-2" />{" "}
-							{isEditing ? "Cancel Edit" : "Edit Campaign"}
-						</button>
-						<button
-							onClick={handleDelete}
-							disabled={isDeleting}
-							className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center"
-						>
-							<FaTrash className="mr-2" />{" "}
-							{isDeleting ? "Deleting..." : "Delete Campaign"}
-						</button>
-					</div>
-				)}
-			</div>
-
-			{isEditing ? (
-				<form
-					onSubmit={handleUpdate}
-					className="bg-white rounded-xl shadow-md p-6 space-y-6 max-w-2xl"
-				>
-					<div className="space-y-2">
-						<label
-							htmlFor="title"
-							className="text-sm font-medium text-gray-600"
-						>
-							Campaign Title
-						</label>
-						<input
-							id="title"
-							name="title"
-							required
-							defaultValue={campaign.title}
-							placeholder="Enter campaign title"
-							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+					{/* Status Overlay */}
+					<Box
+						sx={{
+							position: "absolute",
+							top: 16,
+							right: 16,
+							backgroundColor: "rgba(255,255,255,0.9)",
+							borderRadius: 2,
+							p: 1,
+						}}
+					>
+						<Chip
+							label={campaign.status}
+							color={
+								campaign.status.toLowerCase() === "active"
+									? "success"
+									: campaign.status.toLowerCase() === "draft"
+									? "default"
+									: campaign.status.toLowerCase() === "paused"
+									? "warning"
+									: "info"
+							}
+							sx={{ fontWeight: "bold" }}
 						/>
-					</div>
+					</Box>
+				</Box>
 
-					<div className="space-y-2">
-						<label
-							htmlFor="description"
-							className="text-sm font-medium text-gray-600"
-						>
-							Description
-						</label>
-						<textarea
-							id="description"
-							name="description"
-							required
-							defaultValue={campaign.description}
-							placeholder="Enter campaign description"
-							rows={4}
-							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-						/>
-					</div>
+				{/* Campaign Info */}
+				<Box sx={{ p: 4 }}>
+					<Grid container spacing={3}>
+						<Grid item xs={12} md={8}>
+							<Typography variant="h4" fontWeight="bold" gutterBottom>
+								{campaign.title}
+							</Typography>
 
-					<div className="grid grid-cols-2 gap-4">
-						<div className="space-y-2">
-							<label
-								htmlFor="startDate"
-								className="text-sm font-medium text-gray-600"
-							>
-								Start Date
-							</label>
-							<input
-								id="startDate"
-								name="startDate"
-								type="date"
-								required
-								defaultValue={campaign.startDate.split("T")[0]}
-								className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-							/>
-						</div>
-						<div className="space-y-2">
-							<label
-								htmlFor="endDate"
-								className="text-sm font-medium text-gray-600"
-							>
-								End Date
-							</label>
-							<input
-								id="endDate"
-								name="endDate"
-								type="date"
-								required
-								defaultValue={campaign.endDate.split("T")[0]}
-								className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-							/>
-						</div>
-					</div>
+							<Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+								{campaign.causes &&
+									campaign.causes.map((cause: any) => (
+										<Chip
+											key={cause.id}
+											label={cause.title}
+											size="small"
+											color="primary"
+											variant="outlined"
+										/>
+									))}
+							</Box>
 
-					<div className="space-y-2">
-						<label
-							htmlFor="totalTargetAmount"
-							className="text-sm font-medium text-gray-600"
-						>
-							Target Amount
-						</label>
-						<input
-							id="totalTargetAmount"
-							name="totalTargetAmount"
-							type="number"
-							required
-							min="0.01"
-							step="0.01"
-							defaultValue={campaign.totalTargetAmount}
-							placeholder="Enter target amount"
-							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-						/>
-					</div>
-
-					<div className="space-y-2">
-						<label
-							htmlFor="imageUrl"
-							className="text-sm font-medium text-gray-600"
-						>
-							Image URL
-						</label>
-						<input
-							id="imageUrl"
-							name="imageUrl"
-							type="url"
-							required
-							defaultValue={campaign.imageUrl}
-							placeholder="Enter image URL"
-							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-						/>
-					</div>
-
-					<div className="space-y-2">
-						<label
-							htmlFor="status"
-							className="text-sm font-medium text-gray-600"
-						>
-							Status
-						</label>
-						<select
-							id="status"
-							name="status"
-							defaultValue={campaign.status}
-							className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-						>
-							<option value="draft">Draft</option>
-							<option value="active">Active</option>
-							<option value="completed">Completed</option>
-							<option value="cancelled">Cancelled</option>
-						</select>
-					</div>
-
-					<div className="space-y-2">
-						<label className="text-sm font-medium text-gray-600 flex items-center">
-							<FaDonate className="mr-2" /> Accepted Donation Types
-						</label>
-						<div className="grid grid-cols-2 gap-2">
-							{Object.values(DonationType).map((type) => (
-								<label key={type} className="flex items-center space-x-2">
-									<input
-										type="checkbox"
-										checked={acceptedDonationTypes.includes(type)}
-										onChange={() => handleDonationTypeChange(type)}
-										className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+							<Box display="flex" alignItems="center" gap={3} mb={3}>
+								<Box display="flex" alignItems="center">
+									<CalendarIcon
+										fontSize="small"
+										color="action"
+										sx={{ mr: 1 }}
 									/>
-									<span className="text-sm text-gray-600">{type}</span>
-								</label>
-							))}
-						</div>
-					</div>
+									<Typography variant="body2" color="text.secondary">
+										{daysLeft > 0 ? `${daysLeft} days left` : "Campaign ended"}
+									</Typography>
+								</Box>
 
-					<div className="space-y-2">
-						<label className="text-sm font-medium text-gray-600">Tags</label>
-						<div className="flex gap-2">
-							<input
-								value={tagInput}
-								onChange={(e) => setTagInput(e.target.value)}
-								placeholder="Add a tag"
-								onKeyPress={(e) => {
-									if (e.key === "Enter") {
-										e.preventDefault();
-										handleAddTag();
-									}
-								}}
-								className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-							/>
-							<button
-								type="button"
-								onClick={handleAddTag}
-								className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center"
-							>
-								<FaTag className="mr-2" /> Add
-							</button>
-						</div>
-						<div className="flex flex-wrap gap-2 mt-2">
-							{tags.map((tag) => (
-								<span
-									key={tag}
-									className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full flex items-center gap-2"
-								>
-									{tag}
-									<button
-										type="button"
-										onClick={() => handleRemoveTag(tag)}
-										className="text-teal-800 hover:text-teal-600"
-									>
-										<FaTimes />
-									</button>
-								</span>
-							))}
-						</div>
-					</div>
+								<Box display="flex" alignItems="center">
+									<DonorsIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+									<Typography variant="body2" color="text.secondary">
+										{campaign.donorCount || 0} donors
+									</Typography>
+								</Box>
+							</Box>
+						</Grid>
 
-					<div className="flex gap-4">
-						<button
-							type="submit"
-							disabled={isUpdating}
-							className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center"
-						>
-							<FaHeart className="mr-2" />{" "}
-							{isUpdating ? "Updating..." : "Update Campaign"}
-						</button>
-						<button
-							type="button"
-							onClick={() => setIsEditing(false)}
-							className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center"
-						>
-							<FaTimes className="mr-2" /> Cancel
-						</button>
-					</div>
-				</form>
-			) : (
-				<div className="bg-white rounded-xl shadow-md p-6 space-y-6">
-					<div className="relative">
-						<img
-							src={campaign.imageUrl || "/placeholder.png"}
-							alt={campaign.title}
-							className="w-full h-64 object-cover rounded-lg mb-4"
-						/>
-						<span
-							className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
-								campaign.status === "active"
-									? "bg-green-100 text-green-800"
-									: campaign.status === "completed"
-									? "bg-blue-100 text-blue-800"
-									: campaign.status === "cancelled"
-									? "bg-red-100 text-red-800"
-									: "bg-gray-100 text-gray-800"
-							}`}
-						>
-							{campaign.status}
-						</span>
-					</div>
-					<h2 className="text-xl font-semibold text-gray-900">
-						{campaign.title}
-					</h2>
-					<p className="text-gray-600">{campaign.description}</p>
-					<div className="flex flex-wrap gap-2 mb-4">
-						{campaign.acceptedDonationTypes.map((type) => (
-							<span
-								key={type}
-								className="bg-teal-100 text-teal-800 px-2 py-1 rounded-full text-xs flex items-center"
+						<Grid item xs={12} md={4}>
+							<Card
+								sx={{ mb: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}
 							>
-								<FaDonate className="mr-1" /> {type}
-							</span>
-						))}
-					</div>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<p className="text-sm text-gray-600">
-								<strong>Start Date:</strong>{" "}
-								{new Date(campaign.startDate).toLocaleDateString()}
-							</p>
-							<p className="text-sm text-gray-600">
-								<strong>End Date:</strong>{" "}
-								{new Date(campaign.endDate).toLocaleDateString()}
-							</p>
-							<p className="text-sm text-gray-600">
-								<strong>Target Amount:</strong> $
-								{campaign.totalTargetAmount.toLocaleString()}
-							</p>
-							<p className="text-sm text-gray-600">
-								<strong>Raised Amount:</strong> $
-								{campaign.totalRaisedAmount.toLocaleString()}
-							</p>
-							<p className="text-sm text-gray-600">
-								<strong>Supporters:</strong> {campaign.totalSupporters}
-							</p>
-						</div>
-						<div>
-							<p className="text-sm text-gray-600">
-								<strong>Organizations:</strong>{" "}
-								{campaign.organizations.map((org) => org.name).join(", ") ||
-									"None"}
-							</p>
-							<p className="text-sm text-gray-600">
-								<strong>Causes:</strong>{" "}
-								{campaign.causes.map((cause) => cause.title).join(", ") ||
-									"None"}
-							</p>
-							<p className="text-sm text-gray-600">
-								<strong>Tags:</strong>{" "}
-								{campaign.tags.map((tag) => (
-									<span
-										key={tag}
-										className="inline-block bg-teal-100 text-teal-800 px-2 py-1 rounded-full text-xs mr-2"
+								<CardContent>
+									<Box sx={{ mb: 2 }}>
+										<Box
+											display="flex"
+											justifyContent="space-between"
+											alignItems="center"
+											mb={0.5}
+										>
+											<Typography variant="body2" color="text.secondary">
+												Progress
+											</Typography>
+											<Typography variant="body2" fontWeight="medium">
+												{progressPercentage.toFixed(0)}%
+											</Typography>
+										</Box>
+										<LinearProgress
+											variant="determinate"
+											value={progressPercentage}
+											sx={{ height: 8, borderRadius: 4 }}
+										/>
+									</Box>
+
+									<Grid container spacing={1}>
+										<Grid item xs={6}>
+											<Typography variant="body2" color="text.secondary">
+												Raised
+											</Typography>
+											<Typography
+												variant="h6"
+												fontWeight="bold"
+												color="primary"
+											>
+												${campaign.totalRaisedAmount?.toLocaleString() || "0"}
+											</Typography>
+										</Grid>
+
+										<Grid item xs={6}>
+											<Typography
+												variant="body2"
+												color="text.secondary"
+												align="right"
+											>
+												Goal
+											</Typography>
+											<Typography variant="h6" fontWeight="bold" align="right">
+												${campaign.totalTargetAmount?.toLocaleString() || "0"}
+											</Typography>
+										</Grid>
+									</Grid>
+								</CardContent>
+							</Card>
+
+							{isAuthorized && (
+								<Stack direction="row" spacing={2} sx={{ width: "100%" }}>
+									<Button
+										variant="outlined"
+										startIcon={<EditIcon />}
+										onClick={handleEditCampaign}
+										fullWidth
 									>
-										{tag}
-									</span>
-								))}
-							</p>
-						</div>
-					</div>
-				</div>
-			)}
-		</div>
+										Edit
+									</Button>
+									<Button
+										variant="outlined"
+										color="error"
+										startIcon={<DeleteIcon />}
+										onClick={handleDeleteDialogOpen}
+										fullWidth
+									>
+										Delete
+									</Button>
+								</Stack>
+							)}
+						</Grid>
+					</Grid>
+				</Box>
+			</Paper>
+
+			{/* Tabs Section */}
+			<Box sx={{ mt: 4 }}>
+				<Paper elevation={2} sx={{ borderRadius: 2 }}>
+					<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+						<Tabs
+							value={tabValue}
+							onChange={handleTabChange}
+							aria-label="campaign tabs"
+							variant="scrollable"
+							scrollButtons="auto"
+						>
+							<Tab label="Details" {...a11yProps(0)} />
+							<Tab label="Causes" {...a11yProps(1)} />
+							<Tab label="Donations" {...a11yProps(2)} />
+						</Tabs>
+					</Box>
+
+					{/* Details Tab */}
+					<TabPanel value={tabValue} index={0}>
+						<Box sx={{ px: { xs: 2, md: 4 } }}>
+							<Typography variant="h6" gutterBottom>
+								Campaign Description
+							</Typography>
+							<Typography variant="body1" paragraph>
+								{campaign.description}
+							</Typography>
+
+							<Divider sx={{ my: 3 }} />
+
+							<Grid container spacing={4}>
+								<Grid item xs={12} md={6}>
+									<Typography variant="h6" gutterBottom>
+										Campaign Details
+									</Typography>
+
+									<List>
+										<ListItem>
+											<ListItemAvatar>
+												<Avatar sx={{ bgcolor: "primary.light" }}>
+													<CalendarIcon />
+												</Avatar>
+											</ListItemAvatar>
+											<ListItemText
+												primary="Start Date"
+												secondary={formatDate(campaign.startDate)}
+											/>
+										</ListItem>
+
+										<ListItem>
+											<ListItemAvatar>
+												<Avatar sx={{ bgcolor: "primary.light" }}>
+													<CalendarIcon />
+												</Avatar>
+											</ListItemAvatar>
+											<ListItemText
+												primary="End Date"
+												secondary={formatDate(campaign.endDate)}
+											/>
+										</ListItem>
+
+										<ListItem>
+											<ListItemAvatar>
+												<Avatar sx={{ bgcolor: "primary.light" }}>
+													<CategoryIcon />
+												</Avatar>
+											</ListItemAvatar>
+											<ListItemText
+												primary="Status"
+												secondary={
+													<Chip
+														label={campaign.status}
+														size="small"
+														color={
+															campaign.status.toLowerCase() === "active"
+																? "success"
+																: campaign.status.toLowerCase() === "draft"
+																? "default"
+																: campaign.status.toLowerCase() === "paused"
+																? "warning"
+																: "info"
+														}
+													/>
+												}
+											/>
+										</ListItem>
+									</List>
+								</Grid>
+
+								<Grid item xs={12} md={6}>
+									<Typography variant="h6" gutterBottom>
+										Donation Types Accepted
+									</Typography>
+
+									<Box display="flex" flexWrap="wrap" gap={1} mb={3}>
+										{campaign.acceptedDonationTypes &&
+											campaign.acceptedDonationTypes.map((type: string) => (
+												<Chip
+													key={type}
+													label={type}
+													icon={<DonationIcon />}
+													variant="outlined"
+												/>
+											))}
+									</Box>
+
+									<Typography variant="h6" gutterBottom>
+										Organization
+									</Typography>
+
+									<Card variant="outlined" sx={{ maxWidth: "100%" }}>
+										<CardContent
+											sx={{ display: "flex", alignItems: "center", gap: 2 }}
+										>
+											<Avatar
+												sx={{
+													bgcolor: "secondary.main",
+													width: 50,
+													height: 50,
+												}}
+											>
+												<PersonIcon fontSize="large" />
+											</Avatar>
+											<Box>
+												<Typography variant="h6">
+													{campaign.organizationName || "Organization"}
+												</Typography>
+												<Typography variant="body2" color="text.secondary">
+													Campaign Organizer
+												</Typography>
+											</Box>
+										</CardContent>
+									</Card>
+								</Grid>
+							</Grid>
+						</Box>
+					</TabPanel>
+
+					{/* Causes Tab */}
+					<TabPanel value={tabValue} index={1}>
+						<Box sx={{ px: { xs: 2, md: 4 } }}>
+							<Typography variant="h6" gutterBottom>
+								Related Causes
+							</Typography>
+
+							{campaign.causes && campaign.causes.length > 0 ? (
+								<Grid container spacing={3}>
+									{campaign.causes.map((cause: any) => (
+										<Grid item xs={12} md={6} key={cause.id}>
+											<Card
+												sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}
+											>
+												<CardContent>
+													<Typography variant="h6" gutterBottom>
+														{cause.title}
+													</Typography>
+
+													{cause.description && (
+														<Typography
+															variant="body2"
+															color="text.secondary"
+															paragraph
+														>
+															{cause.description}
+														</Typography>
+													)}
+
+													<Divider sx={{ my: 2 }} />
+
+													<Grid container spacing={1}>
+														<Grid item xs={6}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Target
+															</Typography>
+															<Typography variant="body1" fontWeight="bold">
+																${cause.targetAmount?.toLocaleString() || "0"}
+															</Typography>
+														</Grid>
+
+														<Grid item xs={6}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+																align="right"
+															>
+																Raised
+															</Typography>
+															<Typography
+																variant="body1"
+																fontWeight="bold"
+																color="primary"
+																align="right"
+															>
+																${cause.raisedAmount?.toLocaleString() || "0"}
+															</Typography>
+														</Grid>
+													</Grid>
+												</CardContent>
+											</Card>
+										</Grid>
+									))}
+								</Grid>
+							) : (
+								<Alert severity="info">
+									No causes are associated with this campaign.
+								</Alert>
+							)}
+						</Box>
+					</TabPanel>
+
+					{/* Donations Tab */}
+					<TabPanel value={tabValue} index={2}>
+						<Box sx={{ px: { xs: 2, md: 4 } }}>
+							<Typography variant="h6" gutterBottom>
+								Recent Donations
+							</Typography>
+
+							{campaign.donations && campaign.donations.length > 0 ? (
+								<List sx={{ width: "100%" }}>
+									{campaign.donations.map((donation: any) => (
+										<ListItem
+											key={donation.id}
+											secondaryAction={
+												<Typography
+													variant="h6"
+													color="primary"
+													fontWeight="bold"
+												>
+													${donation.amount?.toLocaleString() || "0"}
+												</Typography>
+											}
+										>
+											<ListItemAvatar>
+												<Avatar sx={{ bgcolor: "success.light" }}>
+													<DonorsIcon />
+												</Avatar>
+											</ListItemAvatar>
+											<ListItemText
+												primary={donation.donorName || "Anonymous"}
+												secondary={`${donation.type} | ${new Date(
+													donation.date
+												).toLocaleDateString()}`}
+											/>
+										</ListItem>
+									))}
+								</List>
+							) : (
+								<Alert severity="info">
+									No donations have been made to this campaign yet.
+								</Alert>
+							)}
+						</Box>
+					</TabPanel>
+				</Paper>
+			</Box>
+
+			{/* Delete Confirmation Dialog */}
+			<Dialog open={deleteDialogOpen} onClose={handleDeleteDialogClose}>
+				<DialogTitle>Confirm Deletion</DialogTitle>
+				<DialogContent>
+					<Typography>
+						Are you sure you want to delete this campaign? This action cannot be
+						undone.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={handleDeleteDialogClose} startIcon={<CancelIcon />}>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleDeleteCampaign}
+						color="error"
+						startIcon={<DeleteIcon />}
+						disabled={isDeleting}
+					>
+						{isDeleting ? "Deleting..." : "Delete"}
+					</Button>
+				</DialogActions>
+			</Dialog>
+		</Box>
 	);
 }

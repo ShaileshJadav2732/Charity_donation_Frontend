@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { RootState } from "@/store/store";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
 	FaBars,
@@ -14,8 +14,13 @@ import {
 	FaTimes,
 	FaUser,
 	FaUsers,
+	FaBell,
+	FaChartBar,
+	FaComments,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
+import { useGetUserNotificationsQuery } from "@/store/api/notificationApi";
+import NotificationList from "@/components/notifications/NotificationList";
 
 export default function DashboardLayout({
 	children,
@@ -23,12 +28,19 @@ export default function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	const router = useRouter();
+	const pathname = usePathname();
 	const { user, isAuthenticated } = useSelector(
 		(state: RootState) => state.auth
 	);
 	const { logout } = useAuth();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isClient, setIsClient] = useState(false);
+	const [showNotifications, setShowNotifications] = useState(false);
+
+	const { data: notificationData } = useGetUserNotificationsQuery({
+		limit: 5,
+		unreadOnly: true,
+	});
 
 	useEffect(() => {
 		setIsClient(true);
@@ -54,6 +66,10 @@ export default function DashboardLayout({
 
 	const toggleMobileMenu = () => {
 		setIsMobileMenuOpen(!isMobileMenuOpen);
+	};
+
+	const toggleNotifications = () => {
+		setShowNotifications(!showNotifications);
 	};
 
 	if (!isClient || !isAuthenticated || !user) {
@@ -86,8 +102,66 @@ export default function DashboardLayout({
 		);
 	}
 
+	const menuItems = [
+		{ icon: FaHome, text: "Dashboard", path: "/dashboard" },
+		{ icon: FaUser, text: "Profile", path: "/dashboard/profile" },
+		...(user.role === "donor"
+			? [
+					{
+						icon: FaHandsHelping,
+						text: "Causes",
+						path: "/dashboard/causes",
+					},
+					{
+						icon: FaHeart,
+						text: "My Donations",
+						path: "/dashboard/donations",
+					},
+			  ]
+			: [
+					{
+						icon: FaUsers,
+						text: "Campaigns",
+						path: "/dashboard/campaigns",
+					},
+					{
+						icon: FaHeart,
+						text: "Donors",
+						path: "/dashboard/donors",
+					},
+					{
+						icon: FaChartBar,
+						text: "Analytics",
+						path: "/dashboard/analytics",
+					},
+					{
+						icon: FaComments,
+						text: "Feedback",
+						path: "/dashboard/feedback",
+					},
+			  ]),
+	];
+
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-teal-100 via-teal-50 to-teal-200">
+			{/* Top Navigation Bar */}
+			<div className="fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-80">
+				<div className="flex-1" />
+				<div className="flex items-center space-x-4">
+					<button
+						onClick={toggleNotifications}
+						className="relative p-2 rounded-full hover:bg-gray-100"
+					>
+						<FaBell className="h-6 w-6 text-teal-600" />
+						{notificationData?.unreadCount ? (
+							<span className="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+								{notificationData.unreadCount}
+							</span>
+						) : null}
+					</button>
+				</div>
+			</div>
+
 			{/* Mobile menu button */}
 			<div className="lg:hidden fixed top-4 right-4 z-50">
 				<button
@@ -99,11 +173,20 @@ export default function DashboardLayout({
 				</button>
 			</div>
 
+			{/* Notifications Panel */}
+			{showNotifications && (
+				<div className="fixed top-16 right-4 z-50">
+					<div className="bg-white rounded-lg shadow-xl">
+						<NotificationList onClose={() => setShowNotifications(false)} />
+					</div>
+				</div>
+			)}
+
 			{/* Sidebar */}
 			<aside
-				className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-2xl transform ${
+				className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${
 					isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-				} lg:translate-x-0 transition-transform duration-300 ease-in-out`}
+				} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16`}
 			>
 				<div className="h-full flex flex-col">
 					{/* Sidebar header */}
@@ -118,61 +201,21 @@ export default function DashboardLayout({
 
 					{/* Sidebar navigation */}
 					<nav className="flex-1 px-4 py-6 space-y-2">
-						<Link
-							href="/dashboard"
-							className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							<FaHome className="mr-3 h-5 w-5 text-teal-600" />
-							Dashboard
-						</Link>
-						<Link
-							href="/dashboard/profile"
-							className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							<FaUser className="mr-3 h-5 w-5 text-teal-600" />
-							Profile
-						</Link>
-						{user.role === "donor" ? (
-							<>
-								<Link
-									href="/dashboard/causes"
-									className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-									onClick={() => setIsMobileMenuOpen(false)}
-								>
-									<FaHandsHelping className="mr-3 h-5 w-5 text-teal-600" />
-									Causes
-								</Link>
-								<Link
-									href="/dashboard/donations"
-									className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-									onClick={() => setIsMobileMenuOpen(false)}
-								>
-									<FaHeart className="mr-3 h-5 w-5 text-teal-600" />
-									My Donations
-								</Link>
-							</>
-						) : (
-							<>
-								<Link
-									href="/dashboard/campaigns"
-									className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-									onClick={() => setIsMobileMenuOpen(false)}
-								>
-									<FaUsers className="mr-3 h-5 w-5 text-teal-600" />
-									Campaigns
-								</Link>
-								<Link
-									href="/dashboard/donors"
-									className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-600 transition-colors duration-200"
-									onClick={() => setIsMobileMenuOpen(false)}
-								>
-									<FaHeart className="mr-3 h-5 w-5 text-teal-600" />
-									Donors
-								</Link>
-							</>
-						)}
+						{menuItems.map((item) => (
+							<Link
+								key={item.path}
+								href={item.path}
+								className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${
+									pathname === item.path
+										? "bg-teal-50 text-teal-600"
+										: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
+								}`}
+								onClick={() => setIsMobileMenuOpen(false)}
+							>
+								<item.icon className="mr-3 h-5 w-5" />
+								{item.text}
+							</Link>
+						))}
 					</nav>
 
 					{/* Sidebar footer */}
@@ -189,14 +232,14 @@ export default function DashboardLayout({
 			</aside>
 
 			{/* Main content */}
-			<main className="lg:ml-72 min-h-screen">
+			<main className="lg:ml-72 pt-16 min-h-screen">
 				<div className="p-8">{children}</div>
 			</main>
 
 			{/* Overlay for mobile menu */}
 			{isMobileMenuOpen && (
 				<div
-					className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+					className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
 					onClick={() => setIsMobileMenuOpen(false)}
 				/>
 			)}

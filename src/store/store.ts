@@ -3,27 +3,28 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import authReducer from "./slices/authSlice";
 import apiSlice from "./api/apiSlice";
-import { donationApi } from "./api/donationApi";
 import { profileApi } from "./api/profileApi";
-import { campaignApi } from "./api/campaignApi"; // Add campaignApi
-import { causeApi } from "./api/causesApi";
+import { campaignApi } from "./api/campaignApi";
+import { causeApi } from "./api/causeApi";
+import { dashboardApi } from "./api/dashboardApi";
+
 // Configure Redux store
 export const store = configureStore({
 	reducer: {
 		[apiSlice.reducerPath]: apiSlice.reducer,
-		[donationApi.reducerPath]: donationApi.reducer,
 		[profileApi.reducerPath]: profileApi.reducer,
-		[campaignApi.reducerPath]: campaignApi.reducer, // Add campaignApi reducer
+		[campaignApi.reducerPath]: campaignApi.reducer,
 		[causeApi.reducerPath]: causeApi.reducer,
+		[dashboardApi.reducerPath]: dashboardApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
-		getDefaultMiddleware().concat(
-			apiSlice.middleware,
-			donationApi.middleware,
-			profileApi.middleware,
-			campaignApi.middleware // Add campaignApi middleware
-		),
+		getDefaultMiddleware()
+			.concat(apiSlice.middleware)
+			.concat(profileApi.middleware)
+			.concat(campaignApi.middleware)
+			.concat(causeApi.middleware)
+			.concat(dashboardApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });
 

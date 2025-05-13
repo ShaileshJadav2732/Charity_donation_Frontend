@@ -1,12 +1,7 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { DonationFormData } from "@/types/donation";
+import apiSlice from "./apiSlice";
 
-export const donationApi = createApi({
-	reducerPath: "donationApi",
-	baseQuery: fetchBaseQuery({
-		baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
-		credentials: "include",
-	}),
+export const donationApi = apiSlice.injectEndpoints({
 	endpoints: (builder) => ({
 		createDonation: builder.mutation<void, DonationFormData>({
 			query: (data) => ({
@@ -15,11 +10,22 @@ export const donationApi = createApi({
 				body: data,
 			}),
 		}),
-		getDonations: builder.query({
+		getDonations: builder.query<DonationFormData[], void>({
 			query: () => "/donations",
 		}),
-		getDonationById: builder.query({
+		getDonationById: builder.query<DonationFormData, string>({
 			query: (id) => `/donations/${id}`,
+		}),
+		// Get donations for a specific organization
+		getOrganizationDonations: builder.query<
+			DonationFormData[],
+			{ organizationId: string; params?: Record<string, any> }
+		>({
+			query: ({ organizationId, params }) => ({
+				url: `/organizations/${organizationId}/donations`,
+				method: "GET",
+				params,
+			}),
 		}),
 	}),
 });
@@ -28,4 +34,5 @@ export const {
 	useCreateDonationMutation,
 	useGetDonationsQuery,
 	useGetDonationByIdQuery,
+	useGetOrganizationDonationsQuery,
 } = donationApi;

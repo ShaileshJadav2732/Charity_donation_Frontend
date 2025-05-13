@@ -1,53 +1,117 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { RootState } from "../store";
 import {
-	CausesResponse,
+	Campaign,
+	CampaignsResponse,
 	CampaignResponse,
 	CreateCampaignBody,
-} from "../../types/campaings";
+	UpdateCampaignBody,
+	CampaignQueryParams,
+} from "@/types/campaings";
+
+const baseQuery = fetchBaseQuery({
+	baseUrl: "/api",
+	prepareHeaders: (headers) => {
+		const token = localStorage.getItem("token");
+		if (token) {
+			headers.set("authorization", `Bearer ${token}`);
+		}
+		return headers;
+	},
+});
 
 export const campaignApi = createApi({
 	reducerPath: "campaignApi",
-	baseQuery: fetchBaseQuery({
-		baseUrl: process.env.NEXT_PUBLIC_API_URL,
-		prepareHeaders: (headers, { getState }) => {
-			const token = (getState() as RootState).auth.token;
-			if (token) {
-				headers.set("Authorization", `Bearer ${token}`);
-			}
-			return headers;
-		},
-	}),
-	tagTypes: ["Campaigns", "Causes"],
+	baseQuery,
+	tagTypes: ["Campaign", "Cause"],
 	endpoints: (builder) => ({
-		getOrganizationCauses: builder.query<
-			CausesResponse,
-			{
-				organizationId: string;
-				params: {
-					page?: number;
-					limit?: number;
-					search?: string;
-					tag?: string;
-				};
-			}
-		>({
-			query: ({ organizationId, params }) => ({
-				url: `/causes/organization/${organizationId}`,
+		getCampaigns: builder.query<CampaignsResponse, CampaignQueryParams>({
+			query: (params) => ({
+				url: "/campaigns",
+				method: "GET",
 				params,
 			}),
-			providesTags: ["Causes"],
+			providesTags: ["Campaign"],
 		}),
+
+		getCampaignById: builder.query<CampaignResponse, string>({
+			query: (id) => ({
+				url: `/campaigns/${id}`,
+				method: "GET",
+			}),
+			providesTags: (result, error, id) => [{ type: "Campaign", id }],
+		}),
+
+		getOrganizationCampaigns: builder.query<
+			CampaignsResponse,
+			CampaignQueryParams & { organizationId: string }
+		>({
+			query: ({ organizationId, ...params }) => ({
+				url: `/organizations/${organizationId}/campaigns`,
+				method: "GET",
+				params,
+			}),
+			providesTags: ["Campaign"],
+		}),
+
 		createCampaign: builder.mutation<CampaignResponse, CreateCampaignBody>({
 			query: (body) => ({
 				url: "/campaigns",
 				method: "POST",
 				body,
 			}),
-			invalidatesTags: ["Campaigns"],
+			invalidatesTags: ["Campaign"],
+		}),
+
+		updateCampaign: builder.mutation<
+			CampaignResponse,
+			{ id: string; body: UpdateCampaignBody }
+		>({
+			query: ({ id, body }) => ({
+				url: `/campaigns/${id}`,
+				method: "PATCH",
+				body,
+			}),
+			invalidatesTags: (result, error, { id }) => [{ type: "Campaign", id }],
+		}),
+
+		deleteCampaign: builder.mutation<void, string>({
+			query: (id) => ({
+				url: `/campaigns/${id}`,
+				method: "DELETE",
+			}),
+			invalidatesTags: ["Campaign"],
+		}),
+
+		updateCampaignStatus: builder.mutation<
+			CampaignResponse,
+			{ id: string; status: string }
+		>({
+			query: ({ id, status }) => ({
+				url: `/campaigns/${id}/status`,
+				method: "PATCH",
+				body: { status },
+			}),
+			invalidatesTags: (result, error, { id }) => [{ type: "Campaign", id }],
+		}),
+
+		getDonorCampaigns: builder.query<CampaignsResponse, CampaignQueryParams>({
+			query: (params) => ({
+				url: "/donor/campaigns",
+				method: "GET",
+				params,
+			}),
+			providesTags: ["Campaign"],
 		}),
 	}),
 });
 
-export const { useGetOrganizationCausesQuery, useCreateCampaignMutation } =
-	campaignApi;
+export const {
+	useGetCampaignsQuery,
+	useGetCampaignByIdQuery,
+	useGetOrganizationCampaignsQuery,
+	useCreateCampaignMutation,
+	useUpdateCampaignMutation,
+	useDeleteCampaignMutation,
+	useUpdateCampaignStatusMutation,
+	useGetDonorCampaignsQuery,
+} = campaignApi;
