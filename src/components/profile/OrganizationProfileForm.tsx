@@ -12,24 +12,24 @@ import {
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useCompleteOrganizationProfileMutation } from "@/store/api/profileApi";
-import { parseError } from "@/types";
+import { parseError } from "@/types/errors";
 
+interface OrganizationProfileFormData {
+	name: string;
+	description: string;
+	phoneNumber: string;
+	email: string;
+	website: string;
+	address: string;
+	city: string;
+	state: string;
+	country: string;
+	profileCompleted: boolean;
+}
 export default function OrganizationProfileForm() {
 	const router = useRouter();
 	const [completeOrgProfile, { isLoading }] =
 		useCompleteOrganizationProfileMutation();
-	interface OrganizationProfileFormData {
-		name: string;
-		description: string;
-		phoneNumber: string;
-		email: string;
-		website: string;
-		address: string;
-		city: string;
-		state: string;
-		country: string;
-		profileCompleted?: boolean;
-	}
 
 	const [formData, setFormData] = useState<OrganizationProfileFormData>({
 		name: "",
@@ -79,27 +79,29 @@ export default function OrganizationProfileForm() {
 			return;
 		}
 
-	try {
-  await completeOrgProfile({
-    ...formData,
-    profileCompleted: true,
-  }).unwrap();
-  
-  toast.success("Organization profile completed successfully!");
-  router.push("/dashboard");
-} catch (error) {
-  // Use the improved parseError
-  const errorDetails = parseError(error);
-  console.error("Organization profile error:", errorDetails);
-  
-  // Show the error message to the user
-  toast.error(errorDetails.message || "Failed to complete profile");
-  
-  // If there are field-specific errors, update your form errors state
-  if (errorDetails.fields) {
-    setErrors(errorDetails.fields);
-  }
-}
+		try {
+			await completeOrgProfile({
+				...formData,
+				profileCompleted: true,
+			});
+
+			toast.success("Organization profile completed successfully!");
+			router.push("/dashboard");
+		} catch (error) {
+			// Use the improved parseError
+			const errorDetails = parseError(error);
+			console.error("Organization profile error:", errorDetails);
+
+			// Show the error message to the user
+			toast.error(errorDetails.message || "Failed to complete profile");
+
+			// If there are field-specific errors, update your form errors state
+			if (errorDetails.fields) {
+				setErrors(errorDetails.fields);
+			}
+		}
+	};
+
 	return (
 		<motion.form
 			onSubmit={handleSubmit}

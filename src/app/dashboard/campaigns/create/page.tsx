@@ -119,7 +119,7 @@ const CreateCampaignPage = () => {
 		totalTargetAmount: "",
 		status: "draft",
 		acceptedDonationTypes: [DonationType.MONEY],
-		imageUrl: "https://placehold.co/600x400?text=Campaign",
+		imageUrl: "",
 		selectedCauses: [],
 	});
 
@@ -129,7 +129,7 @@ const CreateCampaignPage = () => {
 		title: "",
 		description: "",
 		targetAmount: "",
-		imageUrl: "https://placehold.co/600x400?text=Cause",
+		imageUrl: "",
 		tags: [],
 	});
 
@@ -205,7 +205,7 @@ const CreateCampaignPage = () => {
 			title: "",
 			description: "",
 			targetAmount: "",
-			imageUrl: "https://placehold.co/600x400?text=Cause",
+			imageUrl: "",
 			tags: [],
 		});
 	};
@@ -327,7 +327,7 @@ const CreateCampaignPage = () => {
 			};
 
 			console.log("Creating campaign with payload:", payload);
-			const response = await createCampaign(payload).unwrap();
+			const response = await createCampaign(payload);
 			console.log("Campaign created successfully:", response);
 			router.push("/dashboard/campaigns");
 		} catch (err) {

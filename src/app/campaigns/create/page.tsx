@@ -1,37 +1,68 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { formatCurrency } from "@/lib/utils";
 import { useCreateCampaignMutation } from "@/store/api/campaignApi";
 import {
-	useGetCausesQuery,
 	useCreateCauseMutation,
+	useGetCausesQuery,
 } from "@/store/api/causeApi";
+import { RootState } from "@/store/store";
+import { Cause, CreateCauseBody } from "@/types/cause";
+import { DonationType } from "@/types/donation";
 import {
-	Loader2,
-	Plus,
-	Heart,
-	Calendar,
-	AlertCircle,
-	CheckCircle2,
-	Users,
-	DollarSign,
-	Package,
-	Droplet,
 	BookOpen,
-	Home,
+	Calendar,
+	DollarSign,
+	Droplet,
 	Gift,
-	Utensils,
-	Shirt,
+	Heart,
+	Home,
+	Loader2,
 	MoreHorizontal,
+	Package,
+	Plus,
+	Shirt,
+	Users,
+	Utensils,
 	X,
 } from "lucide-react";
-import { DonationType } from "@/types/donation";
-import { formatCurrency } from "@/lib/utils";
-import { CreateCauseBody } from "@/types/cause";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
+
+// Define CreateCampaignBody to match campaign.model.ts
+interface CreateCampaignBody {
+	title: string;
+	description: string;
+	startDate: string;
+	endDate: string;
+	status: "draft" | "active" | "completed" | "cancelled";
+	imageUrl: string;
+	organizations: string[];
+	causes: string[];
+	acceptedDonationTypes: DonationType[];
+	totalTargetAmount: number;
+}
+
+interface CreateCampaignFormData {
+	title: string;
+	description: string;
+	imageUrl: string;
+	startDate: string;
+	endDate: string;
+	causes: string[];
+}
+
+interface CreateCauseFormData {
+	title: string;
+	description: string;
+	targetAmount: number;
+	imageUrl: string;
+	tags: string[];
+	acceptedDonationTypes: DonationType[];
+}
 
 const donationTypeIcons = {
 	[DonationType.MONEY]: DollarSign,
@@ -45,68 +76,32 @@ const donationTypeIcons = {
 	[DonationType.OTHER]: MoreHorizontal,
 };
 
-const createCauseSchema = z.object({
-	title: z.string().min(1, "Title is required").max(100, "Title is too long"),
-	description: z
-		.string()
-		.min(1, "Description is required")
-		.max(1000, "Description is too long"),
-	targetAmount: z.number().min(1, "Target amount must be greater than 0"),
-	imageUrl: z.string().min(1, "Image URL is required").url("Invalid image URL"),
-	tags: z.array(z.string()).min(1, "Add at least one tag"),
-	acceptedDonationTypes: z
-		.array(z.nativeEnum(DonationType))
-		.min(1, "Select at least one donation type"),
-});
-
-const createCampaignSchema = z
-	.object({
-		title: z.string().min(1, "Title is required").max(100, "Title is too long"),
-		description: z
-			.string()
-			.min(1, "Description is required")
-			.max(1000, "Description is too long"),
-		imageUrl: z.string().url("Invalid image URL").optional().or(z.literal("")),
-		startDate: z.string().min(1, "Start date is required"),
-		endDate: z.string().min(1, "End date is required"),
-		causes: z.array(z.string()).min(1, "Select at least one cause"),
-	})
-	.refine(
-		(data) => {
-			const startDate = new Date(data.startDate);
-			const endDate = new Date(data.endDate);
-			return endDate > startDate;
-		},
-		{
-			message: "End date must be after start date",
-			path: ["endDate"],
-		}
-	);
-
-type CreateCampaignFormData = z.infer<typeof createCampaignSchema>;
-type CreateCauseFormData = z.infer<typeof createCauseSchema>;
-
 export default function CreateCampaignPage() {
 	const router = useRouter();
-	const [error, setError] = useState<string | null>(null);
-	const [success, setSuccess] = useState<string | null>(null);
+	const { user } = useSelector((state: RootState) => state.auth);
 	const [selectedCauses, setSelectedCauses] = useState<string[]>([]);
 	const [showCreateCause, setShowCreateCause] = useState(false);
 	const [newCauseTags, setNewCauseTags] = useState<string[]>([]);
 	const [newCauseTagInput, setNewCauseTagInput] = useState("");
 	const [selectedDonationTypes, setSelectedDonationTypes] = useState<
 		DonationType[]
-	>([]);
+	>([DonationType.MONEY]);
 
 	const {
 		register: registerCampaign,
 		handleSubmit: handleSubmitCampaign,
 		formState: { errors: campaignErrors },
+		setValue: setCampaignValue,
 	} = useForm<CreateCampaignFormData>({
-		resolver: zodResolver(createCampaignSchema),
 		defaultValues: {
+			title: "",
+			description: "",
+			imageUrl: "https://placehold.co/600x400?text=Campaign",
+			startDate: "",
+			endDate: "",
 			causes: [],
 		},
+		mode: "onChange",
 	});
 
 	const {
@@ -116,11 +111,15 @@ export default function CreateCampaignPage() {
 		setValue: setCauseValue,
 		formState: { errors: causeErrors },
 	} = useForm<CreateCauseFormData>({
-		resolver: zodResolver(createCauseSchema),
 		defaultValues: {
+			title: "",
+			description: "",
+			targetAmount: 0,
+			imageUrl: "https://placehold.co/600x400?text=Cause",
 			tags: [],
-			acceptedDonationTypes: [],
+			acceptedDonationTypes: [DonationType.MONEY],
 		},
+		mode: "onChange",
 	});
 
 	const [createCampaign, { isLoading: isCreatingCampaign }] =
@@ -131,99 +130,110 @@ export default function CreateCampaignPage() {
 		data: causesData,
 		isLoading: isLoadingCauses,
 		refetch: refetchCauses,
-	} = useGetCausesQuery({
-		organizationId: "current",
-		limit: 100,
-	});
+	} = useGetCausesQuery(
+		{ organizationId: user?._id || "current", limit: 100 },
+		{ skip: !user?._id }
+	);
 
 	// Update form values when state changes
 	useEffect(() => {
 		setCauseValue("tags", newCauseTags);
-	}, [newCauseTags, setCauseValue]);
+		setCauseValue("acceptedDonationTypes", selectedDonationTypes);
+	}, [newCauseTags, selectedDonationTypes, setCauseValue]);
 
 	useEffect(() => {
-		setCauseValue("acceptedDonationTypes", selectedDonationTypes);
-	}, [selectedDonationTypes, setCauseValue]);
+		setCampaignValue("causes", selectedCauses);
+	}, [selectedCauses, setCampaignValue]);
 
 	const onSubmitCampaign = async (data: CreateCampaignFormData) => {
+		if (!user?._id) {
+			toast.error("You must be logged in as an organization");
+			return;
+		}
+
 		if (selectedCauses.length === 0) {
-			setError("Please select at least one cause");
+			toast.error("Please select at least one cause");
 			return;
 		}
 
 		try {
-			await createCampaign({
-				...data,
-				causes: selectedCauses.map((causeId) => {
-					const cause = causesData?.causes.find((c) => c.id === causeId);
-					if (!cause) throw new Error("Cause not found");
-					return {
-						id: cause.id,
-						title: cause.title,
-						description: cause.description,
-						imageUrl: cause.imageUrl,
-						targetAmount: cause.targetAmount,
-						tags: cause.tags,
-						acceptedDonationTypes: cause.acceptedDonationTypes,
-					};
-				}),
-			}).unwrap();
+			const payload: CreateCampaignBody = {
+				title: data.title,
+				description: data.description,
+				imageUrl: data.imageUrl,
+				startDate: data.startDate,
+				endDate: data.endDate,
+				status: "draft",
+				organizations: [user._id], // Map user._id to organizations array
+				causes: selectedCauses,
+				acceptedDonationTypes: selectedCauses
+					.map(
+						(id) =>
+							causesData?.causes.find((c) => c._id === id)
+								?.acceptedDonationTypes || []
+					)
+					.flat()
+					.filter((value, index, self) => self.indexOf(value) === index),
+				totalTargetAmount: selectedCauses
+					.map(
+						(id) =>
+							causesData?.causes.find((c) => c._id === id)?.targetAmount || 0
+					)
+					.reduce((sum, amount) => sum + amount, 0),
+			};
 
-			setSuccess("Campaign created successfully!");
-			setError(null);
-			setTimeout(() => {
-				router.push("/dashboard/campaigns");
-			}, 2000);
-		} catch (error) {
+			await createCampaign(payload).unwrap();
+			toast.success("Campaign created successfully!");
+			setTimeout(() => router.push("/dashboard/campaigns"), 1000);
+		} catch (error: any) {
 			console.error("Failed to create campaign:", error);
-			setError("Failed to create campaign. Please try again.");
-			setSuccess(null);
+			toast.error(
+				error.data?.message || "Failed to create campaign. Please try again."
+			);
 		}
 	};
 
 	const onSubmitCause = async (data: CreateCauseFormData) => {
-		// Validate donation types and tags
-		if (selectedDonationTypes.length === 0) {
-			setError("Please select at least one donation type");
+		if (!user?._id) {
+			toast.error("You must be logged in as an organization");
 			return;
 		}
+
+		if (selectedDonationTypes.length === 0) {
+			toast.error("Please select at least one donation type");
+			return;
+		}
+
 		if (newCauseTags.length === 0) {
-			setError("Please add at least one tag");
+			toast.error("Please add at least one tag");
 			return;
 		}
 
 		try {
-			// Get the current organization ID from auth state
-			const organizationId = localStorage.getItem("organizationId");
-			if (!organizationId) {
-				setError("Organization ID not found. Please log in again.");
-				return;
-			}
-
 			const causeData: CreateCauseBody = {
 				title: data.title,
 				description: data.description,
 				targetAmount: data.targetAmount,
-				imageUrl: data.imageUrl || "", // Backend requires imageUrl
-				tags: newCauseTags,
-				acceptedDonationTypes: selectedDonationTypes,
-				campaignId: "", // Empty string for now, will be updated when campaign is created
+				imageUrl: data.imageUrl,
+				tags: data.tags,
+				acceptedDonationTypes: data.acceptedDonationTypes,
+				organizationId: user._id,
 			};
 
-			await createCause(causeData).unwrap();
-
-			setSuccess("Cause created successfully!");
+			const response = await createCause(causeData).unwrap();
+			setSelectedCauses((prev) => [...prev, response.cause._id]);
 			await refetchCauses();
+			toast.success("Cause created and added to campaign!");
 			setShowCreateCause(false);
 			resetCauseForm();
 			setNewCauseTags([]);
-			setSelectedDonationTypes([]);
+			setSelectedDonationTypes([DonationType.MONEY]);
 			setNewCauseTagInput("");
-			setError(null);
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Failed to create cause:", error);
-			setError("Failed to create cause. Please try again.");
-			setSuccess(null);
+			toast.error(
+				error.data?.message || "Failed to create cause. Please try again."
+			);
 		}
 	};
 
@@ -269,6 +279,9 @@ export default function CreateCampaignPage() {
 								<button
 									onClick={() => setShowCreateCause(!showCreateCause)}
 									className="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600 transition-colors"
+									aria-label={
+										showCreateCause ? "Cancel new cause" : "Create new cause"
+									}
 								>
 									<Plus className="h-5 w-5 mr-2" />
 									{showCreateCause ? "Cancel New Cause" : "Create New Cause"}
@@ -296,14 +309,26 @@ export default function CreateCampaignPage() {
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 											<div className="space-y-4">
 												<div>
-													<label className="block text-sm font-medium text-gray-700 mb-1">
-														Title
+													<label
+														className="block text-sm font-medium text-gray-700 mb-1"
+														htmlFor="cause-title"
+													>
+														Title <span className="text-red-500">*</span>
 													</label>
 													<input
+														id="cause-title"
 														type="text"
-														{...registerCause("title")}
+														{...registerCause("title", {
+															required: "Title is required",
+															maxLength: {
+																value: 100,
+																message: "Title is too long",
+															},
+														})}
 														className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
 														placeholder="Enter cause title"
+														aria-required="true"
+														aria-invalid={!!causeErrors.title}
 													/>
 													{causeErrors.title && (
 														<p className="mt-1 text-sm text-red-600">
@@ -313,20 +338,33 @@ export default function CreateCampaignPage() {
 												</div>
 
 												<div>
-													<label className="block text-sm font-medium text-gray-700 mb-1">
-														Target Amount
+													<label
+														className="block text-sm font-medium text-gray-700 mb-1"
+														htmlFor="cause-targetAmount"
+													>
+														Target Amount{" "}
+														<span className="text-red-500">*</span>
 													</label>
 													<div className="relative">
 														<span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
 															$
 														</span>
 														<input
+															id="cause-targetAmount"
 															type="number"
 															{...registerCause("targetAmount", {
+																required: "Target amount is required",
+																min: {
+																	value: 1,
+																	message:
+																		"Target amount must be greater than 0",
+																},
 																valueAsNumber: true,
 															})}
 															className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
 															placeholder="Enter target amount"
+															aria-required="true"
+															aria-invalid={!!causeErrors.targetAmount}
 														/>
 													</div>
 													{causeErrors.targetAmount && (
@@ -337,15 +375,26 @@ export default function CreateCampaignPage() {
 												</div>
 
 												<div>
-													<label className="block text-sm font-medium text-gray-700 mb-1">
-														Image URL
-														<span className="text-red-500 ml-1">*</span>
+													<label
+														className="block text-sm font-medium text-gray-700 mb-1"
+														htmlFor="cause-imageUrl"
+													>
+														Image URL <span className="text-red-500">*</span>
 													</label>
 													<input
+														id="cause-imageUrl"
 														type="url"
-														{...registerCause("imageUrl")}
+														{...registerCause("imageUrl", {
+															required: "Image URL is required",
+															pattern: {
+																value: /^https?:\/\/.+$/,
+																message: "Invalid image URL",
+															},
+														})}
 														className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
 														placeholder="https://example.com/image.jpg"
+														aria-required="true"
+														aria-invalid={!!causeErrors.imageUrl}
 													/>
 													{causeErrors.imageUrl && (
 														<p className="mt-1 text-sm text-red-600">
@@ -353,21 +402,33 @@ export default function CreateCampaignPage() {
 														</p>
 													)}
 													<p className="mt-1 text-sm text-gray-500">
-														Provide a URL for the cause image. This is required.
+														Provide a URL for the cause image.
 													</p>
 												</div>
 											</div>
 
 											<div className="space-y-4">
 												<div>
-													<label className="block text-sm font-medium text-gray-700 mb-1">
-														Description
+													<label
+														className="block text-sm font-medium text-gray-700 mb-1"
+														htmlFor="cause-description"
+													>
+														Description <span className="text-red-500">*</span>
 													</label>
 													<textarea
-														{...registerCause("description")}
+														id="cause-description"
+														{...registerCause("description", {
+															required: "Description is required",
+															maxLength: {
+																value: 1000,
+																message: "Description is too long",
+															},
+														})}
 														rows={4}
 														className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
 														placeholder="Describe your cause..."
+														aria-required="true"
+														aria-invalid={!!causeErrors.description}
 													/>
 													{causeErrors.description && (
 														<p className="mt-1 text-sm text-red-600">
@@ -378,8 +439,8 @@ export default function CreateCampaignPage() {
 
 												<div>
 													<label className="block text-sm font-medium text-gray-700 mb-2">
-														Accepted Donation Types
-														<span className="text-red-500 ml-1">*</span>
+														Accepted Donation Types{" "}
+														<span className="text-red-500">*</span>
 													</label>
 													<div className="flex flex-wrap gap-2">
 														{Object.values(DonationType).map((type) => {
@@ -394,6 +455,10 @@ export default function CreateCampaignPage() {
 																			? "bg-blue-100 text-blue-800 ring-2 ring-blue-500 ring-offset-2"
 																			: "bg-gray-100 text-gray-800 hover:bg-gray-200"
 																	}`}
+																	aria-pressed={selectedDonationTypes.includes(
+																		type
+																	)}
+																	aria-label={`Toggle ${type} donation type`}
 																>
 																	<Icon className="h-4 w-4 mr-1.5" />
 																	{type.charAt(0) + type.slice(1).toLowerCase()}
@@ -412,8 +477,7 @@ export default function CreateCampaignPage() {
 
 										<div>
 											<label className="block text-sm font-medium text-gray-700 mb-2">
-												Tags
-												<span className="text-red-500 ml-1">*</span>
+												Tags <span className="text-red-500">*</span>
 											</label>
 											<div className="flex gap-2 mb-3">
 												<input
@@ -428,11 +492,13 @@ export default function CreateCampaignPage() {
 													}}
 													placeholder="Add a tag and press Enter"
 													className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+													aria-label="Add tag"
 												/>
 												<button
 													type="button"
 													onClick={addTag}
 													className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+													aria-label="Add tag"
 												>
 													Add Tag
 												</button>
@@ -448,6 +514,7 @@ export default function CreateCampaignPage() {
 															type="button"
 															onClick={() => removeTag(tag)}
 															className="ml-2 hover:text-blue-600 transition-colors"
+															aria-label={`Remove tag ${tag}`}
 														>
 															<X className="h-4 w-4" />
 														</button>
@@ -466,6 +533,7 @@ export default function CreateCampaignPage() {
 												type="submit"
 												disabled={isCreatingCause}
 												className="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+												aria-label="Create cause"
 											>
 												{isCreatingCause ? (
 													<>
@@ -487,20 +555,6 @@ export default function CreateCampaignPage() {
 
 						{/* Campaign Form Section */}
 						<div className="p-6">
-							{error && (
-								<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-red-700">
-									<AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-									<p>{error}</p>
-								</div>
-							)}
-
-							{success && (
-								<div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2 text-green-700">
-									<CheckCircle2 className="h-5 w-5 mt-0.5 flex-shrink-0" />
-									<p>{success}</p>
-								</div>
-							)}
-
 							<form
 								onSubmit={handleSubmitCampaign(onSubmitCampaign)}
 								className="space-y-6"
@@ -512,14 +566,26 @@ export default function CreateCampaignPage() {
 									</h2>
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
-												Campaign Title
+											<label
+												className="block text-sm font-medium text-gray-700 mb-1"
+												htmlFor="campaign-title"
+											>
+												Campaign Title <span className="text-red-500">*</span>
 											</label>
 											<input
+												id="campaign-title"
 												type="text"
-												{...registerCampaign("title")}
+												{...registerCampaign("title", {
+													required: "Title is required",
+													maxLength: {
+														value: 100,
+														message: "Title is too long",
+													},
+												})}
 												className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
 												placeholder="Enter campaign title"
+												aria-required="true"
+												aria-invalid={!!campaignErrors.title}
 											/>
 											{campaignErrors.title && (
 												<p className="mt-1 text-sm text-red-600">
@@ -529,14 +595,26 @@ export default function CreateCampaignPage() {
 										</div>
 
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
-												Image URL (optional)
+											<label
+												className="block text-sm font-medium text-gray-700 mb-1"
+												htmlFor="campaign-imageUrl"
+											>
+												Image URL <span className="text-red-500">*</span>
 											</label>
 											<input
+												id="campaign-imageUrl"
 												type="url"
-												{...registerCampaign("imageUrl")}
+												{...registerCampaign("imageUrl", {
+													required: "Image URL is required",
+													pattern: {
+														value: /^https?:\/\/.+$/,
+														message: "Invalid image URL",
+													},
+												})}
 												className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
 												placeholder="https://example.com/image.jpg"
+												aria-required="true"
+												aria-invalid={!!campaignErrors.imageUrl}
 											/>
 											{campaignErrors.imageUrl && (
 												<p className="mt-1 text-sm text-red-600">
@@ -547,14 +625,26 @@ export default function CreateCampaignPage() {
 									</div>
 
 									<div className="mt-6">
-										<label className="block text-sm font-medium text-gray-700 mb-1">
-											Description
+										<label
+											className="block text-sm font-medium text-gray-700 mb-1"
+											htmlFor="campaign-description"
+										>
+											Description <span className="text-red-500">*</span>
 										</label>
 										<textarea
-											{...registerCampaign("description")}
+											id="campaign-description"
+											{...registerCampaign("description", {
+												required: "Description is required",
+												maxLength: {
+													value: 1000,
+													message: "Description is too long",
+												},
+											})}
 											rows={4}
 											className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
 											placeholder="Describe your campaign..."
+											aria-required="true"
+											aria-invalid={!!campaignErrors.description}
 										/>
 										{campaignErrors.description && (
 											<p className="mt-1 text-sm text-red-600">
@@ -565,14 +655,34 @@ export default function CreateCampaignPage() {
 
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
-												Start Date
+											<label
+												className="block text-sm font-medium text-gray-700 mb-1"
+												htmlFor="campaign-startDate"
+											>
+												Start Date <span className="text-red-500">*</span>
 											</label>
 											<div className="relative">
 												<input
+													id="campaign-startDate"
 													type="date"
-													{...registerCampaign("startDate")}
+													{...registerCampaign("startDate", {
+														required: "Start date is required",
+														validate: (value) => {
+															const endDate =
+																document.getElementById(
+																	"campaign-endDate"
+																)?.value;
+															return (
+																!endDate ||
+																!value ||
+																new Date(value) < new Date(endDate) ||
+																"Start date must be before end date"
+															);
+														},
+													})}
 													className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+													aria-required="true"
+													aria-invalid={!!campaignErrors.startDate}
 												/>
 												<Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
 											</div>
@@ -584,14 +694,34 @@ export default function CreateCampaignPage() {
 										</div>
 
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
-												End Date
+											<label
+												className="block text-sm font-medium text-gray-700 mb-1"
+												htmlFor="campaign-endDate"
+											>
+												End Date <span className="text-red-500">*</span>
 											</label>
 											<div className="relative">
 												<input
+													id="campaign-endDate"
 													type="date"
-													{...registerCampaign("endDate")}
+													{...registerCampaign("endDate", {
+														required: "End date is required",
+														validate: (value) => {
+															const startDate =
+																document.getElementById(
+																	"campaign-startDate"
+																)?.value;
+															return (
+																!startDate ||
+																!value ||
+																new Date(value) > new Date(startDate) ||
+																"End date must be after start date"
+															);
+														},
+													})}
 													className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+													aria-required="true"
+													aria-invalid={!!campaignErrors.endDate}
 												/>
 												<Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
 											</div>
@@ -632,6 +762,7 @@ export default function CreateCampaignPage() {
 												type="button"
 												onClick={() => setShowCreateCause(true)}
 												className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+												aria-label="Create new cause"
 											>
 												<Plus className="h-5 w-5 mr-2" />
 												Create New Cause
@@ -639,16 +770,18 @@ export default function CreateCampaignPage() {
 										</div>
 									) : (
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-											{causesData?.causes.map((cause) => (
+											{causesData?.causes.map((cause: Cause) => (
 												<button
-													key={cause.id}
+													key={cause._id}
 													type="button"
-													onClick={() => toggleCause(cause.id)}
+													onClick={() => toggleCause(cause._id)}
 													className={`p-4 border rounded-lg text-left transition-all ${
-														selectedCauses.includes(cause.id)
+														selectedCauses.includes(cause._id)
 															? "border-blue-200 bg-blue-50 ring-2 ring-blue-500 ring-offset-2"
 															: "border-gray-200 hover:bg-gray-50"
 													}`}
+													aria-pressed={selectedCauses.includes(cause._id)}
+													aria-label={`Select ${cause.title}`}
 												>
 													<div className="flex items-start gap-4">
 														<div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
@@ -729,6 +862,7 @@ export default function CreateCampaignPage() {
 										type="button"
 										onClick={() => router.back()}
 										className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+										aria-label="Cancel campaign creation"
 									>
 										Cancel
 									</button>
@@ -736,6 +870,7 @@ export default function CreateCampaignPage() {
 										type="submit"
 										disabled={isCreatingCampaign}
 										className="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+										aria-label="Create campaign"
 									>
 										{isCreatingCampaign ? (
 											<>

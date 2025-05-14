@@ -102,6 +102,8 @@ const CampaignsPage = () => {
 
 	const campaigns = data?.campaigns || [];
 
+	console.log("this is hello", { data });
+
 	const [deleteCampaign, { isLoading: isDeleting }] =
 		useDeleteCampaignMutation();
 
@@ -136,6 +138,8 @@ const CampaignsPage = () => {
 			campaign.status.toLowerCase() === statusFilter.toLowerCase();
 		return matchesSearch && matchesStatus;
 	});
+
+	console.log("filtercampaing adata: ", filteredCampaigns);
 
 	if (!user || user.role !== "organization") {
 		return (
@@ -220,7 +224,7 @@ const CampaignsPage = () => {
 						<CircularProgress />
 					</Box>
 				) : error ? (
-					<Alert severity="error">Failed to load campaigns</Alert>
+					<Alert severity="error">Failed to load</Alert>
 				) : filteredCampaigns.length === 0 ? (
 					<Paper sx={{ p: 4, textAlign: "center", borderRadius: 2 }}>
 						<Box sx={{ mb: 3 }}>
@@ -416,6 +420,8 @@ const CampaignsPage = () => {
 					</Grid>
 				)}
 			</Box>
+
+			<div>hello</div>
 		</Box>
 	);
 };
