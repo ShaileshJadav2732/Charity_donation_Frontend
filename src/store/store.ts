@@ -7,6 +7,7 @@ import { profileApi } from "./api/profileApi";
 import { campaignApi } from "./api/campaignApi";
 import { causeApi } from "./api/causeApi";
 import { dashboardApi } from "./api/dashboardApi";
+import { feedbackApi } from "./api/feedbackApi";
 
 // Configure Redux store
 export const store = configureStore({
@@ -16,6 +17,7 @@ export const store = configureStore({
 		[campaignApi.reducerPath]: campaignApi.reducer,
 		[causeApi.reducerPath]: causeApi.reducer,
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
+		[feedbackApi.reducerPath]: feedbackApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
@@ -24,7 +26,8 @@ export const store = configureStore({
 			.concat(profileApi.middleware)
 			.concat(campaignApi.middleware)
 			.concat(causeApi.middleware)
-			.concat(dashboardApi.middleware),
+			.concat(dashboardApi.middleware)
+			.concat(feedbackApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });
 

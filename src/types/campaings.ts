@@ -74,6 +74,7 @@ export interface CampaignQueryParams {
 	search?: string;
 	status?: CampaignStatus;
 	organizationId?: string;
+	organizations?: string;
 	startDate?: string;
 	endDate?: string;
 	minTarget?: number;

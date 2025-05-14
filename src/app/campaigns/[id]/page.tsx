@@ -20,6 +20,41 @@ import {
 	FaTimes,
 } from "react-icons/fa";
 import { DonationType } from "@/types/donation";
+import {
+	Box,
+	Container,
+	Typography,
+	Divider,
+	Grid,
+	Paper,
+	Tab,
+	Tabs,
+} from "@mui/material";
+import FeedbackForm from "@/components/feedback/FeedbackForm";
+import FeedbackList from "@/components/feedback/FeedbackList";
+import FeedbackStats from "@/components/feedback/FeedbackStats";
+
+interface TabPanelProps {
+	children?: React.ReactNode;
+	index: number;
+	value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+	const { children, value, index, ...other } = props;
+
+	return (
+		<div
+			role="tabpanel"
+			hidden={value !== index}
+			id={`campaign-tabpanel-${index}`}
+			aria-labelledby={`campaign-tab-${index}`}
+			{...other}
+		>
+			{value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+		</div>
+	);
+}
 
 export default function CampaignDetailsPage({
 	params,
@@ -39,6 +74,7 @@ export default function CampaignDetailsPage({
 		type: "error" | "success";
 		message: string;
 	} | null>(null);
+	const [tabValue, setTabValue] = useState(0);
 
 	const { data, isLoading, error } = useGetCampaignByIdQuery(id);
 	const [updateCampaign, { isLoading: isUpdating }] =
@@ -200,11 +236,10 @@ export default function CampaignDetailsPage({
 		<div className="container mx-auto px-4 py-8 space-y-6">
 			{notification && (
 				<div
-					className={`p-4 rounded-lg ${
-						notification.type === "error"
-							? "bg-red-100 text-red-800"
-							: "bg-green-100 text-green-800"
-					}`}
+					className={`p-4 rounded-lg ${notification.type === "error"
+						? "bg-red-100 text-red-800"
+						: "bg-green-100 text-green-800"
+						}`}
 				>
 					{notification.message}
 				</div>
@@ -454,15 +489,14 @@ export default function CampaignDetailsPage({
 							className="w-full h-64 object-cover rounded-lg mb-4"
 						/>
 						<span
-							className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
-								campaign.status === "active"
-									? "bg-green-100 text-green-800"
-									: campaign.status === "completed"
+							className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${campaign.status === "active"
+								? "bg-green-100 text-green-800"
+								: campaign.status === "completed"
 									? "bg-blue-100 text-blue-800"
 									: campaign.status === "cancelled"
-									? "bg-red-100 text-red-800"
-									: "bg-gray-100 text-gray-800"
-							}`}
+										? "bg-red-100 text-red-800"
+										: "bg-gray-100 text-gray-800"
+								}`}
 						>
 							{campaign.status}
 						</span>

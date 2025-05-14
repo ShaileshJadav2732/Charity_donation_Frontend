@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
       "lh3.googleusercontent.com",
       "storage.googleapis.com",
       "firebasestorage.googleapis.com",
-    ],
+'st2.depositphotos.com'],
+    
   },
   reactStrictMode: true,
 };

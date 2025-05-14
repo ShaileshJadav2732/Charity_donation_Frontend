@@ -7,14 +7,25 @@ import {
 	UpdateCampaignBody,
 	CampaignQueryParams,
 } from "@/types/campaings";
+import { RootState } from "../store";
 
 const baseQuery = fetchBaseQuery({
-	baseUrl: "/api",
-	prepareHeaders: (headers) => {
-		const token = localStorage.getItem("token");
-		if (token) {
-			headers.set("authorization", `Bearer ${token}`);
+	baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+	prepareHeaders: (headers, { getState }) => {
+		// Only access token in browser environment
+		if (typeof window !== "undefined") {
+			// Get token from auth state
+			const token = (getState() as RootState).auth.token;
+
+			// If token exists, add it to the headers
+			if (token) {
+				headers.set("authorization", `Bearer ${token}`);
+			}
 		}
+
+		// Add content type header
+		headers.set("Content-Type", "application/json");
+
 		return headers;
 	},
 });
