@@ -10,7 +10,7 @@ interface RouteGuardProps {
 
 export const useRouteGuard = ({
 	allowedRoles,
-	redirectTo = "/dashboard",
+	redirectTo = "/dashboard/home",
 }: RouteGuardProps = {}) => {
 	const router = useRouter();
 	const { user, isAuthenticated } = useSelector(

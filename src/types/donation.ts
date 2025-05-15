@@ -34,21 +34,43 @@ export interface Organization {
 }
 
 export interface DonationFormData {
-	organization: string;
-	type: "monetary" | "in-kind";
-	amount?: number;
-	quantity?: number;
-	description: string;
-	deliveryMethod: "pickup" | "dropoff";
-	receiptImage?: File;
+	causeId: string;
+	amount: number;
+	paymentMethod: string;
+	isAnonymous: boolean;
+	comment?: string;
 }
 
 export interface Donation {
-	id: number;
-	causeTitle: string;
+	id: string;
+	userId: string;
+	causeId: string;
 	amount: number;
-	date: string;
-	status: "completed" | "pending";
-	receiptUrl?: string;
-	impact: string;
+	paymentMethod: string;
+	isAnonymous: boolean;
+	comment?: string;
+	status: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface DonationsResponse {
+	donations: Donation[];
+	total: number;
+	page: number;
+	limit: number;
+}
+
+export interface DonationResponse {
+	donation: Donation;
+}
+
+export interface DonationQueryParams {
+	page?: number;
+	limit?: number;
+	userId?: string;
+	causeId?: string;
+	status?: string;
+	minAmount?: number;
+	maxAmount?: number;
 }

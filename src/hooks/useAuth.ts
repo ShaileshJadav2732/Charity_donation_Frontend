@@ -71,8 +71,21 @@ export const useAuth = () => {
 			setAuthInitialized(true);
 
 			const handleAuthState = debounce(async () => {
-				// Don't redirect if on a public route
-				if (PUBLIC_ROUTES.includes(pathname)) {
+				// If user is authenticated and trying to access login page, redirect to dashboard
+				if (user && (pathname === "/login" || pathname === "/signup")) {
+					console.log(
+						"User already authenticated, redirecting away from login/signup"
+					);
+					router.push("/dashboard/home");
+					return;
+				}
+
+				// Don't redirect if on public route (except login/signup when authenticated)
+				if (
+					PUBLIC_ROUTES.includes(pathname) &&
+					pathname !== "/login" &&
+					pathname !== "/signup"
+				) {
 					console.log("On public route, skipping redirect");
 					if (!user) {
 						dispatch(clearCredentials());
@@ -108,8 +121,8 @@ export const useAuth = () => {
 							);
 							router.push("/complete-profile");
 						} else if (pathname === "/login" || pathname === "/signup") {
-							console.log("Already authenticated, redirecting to /dashboard");
-							router.push("/dashboard");
+							console.log("Already authenticated, redirecting to dashboard");
+							router.push("/dashboard/home");
 						}
 					} catch (error: unknown) {
 						console.error("Auth error:", error);
@@ -180,13 +193,9 @@ export const useAuth = () => {
 				})
 			);
 
-			if (!response.user.profileCompleted) {
-				console.log("Redirecting to /complete-profile after signup");
-				router.push("/complete-profile");
-			} else {
-				console.log("Redirecting to /dashboard after signup");
-				router.push("/dashboard");
-			}
+			// Always redirect to complete profile after signup
+			console.log("Redirecting to /complete-profile after signup");
+			router.push("/complete-profile");
 
 			return response;
 		} catch (error: unknown) {
@@ -237,7 +246,7 @@ export const useAuth = () => {
 				router.push("/complete-profile");
 			} else {
 				console.log("Redirecting to /dashboard after email login");
-				router.push("/dashboard");
+				router.push("/dashboard/home");
 			}
 
 			return response;
@@ -292,7 +301,7 @@ export const useAuth = () => {
 					router.push("/complete-profile");
 				} else {
 					console.log("Redirecting to /dashboard after Google login");
-					router.push("/dashboard");
+					router.push("/dashboard/home");
 				}
 
 				return response;
@@ -332,7 +341,7 @@ export const useAuth = () => {
 			dispatch(clearCredentials());
 			document.cookie = "authToken=; path=/; max-age=0";
 			console.log("Cleared authToken cookie and logged out");
-			router.push("/login");
+			router.push("/"); // Redirect to home page after logout
 		} catch (error: unknown) {
 			console.error("Logout error:", error);
 			const parsedError = parseError(error);

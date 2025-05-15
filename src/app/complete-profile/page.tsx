@@ -42,7 +42,7 @@ function CompleteProfileContent() {
 		}
 
 		if (user?.profileCompleted) {
-			router.push("/dashboard");
+			router.push("/dashboard/home");
 		}
 	}, [isAuthenticated, user, router, isClient, isLoading]);
 

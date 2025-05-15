@@ -16,6 +16,8 @@ export interface Cause {
 	organizationName?: string;
 	createdAt: string;
 	updatedAt: string;
+	donorCount?: number;
+	acceptedDonationTypes?: DonationType[];
 }
 
 export interface CreateCauseBody {
@@ -40,6 +42,7 @@ export interface CausesResponse {
 	total: number;
 	page: number;
 	limit: number;
+	totalPages: number;
 }
 
 export interface CauseResponse {
@@ -56,4 +59,5 @@ export interface CauseQueryParams {
 	maxTarget?: number;
 	minRaised?: number;
 	maxRaised?: number;
+	donationType?: DonationType;
 }

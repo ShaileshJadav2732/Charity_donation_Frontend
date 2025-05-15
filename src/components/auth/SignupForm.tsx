@@ -65,7 +65,7 @@ const SignupForm = () => {
       toast.success("Account created successfully!");
 
       if (response.user.profileCompleted) {
-        router.push("/dashboard");
+        router.push("/dashboard/home");
       } else {
         router.push("/complete-profile");
       }

@@ -86,7 +86,7 @@ export default function OrganizationProfileForm() {
 			});
 
 			toast.success("Organization profile completed successfully!");
-			router.push("/dashboard");
+			router.push("/dashboard/home");
 		} catch (error) {
 			// Use the improved parseError
 			const errorDetails = parseError(error);

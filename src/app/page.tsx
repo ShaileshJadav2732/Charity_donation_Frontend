@@ -30,7 +30,7 @@ export default function HomePage() {
 				console.log(
 					"HomePage: User profile completed, redirecting to /dashboard"
 				);
-				router.push("/dashboard");
+				router.push("/dashboard/home");
 			} else {
 				console.log(
 					"HomePage: User profile not completed, redirecting to /complete-profile"

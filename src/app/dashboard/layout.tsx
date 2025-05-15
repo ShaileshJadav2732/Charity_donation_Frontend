@@ -103,7 +103,7 @@ export default function DashboardLayout({
 	}
 
 	const menuItems = [
-		{ icon: FaHome, text: "Dashboard", path: "/dashboard" },
+		{ icon: FaHome, text: "Home", path: "/dashboard/home" },
 		{ icon: FaUser, text: "Profile", path: "/dashboard/profile" },
 		...(user.role === "donor"
 			? [

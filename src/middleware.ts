@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const protectedRoutes = [
-	"/dashboard",
+	"/dashboard/home",
 	"/complete-profile",
 	"/dashboard/profile",
 	"/dashboard/donations",
@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
 			console.log(
 				`Middleware: User already logged in, redirecting from ${pathname} to /dashboard`
 			);
-			return NextResponse.redirect(new URL("/dashboard", request.url));
+			return NextResponse.redirect(new URL("/dashboard/home", request.url));
 		}
 	}
 
