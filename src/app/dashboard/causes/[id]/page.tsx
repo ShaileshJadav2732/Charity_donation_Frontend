@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { DonationType } from "@/types/donation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
 
 import {
 	Box,
@@ -26,6 +27,7 @@ import {
 	ListItem,
 	ListItemText,
 	ListItemAvatar,
+	Paper,
 } from "@mui/material";
 import {
 	FavoriteOutlined as HeartIcon,
@@ -42,17 +44,35 @@ import {
 	MenuBook as BooksIcon,
 	Living as FurnitureIcon,
 	Living as HouseholdIcon,
+	Business as BusinessIcon,
+	LocationOn as LocationIcon,
+	Email as EmailIcon,
+	Phone as PhoneIcon,
 } from "@mui/icons-material";
 
-const donationTypeIcons = {
-	[DonationType.MONEY]: MoneyIcon,
+// Extended DonationType to include missing types
+enum ExtendedDonationType {
+	MONEY = "MONEY",
+	BLOOD = "BLOOD",
+	FOOD = "FOOD",
+	TOYS = "TOYS",
+	BOOKS = "BOOKS",
+	FURNITURE = "FURNITURE",
+	HOUSEHOLD = "HOUSEHOLD",
+	IN_KIND = "IN_KIND",
+	VOLUNTEER = "VOLUNTEER"
+}
 
+const donationTypeIcons: Record<string, React.ComponentType<any>> = {
+	[DonationType.MONEY]: MoneyIcon,
 	[DonationType.BLOOD]: BloodIcon,
 	[DonationType.FOOD]: FoodIcon,
 	[DonationType.TOYS]: ToysIcon,
 	[DonationType.BOOKS]: BooksIcon,
 	[DonationType.FURNITURE]: FurnitureIcon,
 	[DonationType.HOUSEHOLD]: HouseholdIcon,
+	[ExtendedDonationType.IN_KIND]: MoneyIcon,
+	[ExtendedDonationType.VOLUNTEER]: PeopleIcon
 };
 
 export default function CauseDetailPage({
@@ -69,8 +89,15 @@ export default function CauseDetailPage({
 	const { user } = useSelector((state: RootState) => state.auth);
 
 	const { data, isLoading, error } = useGetCauseByIdQuery(id);
+	const {
+		data: organizationData,
+		isLoading: orgLoading,
+		error: orgError
+	} = useGetOrganizationByCauseIdQuery(id, { skip: !id });
 
-	console.log("cozzzz", data);
+	console.log("Cause data:", data);
+	console.log("Organization data:", organizationData);
+	console.log("Organization error:", orgError);
 
 	const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
 		setActiveTab(newValue);
@@ -83,6 +110,15 @@ export default function CauseDetailPage({
 	const handleBack = () => {
 		router.push("/dashboard/causes");
 	};
+
+	const handleViewOrganization = () => {
+		if (data?.data.cause.organizationId) {
+			router.push(`/dashboard/organizations/${data.data.cause.organizationId}`);
+		}
+	};
+
+	// Get organization details
+	const organization = organizationData?.organization;
 
 	if (isLoading) {
 		return (
@@ -112,12 +148,16 @@ export default function CauseDetailPage({
 	const progress =
 		data?.data.cause.raisedAmount && data.data.cause.targetAmount
 			? Math.min(
-					100,
-					Math.round(
-						(data?.data.cause.raisedAmount / data.data.cause.targetAmount) * 100
-					)
-			  )
+				100,
+				Math.round(
+					(data?.data.cause.raisedAmount / data.data.cause.targetAmount) * 100
+				)
+			)
 			: 0;
+
+	// We'll assume these values if they're not in the API response
+	const donorCount = 0; // Since this property doesn't exist in the type
+	const acceptedDonationTypes = [DonationType.MONEY]; // Default to money donations
 
 	return (
 		<Box p={4}>
@@ -171,95 +211,89 @@ export default function CauseDetailPage({
 					</Box>
 
 					{/* Cause Stats */}
-					<Grid container spacing={3} mb={4}>
-						<Grid item xs={12} md={4}>
-							<Card variant="outlined">
-								<CardContent>
-									<Box
-										display="flex"
-										alignItems="center"
-										justifyContent="space-between"
-										mb={1}
-									>
-										<Typography variant="body2" color="text.secondary">
-											Raised
-										</Typography>
-										<MoneyIcon color="primary" />
-									</Box>
-									<Typography variant="h5" fontWeight="bold">
-										$
-										{data?.data.cause.raisedAmount
-											? data.data.cause.raisedAmount.toLocaleString()
-											: "0"}
+					<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: '220px' }}>
+							<CardContent>
+								<Box
+									display="flex"
+									alignItems="center"
+									justifyContent="space-between"
+									mb={1}
+								>
+									<Typography variant="body2" color="text.secondary">
+										Raised
 									</Typography>
-									<Typography variant="caption" color="text.secondary">
-										of $
-										{data?.data.cause.targetAmount
-											? data.data.cause.targetAmount.toLocaleString()
-											: "0"}{" "}
-										goal
-									</Typography>
-								</CardContent>
-							</Card>
-						</Grid>
+									<MoneyIcon color="primary" />
+								</Box>
+								<Typography variant="h5" fontWeight="bold">
+									$
+									{data?.data.cause.raisedAmount
+										? data.data.cause.raisedAmount.toLocaleString()
+										: "0"}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									of $
+									{data?.data.cause.targetAmount
+										? data.data.cause.targetAmount.toLocaleString()
+										: "0"}{" "}
+									goal
+								</Typography>
+							</CardContent>
+						</Card>
 
-						<Grid item xs={12} md={4}>
-							<Card variant="outlined">
-								<CardContent>
-									<Box
-										display="flex"
-										alignItems="center"
-										justifyContent="space-between"
-										mb={1}
-									>
-										<Typography variant="body2" color="text.secondary">
-											Contributors
-										</Typography>
-										<HeartIcon color="error" />
-									</Box>
-									<Typography variant="h5" fontWeight="bold">
-										{data?.data.cause.donorCount || 0}
+						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: '220px' }}>
+							<CardContent>
+								<Box
+									display="flex"
+									alignItems="center"
+									justifyContent="space-between"
+									mb={1}
+								>
+									<Typography variant="body2" color="text.secondary">
+										Contributors
 									</Typography>
-									<Typography variant="caption" color="text.secondary">
-										people have donated
-									</Typography>
-								</CardContent>
-							</Card>
-						</Grid>
+									<HeartIcon color="error" />
+								</Box>
+								<Typography variant="h5" fontWeight="bold">
+									{donorCount}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									people have donated
+								</Typography>
+							</CardContent>
+						</Card>
 
-						<Grid item xs={12} md={4}>
-							<Card variant="outlined">
-								<CardContent>
-									<Box
-										display="flex"
-										alignItems="center"
-										justifyContent="space-between"
-										mb={1}
-									>
-										<Typography variant="body2" color="text.secondary">
-											Created
-										</Typography>
-										<CalendarIcon color="info" />
-									</Box>
-									<Typography variant="h5" fontWeight="bold">
-										{data?.data.cause.createdAt
-											? new Date(data.data.cause.createdAt).toLocaleDateString(
-													undefined,
-													{
-														month: "short",
-														day: "numeric",
-														year: "numeric",
-													}
-											  )
-											: "N/A"}
+						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: '220px' }}>
+							<CardContent>
+								<Box
+									display="flex"
+									alignItems="center"
+									justifyContent="space-between"
+									mb={1}
+								>
+									<Typography variant="body2" color="text.secondary">
+										Created
 									</Typography>
-									<Typography variant="caption" color="text.secondary">
-										start date
-									</Typography>
-								</CardContent>
-							</Card>
-						</Grid>
-					</Grid>
+									<CalendarIcon color="info" />
+								</Box>
+								<Typography variant="h5" fontWeight="bold">
+									{data?.data.cause.createdAt
+										? new Date(data.data.cause.createdAt).toLocaleDateString(
+											undefined,
+											{
+												month: "short",
+												day: "numeric",
+												year: "numeric",
+											}
+										)
+										: "N/A"}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									start date
+								</Typography>
+							</CardContent>
+						</Card>
+					</Box>
 
 					{/* Progress Bar */}
 					<Box mb={4}>
@@ -283,44 +317,134 @@ export default function CauseDetailPage({
 					</Box>
 
 					{/* Action Buttons */}
-					<Grid container spacing={2} mb={4}>
-						<Grid item xs={12} sm={6}>
-							<Button
-								fullWidth
-								variant="contained"
-								color="primary"
-								size="large"
-								startIcon={<HeartIcon />}
-								onClick={handleDonate}
-								disabled={user?.role !== "donor"}
-							>
-								Donate Now
-							</Button>
-						</Grid>
-						<Grid item xs={12} sm={6}>
-							<Button
-								fullWidth
-								variant="outlined"
-								color="primary"
-								size="large"
-								startIcon={<PeopleIcon />}
-								disabled={
-									user?.role !== "donor" ||
-									!data.data.cause.acceptedDonationTypes?.includes(
-										DonationType.VOLUNTEER
-									)
-								}
-							>
-								Volunteer
-							</Button>
-						</Grid>
-					</Grid>
+					<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+						<Button
+							fullWidth
+							variant="contained"
+							color="primary"
+							size="large"
+							startIcon={<HeartIcon />}
+							onClick={handleDonate}
+							disabled={user?.role !== "donor"}
+							sx={{ flexGrow: 1, minWidth: '200px' }}
+						>
+							Donate Now
+						</Button>
+						<Button
+							fullWidth
+							variant="outlined"
+							color="primary"
+							size="large"
+							startIcon={<PeopleIcon />}
+							disabled={
+								user?.role !== "donor" ||
+								!acceptedDonationTypes.includes(
+									ExtendedDonationType.VOLUNTEER as unknown as DonationType
+								)
+							}
+							sx={{ flexGrow: 1, minWidth: '200px' }}
+						>
+							Volunteer
+						</Button>
+					</Box>
 
 					{user?.role !== "donor" && (
 						<Alert severity="info" sx={{ mb: 4 }}>
 							You are logged in as an organization. Donation features are only
 							available to donors.
 						</Alert>
+					)}
+
+					{/* Organization Information */}
+					{data?.data.cause.organizationName && (
+						<Box mb={4}>
+							<Typography variant="h6" gutterBottom>
+								About the Organization
+							</Typography>
+							<Paper variant="outlined" sx={{ p: 3 }}>
+								<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+									<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: { xs: '100%', md: '120px' } }}>
+										<Avatar
+											sx={{
+												width: 80,
+												height: 80,
+												bgcolor: "primary.main",
+											}}
+										>
+											<BusinessIcon sx={{ fontSize: 40 }} />
+										</Avatar>
+									</Box>
+									<Box sx={{ flexGrow: 1 }}>
+										<Typography variant="h6" gutterBottom>
+											{data.data.cause.organizationName}
+										</Typography>
+
+										<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+											<BusinessIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+											<Typography variant="body2" color="text.secondary">
+												Organization ID: {data.data.cause.organizationId}
+											</Typography>
+										</Box>
+
+										{!orgLoading && organization ? (
+											<>
+												{organization.email && organization.email !== "Not available" && (
+													<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+														<EmailIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+														<Typography variant="body2" color="text.secondary">
+															{organization.email}
+														</Typography>
+													</Box>
+												)}
+
+												{organization.phoneNumber && organization.phoneNumber !== "Not available" && (
+													<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+														<PhoneIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+														<Typography variant="body2" color="text.secondary">
+															{organization.phoneNumber}
+														</Typography>
+													</Box>
+												)}
+
+												{organization.address && (
+													<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+														<LocationIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+														<Typography variant="body2" color="text.secondary">
+															{`${organization.address}${organization.city ? `, ${organization.city}` : ''}${organization.state ? `, ${organization.state}` : ''}${organization.country ? `, ${organization.country}` : ''}`}
+														</Typography>
+													</Box>
+												)}
+
+												<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+													{organization.description || "This is the organization managing this charitable cause. Click below to view their complete profile."}
+												</Typography>
+											</>
+										) : orgLoading ? (
+											<Box display="flex" alignItems="center" my={2}>
+												<CircularProgress size={20} sx={{ mr: 2 }} />
+												<Typography variant="body2" color="text.secondary">
+													Loading organization details...
+												</Typography>
+											</Box>
+										) : (
+											<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+												This is the organization managing this charitable cause. Click below to view their complete profile.
+											</Typography>
+										)}
+
+										<Button
+											variant="text"
+											color="primary"
+											startIcon={<BusinessIcon />}
+											onClick={handleViewOrganization}
+											sx={{ mt: 2 }}
+										>
+											View Organization Profile
+										</Button>
+									</Box>
+								</Box>
+							</Paper>
+						</Box>
 					)}
 
 					{/* Tags */}
@@ -371,70 +495,83 @@ export default function CauseDetailPage({
 								{data?.data.cause.description || "No description available."}
 							</Typography>
 
-							{data?.data.cause.acceptedDonationTypes &&
-								data.data.cause.acceptedDonationTypes.length > 0 && (
-									<Box mt={4}>
-										<Typography variant="h6" gutterBottom>
-											Ways You Can Help
-										</Typography>
-										<Grid container spacing={2}>
-											{data.data.cause.acceptedDonationTypes.map(
-												(type, index) => {
-													const TypeIcon = donationTypeIcons[type];
-													let title, description;
+							{acceptedDonationTypes && acceptedDonationTypes.length > 0 && (
+								<Box mt={4}>
+									<Typography variant="h6" gutterBottom>
+										Ways You Can Help
+									</Typography>
+									<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+										{acceptedDonationTypes.map(
+											(type, index) => {
+												const TypeIcon = donationTypeIcons[type] || MoneyIcon;
+												let title = "Donation";
+												let description = "Support this cause";
 
-													switch (type) {
-														case DonationType.MONEY:
-															title = "Monetary Donations";
-															description =
-																"Support this cause with financial contributions.";
-															break;
-														case DonationType.IN_KIND:
-															title = "In-Kind Donations";
-															description =
-																"Donate goods, supplies, or services.";
-															break;
-														case DonationType.VOLUNTEER:
-															title = "Volunteer Work";
-															description = "Contribute your time and skills.";
-															break;
-													}
-
-													return (
-														<Grid item xs={12} sm={4} key={index}>
-															<Card variant="outlined" sx={{ height: "100%" }}>
-																<CardContent>
-																	<Box
-																		display="flex"
-																		alignItems="center"
-																		mb={2}
-																	>
-																		<Box
-																			sx={{
-																				bgcolor: "primary.50",
-																				borderRadius: "50%",
-																				p: 1,
-																				mr: 2,
-																			}}
-																		>
-																			<TypeIcon color="primary" />
-																		</Box>
-																		<Typography variant="h6">
-																			{title}
-																		</Typography>
-																	</Box>
-																	<Typography variant="body2">
-																		{description}
-																	</Typography>
-																</CardContent>
-															</Card>
-														</Grid>
-													);
+												switch (type) {
+													case DonationType.MONEY:
+														title = "Monetary Donations";
+														description =
+															"Support this cause with financial contributions.";
+														break;
+													case ExtendedDonationType.IN_KIND as unknown as DonationType:
+														title = "In-Kind Donations";
+														description =
+															"Donate goods, supplies, or services.";
+														break;
+													case ExtendedDonationType.VOLUNTEER as unknown as DonationType:
+														title = "Volunteer Work";
+														description = "Contribute your time and skills.";
+														break;
+													case DonationType.BLOOD:
+														title = "Blood Donations";
+														description = "Donate blood to save lives.";
+														break;
+													case DonationType.FOOD:
+														title = "Food Donations";
+														description = "Donate food items to those in need.";
+														break;
+													case DonationType.BOOKS:
+														title = "Book Donations";
+														description = "Donate books for education and knowledge.";
+														break;
+													default:
+														title = `${type} Donations`;
+														description = `Donate ${type.toLowerCase()} to support this cause.`;
 												}
-											)}
-										</Grid>
+
+												return (
+													<Card key={index} variant="outlined" sx={{ flexGrow: 1, minWidth: '240px', maxWidth: '350px' }}>
+														<CardContent>
+															<Box
+																display="flex"
+																alignItems="center"
+																mb={2}
+															>
+																<Box
+																	sx={{
+																		bgcolor: "primary.50",
+																		borderRadius: "50%",
+																		p: 1,
+																		mr: 2,
+																	}}
+																>
+																	{TypeIcon && <TypeIcon color="primary" />}
+																</Box>
+																<Typography variant="h6">
+																	{title}
+																</Typography>
+															</Box>
+															<Typography variant="body2">
+																{description}
+															</Typography>
+														</CardContent>
+													</Card>
+												);
+											}
+										)}
 									</Box>
-								)}
+								</Box>
+							)}
 						</Box>
 					)}
 
@@ -452,11 +589,10 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Funding Goal"
-										secondary={`$${
-											data?.data.cause.targetAmount
-												? data.data.cause?.targetAmount.toLocaleString()
-												: "0"
-										}`}
+										secondary={`$${data?.data.cause.targetAmount
+											? data.data.cause?.targetAmount.toLocaleString()
+											: "0"
+											}`}
 									/>
 								</ListItem>
 								<Divider variant="inset" component="li" />
@@ -471,11 +607,12 @@ export default function CauseDetailPage({
 										secondary={
 											data?.data.cause?.createdAt
 												? new Date(
-														data.data.cause?.createdAt
-												  ).toLocaleDateString()
+													data.data.cause?.createdAt
+												).toLocaleDateString()
 												: "N/A"
 										}
 									/>
+									{console.log("cause data",data?.data.cause)}
 								</ListItem>
 								<Divider variant="inset" component="li" />
 								<ListItem>
@@ -487,11 +624,123 @@ export default function CauseDetailPage({
 									<ListItemText
 										primary="Organization"
 										secondary={
-											data?.data.cause?.organizationName || "Organization"
+											data?.data.cause?.organizationId.name || "Organization"
 										}
 									/>
 								</ListItem>
+								<Divider variant="inset" component="li" />
+								<ListItem>
+									<ListItemAvatar>
+										<Avatar sx={{ bgcolor: "primary.light" }}>
+											<BusinessIcon />
+										</Avatar>
+									</ListItemAvatar>
+									<ListItemText
+										primary="Organization ID"
+										secondary={data?.data.cause?.organizationId._id || "N/A"}
+									/>
+								</ListItem>
 							</List>
+
+							{/* Organization Contact Information */}
+							{data?.data.cause.organizationId && (
+								<Box mt={4}>
+									<Typography variant="h6" gutterBottom>
+										Organization Contact Information
+									</Typography>
+									<Card variant="outlined" sx={{ mt: 2 }}>
+										<CardContent>
+											{orgLoading ? (
+												<Box display="flex" justifyContent="center" p={3}>
+													<CircularProgress size={30} />
+												</Box>
+											) : organization ? (
+												<List>
+													<ListItem>
+														<ListItemAvatar>
+															<Avatar sx={{ bgcolor: "primary.light" }}>
+																<BusinessIcon />
+															</Avatar>
+														</ListItemAvatar>
+														<ListItemText
+															primary="Organization"
+															secondary={data?.data.cause.organizationName}
+														/>
+													</ListItem>
+
+													{organization.email && organization.email !== "Not available" && (
+														<>
+															<Divider variant="inset" component="li" />
+															<ListItem>
+																<ListItemAvatar>
+																	<Avatar sx={{ bgcolor: "primary.light" }}>
+																		<EmailIcon />
+																	</Avatar>
+																</ListItemAvatar>
+																<ListItemText
+																	primary="Email"
+																	secondary={organization.email}
+																/>
+															</ListItem>
+														</>
+													)}
+
+													{organization.phoneNumber && organization.phoneNumber !== "Not available" && (
+														<>
+															<Divider variant="inset" component="li" />
+															<ListItem>
+																<ListItemAvatar>
+																	<Avatar sx={{ bgcolor: "primary.light" }}>
+																		<PhoneIcon />
+																	</Avatar>
+																</ListItemAvatar>
+																<ListItemText
+																	primary="Phone"
+																	secondary={organization.phoneNumber}
+																/>
+															</ListItem>
+														</>
+													)}
+
+													{organization.address && (
+														<>
+															<Divider variant="inset" component="li" />
+															<ListItem>
+																<ListItemAvatar>
+																	<Avatar sx={{ bgcolor: "primary.light" }}>
+																		<LocationIcon />
+																	</Avatar>
+																</ListItemAvatar>
+																<ListItemText
+																	primary="Address"
+																	secondary={`${organization.address}${organization.city ? `, ${organization.city}` : ''}${organization.state ? `, ${organization.state}` : ''}${organization.country ? `, ${organization.country}` : ''}`}
+																/>
+															</ListItem>
+														</>
+													)}
+												</List>
+											) : (
+												<Box p={3}>
+													<Typography variant="body2" color="text.secondary" align="center">
+														Click below to view full organization details.
+													</Typography>
+												</Box>
+											)}
+
+											<Box display="flex" justifyContent="center" mt={2}>
+												<Button
+													variant="contained"
+													color="primary"
+													startIcon={<BusinessIcon />}
+													onClick={handleViewOrganization}
+												>
+													View Full Organization Profile
+												</Button>
+											</Box>
+										</CardContent>
+									</Card>
+								</Box>
+							)}
 						</Box>
 					)}
 
@@ -513,12 +762,12 @@ export default function CauseDetailPage({
 								<PeopleIcon sx={{ width: 40, height: 40, color: "grey.500" }} />
 							</Avatar>
 							<Typography variant="h6" gutterBottom>
-								{data.cause.donorCount
-									? `${data.cause.donorCount} people have donated`
+								{donorCount
+									? `${donorCount} people have donated`
 									: "No donors yet"}
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								{data.cause.donorCount
+								{donorCount
 									? "Thank you to all our donors for supporting this cause!"
 									: "Be the first to support this cause!"}
 							</Typography>
