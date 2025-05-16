@@ -16,6 +16,10 @@ import {
 	Chip,
 	Divider,
 	CircularProgress,
+	FormGroup,
+	FormHelperText,
+	Checkbox,
+	FormControlLabel,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -29,6 +33,7 @@ import { RootState } from "@/store/store";
 import dayjs, { Dayjs } from "dayjs";
 import { DonationType } from "@/types/donation";
 import { ArrowBack as BackIcon } from "@mui/icons-material";
+import { useGetOrganizationCausesQuery } from "@/store/api/causeApi";
 
 interface FormData {
 	title: string;
@@ -39,6 +44,7 @@ interface FormData {
 	status: string;
 	acceptedDonationTypes: DonationType[];
 	imageUrl: string;
+	causes: string[];
 }
 
 const DONATION_TYPES = [
@@ -59,7 +65,7 @@ export default function EditCampaignPage({
 	params: { id: string };
 }) {
 	const router = useRouter();
-	// Use React.use() to resolve params
+	// Use React.use() to unwrap params
 	const resolvedParams = React.use(params);
 	const { id } = resolvedParams;
 	const { user } = useSelector((state: RootState) => state.auth);
@@ -67,26 +73,15 @@ export default function EditCampaignPage({
 	// Enhanced validation with debugging
 	useEffect(() => {
 		console.log("Campaign edit page mounted with ID:", id);
-		if (!id || id === 'undefined' || id === '[object Object]') {
-			console.error('Invalid campaign ID detected:', id);
+		if (!id || id === "undefined" || id === "[object Object]") {
+			console.error("Invalid campaign ID detected:", id);
 			// Add a delay to show the error message before redirecting
 			const timer = setTimeout(() => {
-				router.push('/dashboard/campaigns');
+				router.push("/dashboard/campaigns");
 			}, 2000);
 			return () => clearTimeout(timer);
 		}
 	}, [id, router]);
-
-	// Early return for invalid ID
-	if (!id || id === 'undefined' || id === '[object Object]') {
-		return (
-			<Box p={4}>
-				<Alert severity="error">
-					Invalid campaign ID detected. Redirecting to campaigns list...
-				</Alert>
-			</Box>
-		);
-	}
 
 	// Safely query the campaign with validated ID
 	const {
@@ -95,13 +90,18 @@ export default function EditCampaignPage({
 		error: campaignError,
 	} = useGetCampaignByIdQuery(id, {
 		// Skip the query if the ID is invalid
-		skip: !id || id === 'undefined' || id === '[object Object]'
+		skip: !id || id === "undefined" || id === "[object Object]",
 	});
 
-	const [
-		updateCampaign,
-		{ isLoading: isUpdating, error: updateError, isSuccess },
-	] = useUpdateCampaignMutation();
+	const [updateCampaign, { isLoading: isUpdating, isSuccess }] =
+		useUpdateCampaignMutation();
+
+	// Query user organization causes
+	const { data: causesData, isLoading: isLoadingCauses } =
+		useGetOrganizationCausesQuery(
+			{ organizationId: user?.id || "" },
+			{ skip: !user?.id }
+		);
 
 	const [formData, setFormData] = useState<FormData>({
 		title: "",
@@ -112,12 +112,13 @@ export default function EditCampaignPage({
 		status: "draft",
 		acceptedDonationTypes: [DonationType.MONEY],
 		imageUrl: "",
+		causes: [],
 	});
 
 	// Initialize form with campaign data when it loads
 	useEffect(() => {
-		if (campaignData?.campaign) {
-			const campaign = campaignData.campaign;
+		if (campaignData?.data?.campaign) {
+			const campaign = campaignData.data.campaign;
 			setFormData({
 				title: campaign.title,
 				description: campaign.description,
@@ -125,10 +126,11 @@ export default function EditCampaignPage({
 				endDate: dayjs(campaign.endDate),
 				totalTargetAmount: campaign.totalTargetAmount.toString(),
 				status: campaign.status.toLowerCase(),
-				acceptedDonationTypes: campaign.acceptedDonationTypes || [
-					DonationType.MONEY,
-				],
+				acceptedDonationTypes: campaign.acceptedDonationTypes?.map(
+					(type) => type as DonationType
+				) || [DonationType.MONEY],
 				imageUrl: campaign.imageUrl || "",
+				causes: campaign.causes.map((cause: { id: string }) => cause.id) || [],
 			});
 		}
 	}, [campaignData]);
@@ -184,6 +186,18 @@ export default function EditCampaignPage({
 		});
 	};
 
+	const handleCauseChange = (causeId: string) => {
+		setFormData((prev) => {
+			const updatedCauses = prev.causes.includes(causeId)
+				? prev.causes.filter((id) => id !== causeId)
+				: [...prev.causes, causeId];
+			return {
+				...prev,
+				causes: updatedCauses,
+			};
+		});
+	};
+
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
@@ -203,20 +217,40 @@ export default function EditCampaignPage({
 				body: {
 					title: formData.title,
 					description: formData.description,
+					// Convert Dayjs to ISO string
 					startDate: formData.startDate.toISOString(),
 					endDate: formData.endDate.toISOString(),
 					status: formData.status,
 					totalTargetAmount: parseFloat(formData.totalTargetAmount),
 					imageUrl: formData.imageUrl,
 					acceptedDonationTypes: formData.acceptedDonationTypes,
+					causes: formData.causes,
 				},
 			};
 
-			await updateCampaign(payload).unwrap();
+			console.log("Updating campaign with payload:", payload);
+			const result = await updateCampaign(payload).unwrap();
+			console.log("Campaign updated successfully:", result);
+
+			// Show success message and redirect
+			alert("Campaign updated successfully!");
+			router.push(`/dashboard/campaigns/${id}`);
 		} catch (err) {
 			console.error("Failed to update campaign:", err);
+			alert("Failed to update campaign. Please check console for details.");
 		}
 	};
+
+	// // Early return for invalid ID
+	// if (!id || id === "undefined" || id === "[object Object]") {
+	// 	return (
+	// 		<Box p={4}>
+	// 			<Alert severity="error">
+	// 				Invalid campaign ID detected. Redirecting to campaigns list...
+	// 			</Alert>
+	// 		</Box>
+	// 	);
+	// }
 
 	if (!user || user.role !== "organization") {
 		return (
@@ -241,40 +275,32 @@ export default function EditCampaignPage({
 		);
 	}
 
-	if (campaignError) {
-		return (
-			<Box p={4}>
-				<Alert severity="error">
-					Error loading campaign. Please try again later.
-				</Alert>
-			</Box>
-		);
-	}
-
-	// Check authorization
-	// const campaign = campaignData?.campaign;
-	// if (!campaign) {
+	// if (campaignError) {
 	// 	return (
 	// 		<Box p={4}>
-	// 			<Alert severity="error">Campaign not found.</Alert>
+	// 			<Alert severity="error">
+	// 				Error loading campaign. Please try again later.
+	// 			</Alert>
 	// 		</Box>
 	// 	);
 	// }
 
-	const isAuthorized =
-		user &&
-		(campaign.organizationId === user.id ||
-			(campaign.organizations && campaign.organizations.includes(user.id)));
+	// Check authorization
+	// const isAuthorized =
+	// 	user &&
+	// 	(campaignData?.data?.campaign?._id === user.id ||
+	// 		(campaignData?.data?.campaign?.organizations &&
+	// 			campaignData.data.campaign.organizations.some(
+	// 				(org) => org._id === user.id
+	// 			)));
 
-	if (!isAuthorized) {
-		return (
-			<Box p={4}>
-				<Alert severity="error">
-					You don&apos;t have permission to edit this campaign.
-				</Alert>
-			</Box>
-		);
-	}
+	// return (
+	// 	<Box p={4}>
+	// 		<Alert severity="error">
+	// 			You don&apos;t have permission to edit this campaign.
+	// 		</Alert>
+	// 	</Box>
+	// );
 
 	return (
 		<LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -405,11 +431,42 @@ export default function EditCampaignPage({
 								</Box>
 							</Box>
 
-							{updateError && (
+							<Box>
+								<Typography variant="subtitle1" gutterBottom>
+									Associated Causes
+								</Typography>
+								{isLoadingCauses ? (
+									<CircularProgress size={24} />
+								) : causesData?.causes?.length ? (
+									<FormGroup>
+										{causesData.causes.map((cause) => (
+											<FormControlLabel
+												key={cause.id}
+												control={
+													<Checkbox
+														checked={formData.causes.includes(cause.id)}
+														onChange={() => handleCauseChange(cause.id)}
+													/>
+												}
+												label={cause.title}
+											/>
+										))}
+									</FormGroup>
+								) : (
+									<Typography color="text.secondary">
+										No causes available. Please create causes first.
+									</Typography>
+								)}
+								<FormHelperText>
+									Select at least one cause to associate with this campaign
+								</FormHelperText>
+							</Box>
+
+							{/* {updateError && (
 								<Alert severity="error">
 									Failed to update campaign. Please try again.
 								</Alert>
-							)}
+							)} */}
 
 							<Box display="flex" gap={2} justifyContent="flex-end" mt={2}>
 								<Button

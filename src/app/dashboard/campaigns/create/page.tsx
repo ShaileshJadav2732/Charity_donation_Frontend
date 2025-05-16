@@ -313,6 +313,10 @@ const CreateCampaignPage = () => {
 		}
 
 		try {
+			if (!user) {
+				throw new Error("User not found");
+			}
+
 			// Ensure organizations includes the current user's ID
 			const organizations = [user.id];
 
@@ -324,7 +328,8 @@ const CreateCampaignPage = () => {
 				endDate: formData.endDate.toISOString(),
 				status: formData.status,
 				totalTargetAmount: parseFloat(formData.totalTargetAmount),
-				imageUrl: formData.imageUrl || "https://placehold.co/600x400?text=Campaign",
+				imageUrl:
+					formData.imageUrl || "https://placehold.co/600x400?text=Campaign",
 				organizations,
 				acceptedDonationTypes: formData.acceptedDonationTypes,
 				causes: formData.selectedCauses,
@@ -340,7 +345,9 @@ const CreateCampaignPage = () => {
 			}
 		} catch (err) {
 			console.error("Failed to create campaign:", err);
-			setError("Failed to create campaign. Please check the form and try again.");
+			setError(
+				"Failed to create campaign. Please check the form and try again."
+			);
 		}
 	};
 

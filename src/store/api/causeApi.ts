@@ -58,6 +58,16 @@ export const causeApi = createApi({
 			providesTags: (result, error, id) => [{ type: "Cause", id }],
 		}),
 
+		// Get causes for active campaigns only
+		getActiveCampaignCauses: builder.query<CausesResponse, CauseQueryParams>({
+			query: (params) => ({
+				url: "/causes/active-campaigns",
+				method: "GET",
+				params,
+			}),
+			providesTags: ["Cause"],
+		}),
+
 		// Get causes for a specific organization
 		getOrganizationCauses: builder.query<
 			CausesResponse,
@@ -139,6 +149,7 @@ export const causeApi = createApi({
 export const {
 	useGetCausesQuery,
 	useGetCauseByIdQuery,
+	useGetActiveCampaignCausesQuery,
 	useGetOrganizationCausesQuery,
 	useCreateCauseMutation,
 	useUpdateCauseMutation,

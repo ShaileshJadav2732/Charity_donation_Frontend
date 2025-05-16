@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
-import { DonationType } from "@/types/cause";
+import { DonationType } from "@/types/donation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import {
@@ -29,7 +29,6 @@ import {
 import {
 	FavoriteOutlined as HeartIcon,
 	MonetizationOn as MoneyIcon,
-	Redeem as GiftIcon,
 	People as PeopleIcon,
 	AccessTime as ClockIcon,
 	Category as CategoryIcon,
@@ -39,9 +38,15 @@ import {
 } from "@mui/icons-material";
 
 const donationTypeIcons: Record<DonationType, React.ComponentType> = {
-	[DonationType.MONETARY]: MoneyIcon,
-	[DonationType.IN_KIND]: GiftIcon,
-	[DonationType.VOLUNTEER]: PeopleIcon,
+	// MONEY = "MONEY",
+	// CLOTHES = "CLOTHES",
+	// BLOOD = "BLOOD",
+	// FOOD = "FOOD",
+	// TOYS = "TOYS",
+	// BOOKS = "BOOKS",
+	// FURNITURE = "FURNITURE",
+	// HOUSEHOLD = "HOUSEHOLD",
+	// OTHER = "OTHER",
 };
 
 export default function CauseDetailPage({
@@ -50,6 +55,8 @@ export default function CauseDetailPage({
 	params: { id: string };
 }) {
 	const router = useRouter();
+	// WARNING: React.use() is not a standard React API and might be causing issues
+	// This should be replaced with a proper approach for unwrapping params
 	const resolvedParams = React.use(params);
 	const { id } = resolvedParams;
 	const [activeTab, setActiveTab] = useState("about");
@@ -57,7 +64,7 @@ export default function CauseDetailPage({
 
 	const { data, isLoading, error } = useGetCauseByIdQuery(id);
 
-	console.log("cozzzz", data)
+	console.log("cozzzz", data);
 
 	const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
 		setActiveTab(newValue);
@@ -79,7 +86,7 @@ export default function CauseDetailPage({
 		);
 	}
 
-	if (error || !data?.cause) {
+	if (error || !data) {
 		return (
 			<Box p={4}>
 				<Alert severity="error">
@@ -97,10 +104,13 @@ export default function CauseDetailPage({
 	}
 
 	const cause = data;
-	const progress = Math.min(
-		100,
-		Math.round((cause.raisedAmount / cause.targetAmount) * 100)
-	);
+	const progress =
+		cause?.raisedAmount && cause?.targetAmount
+			? Math.min(
+					100,
+					Math.round((cause.raisedAmount / cause.targetAmount) * 100)
+			  )
+			: 0;
 
 	return (
 		<Box p={4}>
@@ -118,11 +128,11 @@ export default function CauseDetailPage({
 						bgcolor: "grey.100",
 					}}
 				>
-					{cause.imageUrl ? (
+					{cause?.imageUrl ? (
 						<Box
 							component="img"
 							src={cause.imageUrl}
-							alt={cause.title}
+							alt={cause?.title || "Cause"}
 							sx={{
 								width: "100%",
 								height: "100%",
@@ -143,7 +153,7 @@ export default function CauseDetailPage({
 
 				<CardContent sx={{ p: 4 }}>
 					<Typography variant="h4" fontWeight="bold" gutterBottom>
-						{cause.title}
+						{cause?.data?.title || "Untitled Cause"}
 					</Typography>
 
 					<Box display="flex" alignItems="center" mb={3}>
@@ -170,10 +180,17 @@ export default function CauseDetailPage({
 										<MoneyIcon color="primary" />
 									</Box>
 									<Typography variant="h5" fontWeight="bold">
-										${cause.raisedAmount.toLocaleString()}
+										$
+										{cause?.raisedAmount
+											? cause.raisedAmount.toLocaleString()
+											: "0"}
 									</Typography>
 									<Typography variant="caption" color="text.secondary">
-										of ${cause.targetAmount.toLocaleString()} goal
+										of $
+										{cause?.targetAmount
+											? cause.targetAmount.toLocaleString()
+											: "0"}{" "}
+										goal
 									</Typography>
 								</CardContent>
 							</Card>
@@ -194,7 +211,7 @@ export default function CauseDetailPage({
 										<HeartIcon color="error" />
 									</Box>
 									<Typography variant="h5" fontWeight="bold">
-										{cause.donorCount || 0}
+										{cause?.donorCount || 0}
 									</Typography>
 									<Typography variant="caption" color="text.secondary">
 										people have donated
@@ -218,11 +235,16 @@ export default function CauseDetailPage({
 										<CalendarIcon color="info" />
 									</Box>
 									<Typography variant="h5" fontWeight="bold">
-										{new Date(cause.createdAt).toLocaleDateString(undefined, {
-											month: "short",
-											day: "numeric",
-											year: "numeric",
-										})}
+										{cause?.createdAt
+											? new Date(cause.createdAt).toLocaleDateString(
+													undefined,
+													{
+														month: "short",
+														day: "numeric",
+														year: "numeric",
+													}
+											  )
+											: "N/A"}
 									</Typography>
 									<Typography variant="caption" color="text.secondary">
 										start date
@@ -244,7 +266,11 @@ export default function CauseDetailPage({
 								{progress}% funded
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								${cause.targetAmount.toLocaleString()} goal
+								$
+								{cause?.targetAmount
+									? cause.targetAmount.toLocaleString()
+									: "0"}{" "}
+								goal
 							</Typography>
 						</Box>
 					</Box>
@@ -289,7 +315,7 @@ export default function CauseDetailPage({
 					)}
 
 					{/* Tags */}
-					{cause.tags && cause.tags.length > 0 && (
+					{cause?.tags && cause.tags.length > 0 && (
 						<Box mb={4}>
 							<Typography variant="subtitle2" gutterBottom>
 								Categories
@@ -333,10 +359,10 @@ export default function CauseDetailPage({
 								variant="body1"
 								sx={{ whiteSpace: "pre-wrap", mb: 4 }}
 							>
-								{cause.description}
+								{cause?.description || "No description available."}
 							</Typography>
 
-							{cause.acceptedDonationTypes &&
+							{cause?.acceptedDonationTypes &&
 								cause.acceptedDonationTypes.length > 0 && (
 									<Box mt={4}>
 										<Typography variant="h6" gutterBottom>
@@ -409,7 +435,11 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Funding Goal"
-										secondary={`$${cause.targetAmount.toLocaleString()}`}
+										secondary={`$${
+											cause?.targetAmount
+												? cause.targetAmount.toLocaleString()
+												: "0"
+										}`}
 									/>
 								</ListItem>
 								<Divider variant="inset" component="li" />
@@ -421,7 +451,11 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Created On"
-										secondary={new Date(cause.createdAt).toLocaleDateString()}
+										secondary={
+											cause?.createdAt
+												? new Date(cause.createdAt).toLocaleDateString()
+												: "N/A"
+										}
 									/>
 								</ListItem>
 								<Divider variant="inset" component="li" />

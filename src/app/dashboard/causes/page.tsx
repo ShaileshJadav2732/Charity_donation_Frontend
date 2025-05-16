@@ -1,55 +1,67 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
+	useDeleteCauseMutation,
+	useGetCausesQuery,
+	useGetActiveCampaignCausesQuery,
+} from "@/store/api/causeApi";
+import { RootState } from "@/store/store";
+import { Cause } from "@/types/cause";
+import { DonationType } from "@/types/donation";
+import {
+	Alert,
 	Box,
 	Button,
 	Card,
-	CardContent,
 	CardActions,
-	Typography,
-	Grid,
-	Chip,
-	IconButton,
-	TextField,
-	Alert,
-	CircularProgress,
+	CardContent,
 	CardMedia,
-	LinearProgress,
-	Select,
-	MenuItem,
+	Chip,
+	CircularProgress,
 	FormControl,
-	InputLabel,
+	Grid,
+	IconButton,
 	InputAdornment,
+	InputLabel,
+	LinearProgress,
+	MenuItem,
+	Select,
 	SelectChangeEvent,
-	Tabs,
-	Tab,
+	TextField,
+	Typography,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import {
 	Add as AddIcon,
+	Search as SearchIcon,
 	Edit as EditIcon,
 	Delete as DeleteIcon,
-	Search as SearchIcon,
-	Favorite as FavoriteIcon,
 	FilterList as FilterIcon,
 	Category as CategoryIcon,
 	MonetizationOn as MoneyIcon,
-	Redeem as GiftIcon,
-	People as PeopleIcon,
+	LocalMall as ClothesIcon,
+	Bloodtype as BloodIcon,
+	Fastfood as FoodIcon,
+	Toys as ToysIcon,
+	MenuBook as BooksIcon,
+	Chair as FurnitureIcon,
+	Home as HouseholdIcon,
+	MoreHoriz as OtherIcon,
+	Favorite as FavoriteIcon,
 } from "@mui/icons-material";
-import {
-	useGetCausesQuery,
-	useDeleteCauseMutation,
-} from "@/store/api/causeApi";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { Cause, DonationType } from "@/types/cause";
 
 const DonationTypeIcons: Record<DonationType, React.ComponentType> = {
-	[DonationType.MONETARY]: MoneyIcon,
-	[DonationType.IN_KIND]: GiftIcon,
-	[DonationType.VOLUNTEER]: PeopleIcon,
+	[DonationType.MONEY]: MoneyIcon,
+	[DonationType.CLOTHES]: ClothesIcon,
+	[DonationType.BLOOD]: BloodIcon,
+	[DonationType.FOOD]: FoodIcon,
+	[DonationType.TOYS]: ToysIcon,
+	[DonationType.BOOKS]: BooksIcon,
+	[DonationType.FURNITURE]: FurnitureIcon,
+	[DonationType.HOUSEHOLD]: HouseholdIcon,
+	[DonationType.OTHER]: OtherIcon,
 };
 
 const CausesPage = () => {
@@ -63,19 +75,43 @@ const CausesPage = () => {
 	>("all");
 	const [page, setPage] = useState(1);
 
-	// Query parameters depend on user role
-	const queryParams =
-		user?.role === "organization"
-			? { organizationId: user?._id }
-			: {
-					page,
-					search: searchTerm,
-					donationType:
-						selectedDonationType !== "all" ? selectedDonationType : undefined,
-					tags: selectedTag ? [selectedTag] : undefined,
-			  };
+	// Query parameters for filters
+	const filterParams = {
+		page,
+		search: searchTerm,
+		donationType:
+			selectedDonationType !== "all" ? selectedDonationType : undefined,
+		tags: selectedTag ? [selectedTag] : undefined,
+	};
 
-	const { data: causesData, isLoading, error } = useGetCausesQuery(queryParams);
+	// For organization users - get their own causes
+	const {
+		data: organizationCausesData,
+		isLoading: isLoadingOrgCauses,
+		error: orgCausesError,
+	} = useGetCausesQuery(
+		{ organizationId: user?.id },
+		{ skip: user?.role !== "organization" }
+	);
+
+	// For donor users - get causes from active campaigns only
+	const {
+		data: activeCampaignCausesData,
+		isLoading: isLoadingActiveCauses,
+		error: activeCausesError,
+	} = useGetActiveCampaignCausesQuery(filterParams, {
+		skip: user?.role !== "donor",
+	});
+
+	// Determine which data to use based on user role
+	const causesData =
+		user?.role === "organization"
+			? organizationCausesData
+			: activeCampaignCausesData;
+	const isLoading =
+		user?.role === "organization" ? isLoadingOrgCauses : isLoadingActiveCauses;
+	const error =
+		user?.role === "organization" ? orgCausesError : activeCausesError;
 
 	const [deleteCause, { isLoading: isDeleting }] = useDeleteCauseMutation();
 
@@ -123,7 +159,7 @@ const CausesPage = () => {
 		cause.tags?.forEach((tag) => allTags.add(tag));
 	});
 
-	// Filter causes (only used for organization view)
+	// Filter causes (only used for organization view to filter locally)
 	const filteredCauses =
 		user?.role === "organization"
 			? causesData?.causes?.filter((cause: Cause) =>
@@ -262,14 +298,14 @@ const CausesPage = () => {
 		);
 	}
 
-	// Donor View
+	// Donor View - Shows only causes from active campaigns
 	return (
 		<Box p={4}>
 			<Typography variant="h4" gutterBottom>
-				Browse Causes
+				Browse Active Causes
 			</Typography>
 			<Typography variant="body1" color="text.secondary" paragraph>
-				Discover causes that need your support and make a difference.
+				Discover causes from active campaigns that need your support.
 			</Typography>
 
 			{/* Search and Filters */}
@@ -367,7 +403,7 @@ const CausesPage = () => {
 				<Alert severity="info">
 					{searchTerm || selectedDonationType !== "all" || selectedTag
 						? "No causes match your search criteria. Try adjusting your filters."
-						: "No causes available at the moment."}
+						: "No active causes available at the moment."}
 				</Alert>
 			) : (
 				<Grid container spacing={3}>
@@ -380,7 +416,7 @@ const CausesPage = () => {
 
 						// Get primary donation type if available
 						const primaryDonationType =
-							cause.acceptedDonationTypes?.[0] || DonationType.MONETARY;
+							cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
 						const DonationIcon = DonationTypeIcons[primaryDonationType];
 
 						return (
@@ -501,9 +537,6 @@ const CausesPage = () => {
 					>
 						Previous
 					</Button>
-					<Typography variant="body1" sx={{ mx: 2, alignSelf: "center" }}>
-						Page {page} of {causesData.totalPages}
-					</Typography>
 					<Button
 						disabled={page === causesData.totalPages}
 						onClick={() =>

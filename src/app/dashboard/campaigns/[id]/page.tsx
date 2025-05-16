@@ -167,8 +167,8 @@ export default function CampaignDetailPage({
 // 	const unwrappedParams = React.use(params as any);
 // 	const id = unwrappedParams.id;
 
-	 function CampaignDetail({ params }: { params: { id: string } }) {
-		const id = params.id;
+function CampaignDetail({ params }: { params: { id: string } }) {
+	const id = params.id;
 
 	const router = useRouter();
 	const { user } = useSelector((state: RootState) => state.auth);
@@ -179,22 +179,29 @@ export default function CampaignDetailPage({
 	// Debug log for campaign ID
 	useEffect(() => {
 		console.log("Campaign detail page mounted with ID:", id, typeof id);
-		if (!id || id === 'undefined' || id === '[object Object]') {
-			console.error('Invalid campaign ID in campaign detail page');
-			router.push('/dashboard/campaigns');
+		if (!id || id === "undefined" || id === "[object Object]") {
+			console.error("Invalid campaign ID in campaign detail page");
+			router.push("/dashboard/campaigns");
 		}
 	}, [id, router]);
 
 	// Skip the query if ID is invalid
-	const skipQuery = !id || id === 'undefined' || id === '[object Object]';
-	const { data: campaignData, isLoading, error, refetch } = useGetCampaignByIdQuery(id, {
-		skip: skipQuery
+	const skipQuery = !id || id === "undefined" || id === "[object Object]";
+	const {
+		data: campaignData,
+		isLoading,
+		error,
+		refetch,
+	} = useGetCampaignByIdQuery(id, {
+		skip: skipQuery,
 	});
 
 	console.log("campaignData", campaignData);
 
-	const [deleteCampaign, { isLoading: isDeleting }] = useDeleteCampaignMutation();
-	const [updateCampaign, { isLoading: isUpdating }] = useUpdateCampaignMutation();
+	const [deleteCampaign, { isLoading: isDeleting }] =
+		useDeleteCampaignMutation();
+	const [updateCampaign, { isLoading: isUpdating }] =
+		useUpdateCampaignMutation();
 
 	// Form state for editing
 	const [formData, setFormData] = useState<FormData>({
@@ -210,8 +217,8 @@ export default function CampaignDetailPage({
 
 	// Initialize form with campaign data when it loads
 	useEffect(() => {
-		if (campaignData?.campaign) {
-			const campaign = campaignData.campaign;
+		if (campaignData?.data?.campaign) {
+			const campaign = campaignData.data.campaign;
 			setFormData({
 				title: campaign.title,
 				description: campaign.description,
@@ -228,38 +235,40 @@ export default function CampaignDetailPage({
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
-		setFormData(prev => ({
+		setFormData((prev) => ({
 			...prev,
-			[name]: value
+			[name]: value,
 		}));
 	};
 
-	const handleSelectChange = (event: React.ChangeEvent<HTMLInputElement> | any) => {
+	const handleSelectChange = (
+		event: React.ChangeEvent<{ name?: string; value: unknown }>
+	) => {
 		const name = event.target.name;
 		const value = event.target.value;
 		if (name) {
-			setFormData(prev => ({
+			setFormData((prev) => ({
 				...prev,
-				[name]: value
+				[name]: value,
 			}));
 		}
 	};
 
 	const handleDateChange = (field: string) => (date: Dayjs | null) => {
-		setFormData(prev => ({
+		setFormData((prev) => ({
 			...prev,
-			[field]: date
+			[field]: date,
 		}));
 	};
 
 	const handleDonationTypeChange = (type: DonationType) => {
-		setFormData(prev => {
+		setFormData((prev) => {
 			const types = prev.acceptedDonationTypes.includes(type)
-				? prev.acceptedDonationTypes.filter(t => t !== type)
+				? prev.acceptedDonationTypes.filter((t) => t !== type)
 				: [...prev.acceptedDonationTypes, type];
 			return {
 				...prev,
-				acceptedDonationTypes: types
+				acceptedDonationTypes: types,
 			};
 		});
 	};
@@ -301,8 +310,8 @@ export default function CampaignDetailPage({
 	};
 
 	const handleEditCampaign = () => {
-		if (!id || id === 'undefined') {
-			console.error('Invalid campaign ID');
+		if (!id || id === "undefined") {
+			console.error("Invalid campaign ID");
 			return;
 		}
 		setIsEditMode(true);
@@ -360,7 +369,7 @@ export default function CampaignDetailPage({
 	}
 
 	// Uncomment and update the guard clause
-	if (!campaignData ) {
+	if (!campaignData) {
 		return (
 			<Box p={4}>
 				<Alert severity="warning">Campaign not found or still loading.</Alert>
@@ -368,12 +377,12 @@ export default function CampaignDetailPage({
 		);
 	}
 
-	const campaign = campaignData.campaign;
+	const campaign = campaignData?.data?.campaign;
 	const progressPercentage = getProgressPercentage(
 		campaign?.totalRaisedAmount || 0,
 		campaign?.totalTargetAmount || 0
 	);
-	const { days: daysLeft, status: campaignTimeStatus } = getDaysRemaining(
+	const { days: daysLeft } = getDaysRemaining(
 		campaign?.endDate || new Date().toISOString()
 	);
 
@@ -387,7 +396,12 @@ export default function CampaignDetailPage({
 		<LocalizationProvider dateAdapter={AdapterDayjs}>
 			<Box sx={{ p: 4, backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
 				{/* Back Button */}
-				<Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+				<Box
+					display="flex"
+					justifyContent="space-between"
+					alignItems="center"
+					mb={3}
+				>
 					<Button
 						startIcon={<BackIcon />}
 						onClick={() => router.push("/dashboard/campaigns")}
@@ -395,35 +409,23 @@ export default function CampaignDetailPage({
 						Back to Campaigns
 					</Button>
 
-					{isAuthorized && !isEditMode && (
-						<Button
-							variant="contained"
-							color="primary"
-							startIcon={<EditIcon />}
-							onClick={toggleEditMode}
-						>
-							Edit Campaign
-						</Button>
-					)}
-
-					{isAuthorized && isEditMode && (
-						<Box>
-							<Button
-								variant="outlined"
-								startIcon={<CancelIcon />}
-								onClick={toggleEditMode}
-								sx={{ mr: 2 }}
-							>
-								Cancel
-							</Button>
+					{isAuthorized && (
+						<Box sx={{ display: "flex", gap: 2 }}>
 							<Button
 								variant="contained"
 								color="primary"
-								startIcon={<SaveIcon />}
-								onClick={handleSaveChanges}
-								disabled={isUpdating}
+								startIcon={<EditIcon />}
+								onClick={() => router.push(`/dashboard/campaigns/${id}/edit`)}
 							>
-								{isUpdating ? "Saving..." : "Save Changes"}
+								Edit
+							</Button>
+							<Button
+								variant="outlined"
+								color="error"
+								startIcon={<DeleteIcon />}
+								onClick={handleDeleteDialogOpen}
+							>
+								Delete
 							</Button>
 						</Box>
 					)}
@@ -437,7 +439,10 @@ export default function CampaignDetailPage({
 							sx={{
 								height: { xs: 200, md: 300 },
 								position: "relative",
-								background: `url(${campaign?.imageUrl || "https://placehold.co/1200x400?text=Campaign"})`,
+								background: `url(${
+									campaign?.imageUrl ||
+									"https://placehold.co/1200x400?text=Campaign"
+								})`,
 								backgroundSize: "cover",
 								backgroundPosition: "center",
 							}}
@@ -459,10 +464,10 @@ export default function CampaignDetailPage({
 										(campaign?.status || "").toLowerCase() === "active"
 											? "success"
 											: (campaign?.status || "").toLowerCase() === "draft"
-												? "default"
-												: (campaign?.status || "").toLowerCase() === "paused"
-													? "warning"
-													: "info"
+											? "default"
+											: (campaign?.status || "").toLowerCase() === "paused"
+											? "warning"
+											: "info"
 									}
 									sx={{ fontWeight: "bold" }}
 								/>
@@ -505,7 +510,7 @@ export default function CampaignDetailPage({
 										</Typography>
 										<Box display="flex" flexWrap="wrap" gap={1} mb={2}>
 											{campaign?.causes &&
-												campaign.causes.map((cause: any) => (
+												campaign.causes.map((cause) => (
 													<Chip
 														key={cause.id}
 														label={cause.title}
@@ -547,12 +552,18 @@ export default function CampaignDetailPage({
 											sx={{ mr: 1 }}
 										/>
 										<Typography variant="body2" color="text.secondary">
-											{daysLeft > 0 ? `${daysLeft} days left` : "Campaign ended"}
+											{daysLeft > 0
+												? `${daysLeft} days left`
+												: "Campaign ended"}
 										</Typography>
 									</Box>
 
 									<Box display="flex" alignItems="center">
-										<DonorsIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+										<DonorsIcon
+											fontSize="small"
+											color="action"
+											sx={{ mr: 1 }}
+										/>
 										<Typography variant="body2" color="text.secondary">
 											{campaign?.donorCount || 0} donors
 										</Typography>
@@ -579,7 +590,11 @@ export default function CampaignDetailPage({
 													}}
 													sx={{ mb: 2 }}
 												/>
-												<Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+												<Box
+													display="grid"
+													gridTemplateColumns="1fr 1fr"
+													gap={2}
+												>
 													<DatePicker
 														label="Start Date"
 														value={formData.startDate}
@@ -636,7 +651,10 @@ export default function CampaignDetailPage({
 															fontWeight="bold"
 															color="primary"
 														>
-															${(campaign?.totalRaisedAmount || 0).toLocaleString()}
+															$
+															{(
+																campaign?.totalRaisedAmount || 0
+															).toLocaleString()}
 														</Typography>
 													</Grid>
 
@@ -648,8 +666,15 @@ export default function CampaignDetailPage({
 														>
 															Goal
 														</Typography>
-														<Typography variant="h6" fontWeight="bold" align="right">
-															${(campaign?.totalTargetAmount || 0).toLocaleString()}
+														<Typography
+															variant="h6"
+															fontWeight="bold"
+															align="right"
+														>
+															$
+															{(
+																campaign?.totalTargetAmount || 0
+															).toLocaleString()}
 														</Typography>
 													</Grid>
 												</Grid>
@@ -755,7 +780,9 @@ export default function CampaignDetailPage({
 												</ListItemAvatar>
 												<ListItemText
 													primary="Start Date"
-													secondary={formatDate(campaign?.startDate || new Date().toISOString())}
+													secondary={formatDate(
+														campaign?.startDate || new Date().toISOString()
+													)}
 												/>
 											</ListItem>
 
@@ -767,7 +794,9 @@ export default function CampaignDetailPage({
 												</ListItemAvatar>
 												<ListItemText
 													primary="End Date"
-													secondary={formatDate(campaign?.endDate || new Date().toISOString())}
+													secondary={formatDate(
+														campaign?.endDate || new Date().toISOString()
+													)}
 												/>
 											</ListItem>
 
@@ -784,13 +813,16 @@ export default function CampaignDetailPage({
 															label={campaign?.status || "Unknown"}
 															size="small"
 															color={
-																(campaign?.status || "").toLowerCase() === "active"
+																(campaign?.status || "").toLowerCase() ===
+																"active"
 																	? "success"
-																	: (campaign?.status || "").toLowerCase() === "draft"
-																		? "default"
-																		: (campaign?.status || "").toLowerCase() === "paused"
-																			? "warning"
-																			: "info"
+																	: (campaign?.status || "").toLowerCase() ===
+																	  "draft"
+																	? "default"
+																	: (campaign?.status || "").toLowerCase() ===
+																	  "paused"
+																	? "warning"
+																	: "info"
 															}
 														/>
 													}
@@ -841,7 +873,7 @@ export default function CampaignDetailPage({
 
 								{campaign?.causes && campaign.causes.length > 0 ? (
 									<Grid container spacing={3}>
-										{campaign.causes.map((cause: any) => (
+										{campaign.causes.map((cause) => (
 											<Grid item xs={12} md={6} key={cause.id}>
 												<Card
 													sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}
@@ -915,7 +947,8 @@ export default function CampaignDetailPage({
 								</Typography>
 
 								<Alert severity="info">
-									Donation information will be available here when donations are made to this campaign.
+									Donation information will be available here when donations are
+									made to this campaign.
 								</Alert>
 							</Box>
 						</TabPanel>
@@ -927,12 +960,15 @@ export default function CampaignDetailPage({
 					<DialogTitle>Confirm Deletion</DialogTitle>
 					<DialogContent>
 						<Typography>
-							Are you sure you want to delete this campaign? This action cannot be
-							undone.
+							Are you sure you want to delete this campaign? This action cannot
+							be undone.
 						</Typography>
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={handleDeleteDialogClose} startIcon={<CancelIcon />}>
+						<Button
+							onClick={handleDeleteDialogClose}
+							startIcon={<CancelIcon />}
+						>
 							Cancel
 						</Button>
 						<Button

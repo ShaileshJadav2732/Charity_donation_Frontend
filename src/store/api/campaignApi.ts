@@ -1,59 +1,43 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
-	Campaign,
 	CampaignsResponse,
 	CampaignResponse,
 	CreateCampaignBody,
 	UpdateCampaignBody,
 	CampaignQueryParams,
-} from "@/types/campaings";
+} from "@/types/campaigns";
 import { RootState } from "../store";
-
-// Helper to validate campaign ID
-const isValidId = (id: string): boolean => {
-	return Boolean(id && typeof id === 'string' && id !== 'undefined' && id !== '[object Object]');
-};
-
-// Add improved error handler
-const handleErrorResponse = (error: any, functionName: string, id?: string): Error => {
-	console.error(`API error in ${functionName}${id ? ` for ID ${id}` : ''}:`, error);
-
-	// Return a more descriptive error
-	if (error?.status === 404) {
-		return new Error(`Resource not found. ${error.data?.message || ''}`);
-	} else if (error?.status === 401 || error?.status === 403) {
-		return new Error(`Authentication error: ${error.data?.message || 'You do not have permission to perform this action'}`);
-	} else if (error?.status >= 500) {
-		return new Error(`Server error: ${error.data?.message || 'The server encountered an error processing your request'}`);
-	}
-
-	return new Error(error?.data?.message || `Error in ${functionName}: ${error?.status || 'Unknown error'}`);
-};
-
-const baseQuery = fetchBaseQuery({
-	baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
-	prepareHeaders: (headers, { getState }) => {
-		// Only access token in browser environment
-		if (typeof window !== "undefined") {
-			// Get token from auth state
-			const token = (getState() as RootState).auth.token;
-
-			// If token exists, add it to the headers
-			if (token) {
-				headers.set("authorization", `Bearer ${token}`);
-			}
-		}
-
-		// Add content type header
-		headers.set("Content-Type", "application/json");
-
-		return headers;
-	},
-});
 
 export const campaignApi = createApi({
 	reducerPath: "campaignApi",
-	baseQuery,
+	baseQuery: fetchBaseQuery({
+		baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+		prepareHeaders: (headers, { getState }) => {
+			// Get token from auth state
+			const token = (getState() as RootState).auth.token;
+
+			// Log auth headers for debugging
+			console.log(
+				"Setting auth headers with token:",
+				token ? "present" : "missing"
+			);
+
+			// If token exists, add it to the headers
+			if (token) {
+				// Log the full token for debugging
+				console.log(
+					"Using token (first 15 chars):",
+					token.substring(0, 15) + "..."
+				);
+				headers.set("Authorization", `Bearer ${token}`);
+			}
+
+			// Add content type header
+			headers.set("Content-Type", "application/json");
+
+			return headers;
+		},
+	}),
 	tagTypes: ["Campaign", "Cause"],
 	endpoints: (builder) => ({
 		getCampaigns: builder.query<CampaignsResponse, CampaignQueryParams>({
@@ -66,17 +50,10 @@ export const campaignApi = createApi({
 		}),
 
 		getCampaignById: builder.query<CampaignResponse, string>({
-			query: (id) => {
-				// Log and validate the ID
-				console.log("API call getCampaignById with ID:", id);
-				if (!isValidId(id)) {
-					throw new Error(`Invalid campaign ID: ${id}`);
-				}
-				return {
-					url: `/campaigns/${id}`,
-					method: "GET",
-				};
-			},
+			query: (id) => ({
+				url: `/campaigns/${id}`,
+				method: "GET",
+			}),
 			providesTags: (result, error, id) => [{ type: "Campaign", id }],
 		}),
 
@@ -93,11 +70,17 @@ export const campaignApi = createApi({
 		}),
 
 		createCampaign: builder.mutation<CampaignResponse, CreateCampaignBody>({
-			query: (body) => ({
-				url: "/campaigns",
-				method: "POST",
-				body,
-			}),
+			query: (body) => {
+				console.log(
+					"Campaign creation request payload:",
+					JSON.stringify(body, null, 2)
+				);
+				return {
+					url: "/campaigns",
+					method: "POST",
+					body,
+				};
+			},
 			invalidatesTags: ["Campaign"],
 		}),
 
@@ -106,45 +89,29 @@ export const campaignApi = createApi({
 			{ id: string; body: UpdateCampaignBody }
 		>({
 			query: ({ id, body }) => {
-				// Log and validate the ID
-				console.log("API call updateCampaign with ID:", id);
-				if (!isValidId(id)) {
-					throw new Error(`Invalid campaign ID for update: ${id}`);
-				}
+				console.log("Update campaign request:", {
+					url: `/campaigns/${id}`,
+					method: "PATCH",
+					body,
+				});
 				return {
 					url: `/campaigns/${id}`,
 					method: "PATCH",
 					body,
 				};
 			},
-			invalidatesTags: (result, error, { id }) => [{ type: "Campaign", id }],
+			invalidatesTags: (result, error, { id }) => {
+				console.log("Update campaign result:", result);
+				console.log("Update campaign error:", error);
+				return [{ type: "Campaign", id }];
+			},
 		}),
 
 		deleteCampaign: builder.mutation<void, string>({
-			query: (id) => {
-				// Log and validate the ID
-				console.log("API call deleteCampaign with ID:", id);
-				if (!isValidId(id)) {
-					throw new Error(`Invalid campaign ID for delete: ${id}`);
-				}
-				return {
-					url: `/campaigns/${id}`,
-					method: "DELETE",
-				};
-			},
-			// Add error handling to transform and log errors
-			transformErrorResponse: (response, meta, arg) => {
-				return handleErrorResponse(response, 'deleteCampaign', arg);
-			},
-			// Improved error handling in the onQueryStarted lifecycle
-			async onQueryStarted(id, { dispatch, queryFulfilled }) {
-				try {
-					await queryFulfilled;
-					console.log(`Successfully deleted campaign with ID: ${id}`);
-				} catch (error) {
-					console.error(`Error deleting campaign with ID ${id}:`, error);
-				}
-			},
+			query: (id) => ({
+				url: `/campaigns/${id}`,
+				method: "DELETE",
+			}),
 			invalidatesTags: ["Campaign"],
 		}),
 
@@ -170,6 +137,12 @@ export const campaignApi = createApi({
 		}),
 	}),
 });
+
+// Log the API URL for debugging
+console.log(
+	"Campaign API URL:",
+	process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+);
 
 export const {
 	useGetCampaignsQuery,
