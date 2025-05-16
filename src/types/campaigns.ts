@@ -42,46 +42,24 @@ export interface Campaign {
 	updatedAt: string;
 }
 
-export interface CampaignResponse {
+export interface CauseResponse {
 	success: boolean;
 	data: {
-		campaign: {
-			_id: string;
+		cause: {
+			id: string;
 			title: string;
 			description: string;
-			startDate: string;
-			endDate: string;
-			status: "draft" | "active" | "completed" | "cancelled";
-			causes: Array<{
-				id: string;
-				title: string;
-				description?: string;
-				targetAmount?: number;
-				raisedAmount?: number;
-			}>;
-			organizations: Array<{
-				_id: string;
-				name: string;
-				email?: string;
-				phone?: string;
-				address?: string;
-			}>;
-			totalTargetAmount: number;
-			totalRaisedAmount: number;
-			totalSupporters: number;
+			targetAmount: number;
+			raisedAmount: number;
 			imageUrl: string;
-			acceptedDonationTypes: string[];
+			tags: string[];
+			organizationId: string;
+			organizationName?: string;
 			createdAt: string;
 			updatedAt: string;
 		};
-		donationStats?: Array<{
-			_id: string;
-			totalAmount: number;
-			count: number;
-		}>;
 	};
 }
-
 export interface CausesResponse {
 	causes: Cause[];
 	total: number;

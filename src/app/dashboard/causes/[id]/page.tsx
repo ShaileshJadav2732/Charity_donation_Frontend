@@ -6,6 +6,7 @@ import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { DonationType } from "@/types/donation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+
 import {
 	Box,
 	Button,
@@ -35,30 +36,35 @@ import {
 	ArrowBack as ArrowBackIcon,
 	CalendarToday as CalendarIcon,
 	Public as PublicIcon,
+	Bloodtype as BloodIcon,
+	Fastfood as FoodIcon,
+	ChildCare as ToysIcon,
+	MenuBook as BooksIcon,
+	Living as FurnitureIcon,
+	Living as HouseholdIcon,
 } from "@mui/icons-material";
 
-const donationTypeIcons: Record<DonationType, React.ComponentType> = {
-	// MONEY = "MONEY",
-	// CLOTHES = "CLOTHES",
-	// BLOOD = "BLOOD",
-	// FOOD = "FOOD",
-	// TOYS = "TOYS",
-	// BOOKS = "BOOKS",
-	// FURNITURE = "FURNITURE",
-	// HOUSEHOLD = "HOUSEHOLD",
-	// OTHER = "OTHER",
+const donationTypeIcons = {
+	[DonationType.MONEY]: MoneyIcon,
+
+	[DonationType.BLOOD]: BloodIcon,
+	[DonationType.FOOD]: FoodIcon,
+	[DonationType.TOYS]: ToysIcon,
+	[DonationType.BOOKS]: BooksIcon,
+	[DonationType.FURNITURE]: FurnitureIcon,
+	[DonationType.HOUSEHOLD]: HouseholdIcon,
 };
 
 export default function CauseDetailPage({
 	params,
 }: {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 }) {
+	const { id } = React.use(params);
 	const router = useRouter();
 	// WARNING: React.use() is not a standard React API and might be causing issues
 	// This should be replaced with a proper approach for unwrapping params
-	const resolvedParams = React.use(params);
-	const { id } = resolvedParams;
+
 	const [activeTab, setActiveTab] = useState("about");
 	const { user } = useSelector((state: RootState) => state.auth);
 
@@ -102,13 +108,14 @@ export default function CauseDetailPage({
 			</Box>
 		);
 	}
-
-	const cause = data;
+	console.log(data.data.cause.targetAmount);
 	const progress =
-		cause?.raisedAmount && cause?.targetAmount
+		data?.data.cause.raisedAmount && data.data.cause.targetAmount
 			? Math.min(
 					100,
-					Math.round((cause.raisedAmount / cause.targetAmount) * 100)
+					Math.round(
+						(data?.data.cause.raisedAmount / data.data.cause.targetAmount) * 100
+					)
 			  )
 			: 0;
 
@@ -128,11 +135,11 @@ export default function CauseDetailPage({
 						bgcolor: "grey.100",
 					}}
 				>
-					{cause?.imageUrl ? (
+					{data.data.cause.imageUrl ? (
 						<Box
 							component="img"
-							src={cause.imageUrl}
-							alt={cause?.title || "Cause"}
+							src={data?.data.cause?.imageUrl}
+							alt={data?.data.cause?.title || "Cause"}
 							sx={{
 								width: "100%",
 								height: "100%",
@@ -153,13 +160,13 @@ export default function CauseDetailPage({
 
 				<CardContent sx={{ p: 4 }}>
 					<Typography variant="h4" fontWeight="bold" gutterBottom>
-						{cause?.data?.title || "Untitled Cause"}
+						{data?.data.cause?.title || "Untitled Cause"}
 					</Typography>
 
 					<Box display="flex" alignItems="center" mb={3}>
 						<PeopleIcon sx={{ mr: 1, color: "grey.500" }} />
 						<Typography variant="body2" color="text.secondary">
-							{cause.organizationName || "Organization"}
+							{data.data.cause.organizationName || "Organization"}
 						</Typography>
 					</Box>
 
@@ -181,14 +188,14 @@ export default function CauseDetailPage({
 									</Box>
 									<Typography variant="h5" fontWeight="bold">
 										$
-										{cause?.raisedAmount
-											? cause.raisedAmount.toLocaleString()
+										{data?.data.cause.raisedAmount
+											? data.data.cause.raisedAmount.toLocaleString()
 											: "0"}
 									</Typography>
 									<Typography variant="caption" color="text.secondary">
 										of $
-										{cause?.targetAmount
-											? cause.targetAmount.toLocaleString()
+										{data?.data.cause.targetAmount
+											? data.data.cause.targetAmount.toLocaleString()
 											: "0"}{" "}
 										goal
 									</Typography>
@@ -211,7 +218,7 @@ export default function CauseDetailPage({
 										<HeartIcon color="error" />
 									</Box>
 									<Typography variant="h5" fontWeight="bold">
-										{cause?.donorCount || 0}
+										{data?.data.cause.donorCount || 0}
 									</Typography>
 									<Typography variant="caption" color="text.secondary">
 										people have donated
@@ -235,8 +242,8 @@ export default function CauseDetailPage({
 										<CalendarIcon color="info" />
 									</Box>
 									<Typography variant="h5" fontWeight="bold">
-										{cause?.createdAt
-											? new Date(cause.createdAt).toLocaleDateString(
+										{data?.data.cause.createdAt
+											? new Date(data.data.cause.createdAt).toLocaleDateString(
 													undefined,
 													{
 														month: "short",
@@ -267,8 +274,8 @@ export default function CauseDetailPage({
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
 								$
-								{cause?.targetAmount
-									? cause.targetAmount.toLocaleString()
+								{data?.data.cause.targetAmount
+									? data.data.cause.targetAmount.toLocaleString()
 									: "0"}{" "}
 								goal
 							</Typography>
@@ -299,7 +306,9 @@ export default function CauseDetailPage({
 								startIcon={<PeopleIcon />}
 								disabled={
 									user?.role !== "donor" ||
-									!cause.acceptedDonationTypes?.includes(DonationType.VOLUNTEER)
+									!data.data.cause.acceptedDonationTypes?.includes(
+										DonationType.VOLUNTEER
+									)
 								}
 							>
 								Volunteer
@@ -315,13 +324,13 @@ export default function CauseDetailPage({
 					)}
 
 					{/* Tags */}
-					{cause?.tags && cause.tags.length > 0 && (
+					{data?.data.cause.tags && data.data.cause.tags.length > 0 && (
 						<Box mb={4}>
 							<Typography variant="subtitle2" gutterBottom>
 								Categories
 							</Typography>
 							<Box display="flex" flexWrap="wrap" gap={1}>
-								{cause.tags.map((tag) => (
+								{data.data.cause.tags.map((tag) => (
 									<Chip
 										key={tag}
 										label={tag}
@@ -359,62 +368,70 @@ export default function CauseDetailPage({
 								variant="body1"
 								sx={{ whiteSpace: "pre-wrap", mb: 4 }}
 							>
-								{cause?.description || "No description available."}
+								{data?.data.cause.description || "No description available."}
 							</Typography>
 
-							{cause?.acceptedDonationTypes &&
-								cause.acceptedDonationTypes.length > 0 && (
+							{data?.data.cause.acceptedDonationTypes &&
+								data.data.cause.acceptedDonationTypes.length > 0 && (
 									<Box mt={4}>
 										<Typography variant="h6" gutterBottom>
 											Ways You Can Help
 										</Typography>
 										<Grid container spacing={2}>
-											{cause.acceptedDonationTypes.map((type, index) => {
-												const TypeIcon = donationTypeIcons[type];
-												let title, description;
+											{data.data.cause.acceptedDonationTypes.map(
+												(type, index) => {
+													const TypeIcon = donationTypeIcons[type];
+													let title, description;
 
-												switch (type) {
-													case DonationType.MONETARY:
-														title = "Monetary Donations";
-														description =
-															"Support this cause with financial contributions.";
-														break;
-													case DonationType.IN_KIND:
-														title = "In-Kind Donations";
-														description =
-															"Donate goods, supplies, or services.";
-														break;
-													case DonationType.VOLUNTEER:
-														title = "Volunteer Work";
-														description = "Contribute your time and skills.";
-														break;
-												}
+													switch (type) {
+														case DonationType.MONEY:
+															title = "Monetary Donations";
+															description =
+																"Support this cause with financial contributions.";
+															break;
+														case DonationType.IN_KIND:
+															title = "In-Kind Donations";
+															description =
+																"Donate goods, supplies, or services.";
+															break;
+														case DonationType.VOLUNTEER:
+															title = "Volunteer Work";
+															description = "Contribute your time and skills.";
+															break;
+													}
 
-												return (
-													<Grid item xs={12} sm={4} key={index}>
-														<Card variant="outlined" sx={{ height: "100%" }}>
-															<CardContent>
-																<Box display="flex" alignItems="center" mb={2}>
+													return (
+														<Grid item xs={12} sm={4} key={index}>
+															<Card variant="outlined" sx={{ height: "100%" }}>
+																<CardContent>
 																	<Box
-																		sx={{
-																			bgcolor: "primary.50",
-																			borderRadius: "50%",
-																			p: 1,
-																			mr: 2,
-																		}}
+																		display="flex"
+																		alignItems="center"
+																		mb={2}
 																	>
-																		<TypeIcon color="primary" />
+																		<Box
+																			sx={{
+																				bgcolor: "primary.50",
+																				borderRadius: "50%",
+																				p: 1,
+																				mr: 2,
+																			}}
+																		>
+																			<TypeIcon color="primary" />
+																		</Box>
+																		<Typography variant="h6">
+																			{title}
+																		</Typography>
 																	</Box>
-																	<Typography variant="h6">{title}</Typography>
-																</Box>
-																<Typography variant="body2">
-																	{description}
-																</Typography>
-															</CardContent>
-														</Card>
-													</Grid>
-												);
-											})}
+																	<Typography variant="body2">
+																		{description}
+																	</Typography>
+																</CardContent>
+															</Card>
+														</Grid>
+													);
+												}
+											)}
 										</Grid>
 									</Box>
 								)}
@@ -436,8 +453,8 @@ export default function CauseDetailPage({
 									<ListItemText
 										primary="Funding Goal"
 										secondary={`$${
-											cause?.targetAmount
-												? cause.targetAmount.toLocaleString()
+											data?.data.cause.targetAmount
+												? data.data.cause?.targetAmount.toLocaleString()
 												: "0"
 										}`}
 									/>
@@ -452,8 +469,10 @@ export default function CauseDetailPage({
 									<ListItemText
 										primary="Created On"
 										secondary={
-											cause?.createdAt
-												? new Date(cause.createdAt).toLocaleDateString()
+											data?.data.cause?.createdAt
+												? new Date(
+														data.data.cause?.createdAt
+												  ).toLocaleDateString()
 												: "N/A"
 										}
 									/>
@@ -467,7 +486,9 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Organization"
-										secondary={cause.organizationName || "Organization"}
+										secondary={
+											data?.data.cause?.organizationName || "Organization"
+										}
 									/>
 								</ListItem>
 							</List>
@@ -492,12 +513,12 @@ export default function CauseDetailPage({
 								<PeopleIcon sx={{ width: 40, height: 40, color: "grey.500" }} />
 							</Avatar>
 							<Typography variant="h6" gutterBottom>
-								{cause.donorCount
-									? `${cause.donorCount} people have donated`
+								{data.cause.donorCount
+									? `${data.cause.donorCount} people have donated`
 									: "No donors yet"}
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								{cause.donorCount
+								{data.cause.donorCount
 									? "Thank you to all our donors for supporting this cause!"
 									: "Be the first to support this cause!"}
 							</Typography>

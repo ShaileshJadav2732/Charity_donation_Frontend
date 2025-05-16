@@ -1,13 +1,12 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { RootState } from "@/store/store";
+import { CauseResponse } from "@/types/campaigns";
 import {
-	Cause,
+	CauseQueryParams,
 	CausesResponse,
-	CauseResponse,
 	CreateCauseBody,
 	UpdateCauseBody,
-	CauseQueryParams,
 } from "@/types/cause";
-import { RootState } from "@/store/store";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
 	baseUrl: "/api",

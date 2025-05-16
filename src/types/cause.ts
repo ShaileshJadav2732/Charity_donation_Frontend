@@ -40,36 +40,6 @@ export interface CausesResponse {
 	totalPages: number;
 }
 
-export interface CauseResponse {
-	// cause: Cause;
-	// id: any;
-	// title: any;
-	// description: any;
-	// targetAmount: any;
-	// raisedAmount: any;
-	// imageUrl: any;
-	// tags: any;
-	// organizationId: any;
-	// organizationName: any;
-	// createdAt: any;
-	// updatedAt: any;
-
-	cause: Cause;
-	id: string;
-	title: string;
-	description: string;
-	targetAmount: number;
-	raisedAmount: number;
-	imageUrl: string;
-	tags: string[];
-	organizationId: string;
-	organizationName: string;
-	createdAt: string;
-	updatedAt: string;
-	donorCount: number;
-	acceptedDonationTypes: DonationType[];
-}
-
 export interface CauseQueryParams {
 	page?: number;
 	limit?: number;
