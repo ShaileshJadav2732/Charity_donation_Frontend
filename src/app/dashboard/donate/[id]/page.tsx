@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { useCreateDonationMutation } from "@/store/api/donationApi";
@@ -43,7 +43,8 @@ const DONATION_AMOUNTS = [10, 25, 50, 100, 250, 500];
 
 export default function DonatePage({ params }: { params: { id: string } }) {
 	const router = useRouter();
-	const { id } = params;
+	const resolvedParams = React.use(params);
+	const { id } = resolvedParams;
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [activeStep, setActiveStep] = useState(0);
 	const [donationAmount, setDonationAmount] = useState<number | string>(25);

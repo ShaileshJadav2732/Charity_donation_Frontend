@@ -44,8 +44,9 @@ export async function middleware(request: NextRequest) {
 
 	// Check if user is already logged in and trying to access public routes
 	if (publicRoutes.some((route) => pathname === route) && activeToken) {
-		// For login, signup, and select-role pages, redirect to dashboard if already logged in
-		if (["/login", "/signup", "/select-role"].includes(pathname)) {
+		// For login and select-role pages, redirect to dashboard if already logged in
+		// Explicitly exclude signup page from this redirect
+		if (["/login", "/select-role"].includes(pathname)) {
 			console.log(
 				`Middleware: User already logged in, redirecting from ${pathname} to /dashboard`
 			);

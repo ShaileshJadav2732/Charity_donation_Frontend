@@ -61,7 +61,7 @@ export default function DonorProfileForm() {
 			}).unwrap();
 			console.log("DonorProfileForm: Profile update successful");
 			toast.success("Profile completed successfully!");
-			router.push("/dashboard");
+			router.push("/dashboard/home");
 		} catch (error) {
 			console.error("DonorProfileForm: Profile update error:", error);
 			const parsedError = parseError(error);
@@ -96,9 +96,8 @@ export default function DonorProfileForm() {
 						value={formData.firstName}
 						onChange={handleChange}
 						required
-						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${
-							errors.firstName ? "border-red-300" : "border-gray-200"
-						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${errors.firstName ? "border-red-300" : "border-gray-200"
+							} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
 						placeholder="John"
 						autoComplete="given-name"
 					/>
@@ -127,9 +126,8 @@ export default function DonorProfileForm() {
 						value={formData.lastName}
 						onChange={handleChange}
 						required
-						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${
-							errors.lastName ? "border-red-300" : "border-gray-200"
-						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${errors.lastName ? "border-red-300" : "border-gray-200"
+							} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
 						placeholder="Doe"
 						autoComplete="family-name"
 					/>
@@ -157,9 +155,8 @@ export default function DonorProfileForm() {
 						type="tel"
 						value={formData.phoneNumber}
 						onChange={handleChange}
-						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${
-							errors.phoneNumber ? "border-red-300" : "border-gray-200"
-						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${errors.phoneNumber ? "border-red-300" : "border-gray-200"
+							} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
 						placeholder="+1 (123) 456-7890"
 						autoComplete="tel"
 					/>
@@ -271,7 +268,7 @@ export default function DonorProfileForm() {
 						value={formData.bio}
 						onChange={handleChange}
 						className="appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50"
-						placeholder="Tell us about yourself and why you’re passionate about giving..."
+						placeholder="Tell us about yourself and why you're passionate about giving..."
 					/>
 				</div>
 			</div>

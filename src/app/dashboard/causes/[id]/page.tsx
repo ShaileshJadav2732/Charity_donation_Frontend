@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { DonationType } from "@/types/cause";
@@ -50,11 +50,14 @@ export default function CauseDetailPage({
 	params: { id: string };
 }) {
 	const router = useRouter();
-	const { id } = params;
+	const resolvedParams = React.use(params);
+	const { id } = resolvedParams;
 	const [activeTab, setActiveTab] = useState("about");
 	const { user } = useSelector((state: RootState) => state.auth);
 
 	const { data, isLoading, error } = useGetCauseByIdQuery(id);
+
+	console.log("cozzzz", data)
 
 	const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
 		setActiveTab(newValue);
@@ -93,7 +96,7 @@ export default function CauseDetailPage({
 		);
 	}
 
-	const cause = data.cause;
+	const cause = data;
 	const progress = Math.min(
 		100,
 		Math.round((cause.raisedAmount / cause.targetAmount) * 100)

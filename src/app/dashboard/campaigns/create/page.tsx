@@ -313,6 +313,10 @@ const CreateCampaignPage = () => {
 		}
 
 		try {
+			// Ensure organizations includes the current user's ID
+			const organizations = [user.id];
+
+			// Create payload
 			const payload = {
 				title: formData.title,
 				description: formData.description,
@@ -320,18 +324,23 @@ const CreateCampaignPage = () => {
 				endDate: formData.endDate.toISOString(),
 				status: formData.status,
 				totalTargetAmount: parseFloat(formData.totalTargetAmount),
-				imageUrl: formData.imageUrl,
-				organizations: user?.id ? [user.id] : [],
+				imageUrl: formData.imageUrl || "https://placehold.co/600x400?text=Campaign",
+				organizations,
 				acceptedDonationTypes: formData.acceptedDonationTypes,
 				causes: formData.selectedCauses,
 			};
 
 			console.log("Creating campaign with payload:", payload);
-			const response = await createCampaign(payload);
-			console.log("Campaign created successfully:", response);
-			router.push("/dashboard/campaigns");
+
+			const response = await createCampaign(payload).unwrap();
+			console.log("Campaign created:", response);
+
+			if (response.success) {
+				router.push("/dashboard/campaigns");
+			}
 		} catch (err) {
 			console.error("Failed to create campaign:", err);
+			setError("Failed to create campaign. Please check the form and try again.");
 		}
 	};
 

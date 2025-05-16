@@ -59,14 +59,44 @@ export default function EditCampaignPage({
 	params: { id: string };
 }) {
 	const router = useRouter();
-	const { id } = params;
+	// Use React.use() to resolve params
+	const resolvedParams = React.use(params);
+	const { id } = resolvedParams;
 	const { user } = useSelector((state: RootState) => state.auth);
 
+	// Enhanced validation with debugging
+	useEffect(() => {
+		console.log("Campaign edit page mounted with ID:", id);
+		if (!id || id === 'undefined' || id === '[object Object]') {
+			console.error('Invalid campaign ID detected:', id);
+			// Add a delay to show the error message before redirecting
+			const timer = setTimeout(() => {
+				router.push('/dashboard/campaigns');
+			}, 2000);
+			return () => clearTimeout(timer);
+		}
+	}, [id, router]);
+
+	// Early return for invalid ID
+	if (!id || id === 'undefined' || id === '[object Object]') {
+		return (
+			<Box p={4}>
+				<Alert severity="error">
+					Invalid campaign ID detected. Redirecting to campaigns list...
+				</Alert>
+			</Box>
+		);
+	}
+
+	// Safely query the campaign with validated ID
 	const {
 		data: campaignData,
 		isLoading: isLoadingCampaign,
 		error: campaignError,
-	} = useGetCampaignByIdQuery(id);
+	} = useGetCampaignByIdQuery(id, {
+		// Skip the query if the ID is invalid
+		skip: !id || id === 'undefined' || id === '[object Object]'
+	});
 
 	const [
 		updateCampaign,
@@ -222,14 +252,14 @@ export default function EditCampaignPage({
 	}
 
 	// Check authorization
-	const campaign = campaignData?.campaign;
-	if (!campaign) {
-		return (
-			<Box p={4}>
-				<Alert severity="error">Campaign not found.</Alert>
-			</Box>
-		);
-	}
+	// const campaign = campaignData?.campaign;
+	// if (!campaign) {
+	// 	return (
+	// 		<Box p={4}>
+	// 			<Alert severity="error">Campaign not found.</Alert>
+	// 		</Box>
+	// 	);
+	// }
 
 	const isAuthorized =
 		user &&

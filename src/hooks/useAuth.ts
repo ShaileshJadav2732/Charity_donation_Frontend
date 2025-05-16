@@ -72,19 +72,19 @@ export const useAuth = () => {
 
 			const handleAuthState = debounce(async () => {
 				// If user is authenticated and trying to access login page, redirect to dashboard
-				if (user && (pathname === "/login" || pathname === "/signup")) {
+				// Explicitly check for login page only, allowing access to signup
+				if (user && pathname === "/login") {
 					console.log(
-						"User already authenticated, redirecting away from login/signup"
+						"User already authenticated, redirecting away from login"
 					);
 					router.push("/dashboard/home");
 					return;
 				}
 
-				// Don't redirect if on public route (except login/signup when authenticated)
+				// Don't redirect if on public route (except login when authenticated)
 				if (
 					PUBLIC_ROUTES.includes(pathname) &&
-					pathname !== "/login" &&
-					pathname !== "/signup"
+					pathname !== "/login"
 				) {
 					console.log("On public route, skipping redirect");
 					if (!user) {
@@ -120,7 +120,7 @@ export const useAuth = () => {
 								"Profile not completed, redirecting to /complete-profile"
 							);
 							router.push("/complete-profile");
-						} else if (pathname === "/login" || pathname === "/signup") {
+						} else if (pathname === "/login") {
 							console.log("Already authenticated, redirecting to dashboard");
 							router.push("/dashboard/home");
 						}

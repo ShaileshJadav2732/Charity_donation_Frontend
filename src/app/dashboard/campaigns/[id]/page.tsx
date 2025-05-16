@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Box,
@@ -8,7 +8,6 @@ import {
 	Paper,
 	Typography,
 	Chip,
-	Grid,
 	Card,
 	CardContent,
 	Divider,
@@ -28,7 +27,15 @@ import {
 	DialogTitle,
 	DialogContent,
 	DialogActions,
+	TextField,
+	FormControl,
+	InputLabel,
+	Select,
+	MenuItem,
+	Switch,
+	FormControlLabel,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import {
 	CalendarMonth as CalendarIcon,
 	Groups as DonorsIcon,
@@ -41,13 +48,22 @@ import {
 	Cancel as CancelIcon,
 	Category as CategoryIcon,
 	Person as PersonIcon,
+	Save as SaveIcon,
 } from "@mui/icons-material";
 import {
 	useGetCampaignByIdQuery,
 	useDeleteCampaignMutation,
+	useUpdateCampaignMutation,
 } from "@/store/api/campaignApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { DatePicker } from "@mui/x-date-pickers";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DonationType } from "@/types/donation";
+import dayjs, { Dayjs } from "dayjs";
+import { CampaignStatus } from "@/types/campaings";
+import { Suspense } from "react";
 
 interface TabPanelProps {
 	children?: React.ReactNode;
@@ -106,32 +122,190 @@ const getDaysRemaining = (
 
 // Calculate progress percentage
 const getProgressPercentage = (raised: number, target: number): number => {
-	if (target === 0) return 0;
+	if (target === 0 || !raised) return 0;
 	const percentage = (raised / target) * 100;
 	return Math.min(percentage, 100); // Cap at 100%
 };
+
+// Add donation type options
+const DONATION_TYPES = [
+	{ value: DonationType.MONEY, label: "Money" },
+	{ value: DonationType.CLOTHES, label: "Clothes" },
+	{ value: DonationType.BLOOD, label: "Blood" },
+	{ value: DonationType.FOOD, label: "Food" },
+	{ value: DonationType.TOYS, label: "Toys" },
+	{ value: DonationType.BOOKS, label: "Books" },
+	{ value: DonationType.FURNITURE, label: "Furniture" },
+	{ value: DonationType.HOUSEHOLD, label: "Household" },
+	{ value: DonationType.OTHER, label: "Other" },
+];
+
+// Form state interface
+interface FormData {
+	title: string;
+	description: string;
+	startDate: Dayjs | null;
+	endDate: Dayjs | null;
+	totalTargetAmount: string;
+	status: string;
+	imageUrl: string;
+	acceptedDonationTypes: DonationType[];
+}
 
 export default function CampaignDetailPage({
 	params,
 }: {
 	params: { id: string };
 }) {
+	// Use a wrapper component to handle params properly with React.use()
+	return <CampaignDetail params={params} />;
+}
+
+// // Component that uses React.use() to unwrap params
+// function CampaignDetail({ params }: { params: { id: string } }) {
+// 	// Properly unwrap params with React.use()
+// 	const unwrappedParams = React.use(params as any);
+// 	const id = unwrappedParams.id;
+
+	 function CampaignDetail({ params }: { params: { id: string } }) {
+		const id = params.id;
+
 	const router = useRouter();
-	const { id } = params;
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [tabValue, setTabValue] = useState(0);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [isEditMode, setIsEditMode] = useState(false);
 
-	const { data: campaignData, isLoading, error } = useGetCampaignByIdQuery(id);
-	const [deleteCampaign, { isLoading: isDeleting }] =
-		useDeleteCampaignMutation();
+	// Debug log for campaign ID
+	useEffect(() => {
+		console.log("Campaign detail page mounted with ID:", id, typeof id);
+		if (!id || id === 'undefined' || id === '[object Object]') {
+			console.error('Invalid campaign ID in campaign detail page');
+			router.push('/dashboard/campaigns');
+		}
+	}, [id, router]);
+
+	// Skip the query if ID is invalid
+	const skipQuery = !id || id === 'undefined' || id === '[object Object]';
+	const { data: campaignData, isLoading, error, refetch } = useGetCampaignByIdQuery(id, {
+		skip: skipQuery
+	});
+
+	console.log("campaignData", campaignData);
+
+	const [deleteCampaign, { isLoading: isDeleting }] = useDeleteCampaignMutation();
+	const [updateCampaign, { isLoading: isUpdating }] = useUpdateCampaignMutation();
+
+	// Form state for editing
+	const [formData, setFormData] = useState<FormData>({
+		title: "",
+		description: "",
+		startDate: null,
+		endDate: null,
+		totalTargetAmount: "",
+		status: "",
+		imageUrl: "",
+		acceptedDonationTypes: [],
+	});
+
+	// Initialize form with campaign data when it loads
+	useEffect(() => {
+		if (campaignData?.campaign) {
+			const campaign = campaignData.campaign;
+			setFormData({
+				title: campaign.title,
+				description: campaign.description,
+				startDate: dayjs(campaign.startDate),
+				endDate: dayjs(campaign.endDate),
+				totalTargetAmount: campaign.totalTargetAmount.toString(),
+				status: campaign.status.toLowerCase(),
+				imageUrl: campaign.imageUrl || "",
+				// Check if acceptedDonationTypes exists on the campaign object
+				acceptedDonationTypes: [],
+			});
+		}
+	}, [campaignData]);
+
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const { name, value } = e.target;
+		setFormData(prev => ({
+			...prev,
+			[name]: value
+		}));
+	};
+
+	const handleSelectChange = (event: React.ChangeEvent<HTMLInputElement> | any) => {
+		const name = event.target.name;
+		const value = event.target.value;
+		if (name) {
+			setFormData(prev => ({
+				...prev,
+				[name]: value
+			}));
+		}
+	};
+
+	const handleDateChange = (field: string) => (date: Dayjs | null) => {
+		setFormData(prev => ({
+			...prev,
+			[field]: date
+		}));
+	};
+
+	const handleDonationTypeChange = (type: DonationType) => {
+		setFormData(prev => {
+			const types = prev.acceptedDonationTypes.includes(type)
+				? prev.acceptedDonationTypes.filter(t => t !== type)
+				: [...prev.acceptedDonationTypes, type];
+			return {
+				...prev,
+				acceptedDonationTypes: types
+			};
+		});
+	};
 
 	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
 		setTabValue(newValue);
 	};
 
+	const toggleEditMode = () => {
+		setIsEditMode(!isEditMode);
+	};
+
+	const handleSaveChanges = async () => {
+		try {
+			if (!formData.startDate || !formData.endDate) {
+				console.error("Start date or end date is missing");
+				return;
+			}
+
+			const payload = {
+				id,
+				body: {
+					title: formData.title,
+					description: formData.description,
+					startDate: formData.startDate.toISOString(),
+					endDate: formData.endDate.toISOString(),
+					status: formData.status as CampaignStatus,
+					totalTargetAmount: parseFloat(formData.totalTargetAmount),
+					imageUrl: formData.imageUrl,
+				},
+			};
+
+			await updateCampaign(payload).unwrap();
+			setIsEditMode(false);
+			refetch();
+		} catch (err) {
+			console.error("Failed to update campaign:", err);
+		}
+	};
+
 	const handleEditCampaign = () => {
-		router.push(`/dashboard/campaigns/${id}/edit`);
+		if (!id || id === 'undefined') {
+			console.error('Invalid campaign ID');
+			return;
+		}
+		setIsEditMode(true);
 	};
 
 	const handleDeleteDialogOpen = () => {
@@ -150,6 +324,17 @@ export default function CampaignDetailPage({
 			console.error("Failed to delete campaign:", error);
 		}
 	};
+
+	// Early return if ID is invalid
+	if (skipQuery) {
+		return (
+			<Box p={4}>
+				<Alert severity="error">
+					Invalid campaign ID. Redirecting to campaigns list...
+				</Alert>
+			</Box>
+		);
+	}
 
 	if (isLoading) {
 		return (
@@ -174,487 +359,593 @@ export default function CampaignDetailPage({
 		);
 	}
 
-	if (!campaignData || !campaignData.campaign) {
+	// Uncomment and update the guard clause
+	if (!campaignData ) {
 		return (
 			<Box p={4}>
-				<Alert severity="warning">Campaign not found.</Alert>
+				<Alert severity="warning">Campaign not found or still loading.</Alert>
 			</Box>
 		);
 	}
 
 	const campaign = campaignData.campaign;
 	const progressPercentage = getProgressPercentage(
-		campaign.totalRaisedAmount,
-		campaign.totalTargetAmount
+		campaign?.totalRaisedAmount || 0,
+		campaign?.totalTargetAmount || 0
 	);
 	const { days: daysLeft, status: campaignTimeStatus } = getDaysRemaining(
-		campaign.endDate
+		campaign?.endDate || new Date().toISOString()
 	);
 
 	// Check if user is authorized to edit/delete this campaign
 	const isAuthorized =
 		user &&
 		user.role === "organization" &&
-		(campaign.organizationId === user.id ||
-			(campaign.organizations && campaign.organizations.includes(user.id)));
+		campaign?.organizationId === user.id;
 
 	return (
-		<Box sx={{ p: 4, backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
-			{/* Back Button */}
-			<Button
-				startIcon={<BackIcon />}
-				onClick={() => router.push("/dashboard/campaigns")}
-				sx={{ mb: 3 }}
-			>
-				Back to Campaigns
-			</Button>
-
-			{/* Campaign Header */}
-			<Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-				{/* Campaign Image */}
-				<Box
-					sx={{
-						height: { xs: 200, md: 300 },
-						position: "relative",
-						background: `url(${
-							campaign.imageUrl || "https://placehold.co/1200x400?text=Campaign"
-						})`,
-						backgroundSize: "cover",
-						backgroundPosition: "center",
-					}}
-				>
-					{/* Status Overlay */}
-					<Box
-						sx={{
-							position: "absolute",
-							top: 16,
-							right: 16,
-							backgroundColor: "rgba(255,255,255,0.9)",
-							borderRadius: 2,
-							p: 1,
-						}}
+		<LocalizationProvider dateAdapter={AdapterDayjs}>
+			<Box sx={{ p: 4, backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+				{/* Back Button */}
+				<Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+					<Button
+						startIcon={<BackIcon />}
+						onClick={() => router.push("/dashboard/campaigns")}
 					>
-						<Chip
-							label={campaign.status}
-							color={
-								campaign.status.toLowerCase() === "active"
-									? "success"
-									: campaign.status.toLowerCase() === "draft"
-									? "default"
-									: campaign.status.toLowerCase() === "paused"
-									? "warning"
-									: "info"
-							}
-							sx={{ fontWeight: "bold" }}
-						/>
-					</Box>
-				</Box>
+						Back to Campaigns
+					</Button>
 
-				{/* Campaign Info */}
-				<Box sx={{ p: 4 }}>
-					<Grid container spacing={3}>
-						<Grid item xs={12} md={8}>
-							<Typography variant="h4" fontWeight="bold" gutterBottom>
-								{campaign.title}
-							</Typography>
-
-							<Box display="flex" flexWrap="wrap" gap={1} mb={2}>
-								{campaign.causes &&
-									campaign.causes.map((cause: any) => (
-										<Chip
-											key={cause.id}
-											label={cause.title}
-											size="small"
-											color="primary"
-											variant="outlined"
-										/>
-									))}
-							</Box>
-
-							<Box display="flex" alignItems="center" gap={3} mb={3}>
-								<Box display="flex" alignItems="center">
-									<CalendarIcon
-										fontSize="small"
-										color="action"
-										sx={{ mr: 1 }}
-									/>
-									<Typography variant="body2" color="text.secondary">
-										{daysLeft > 0 ? `${daysLeft} days left` : "Campaign ended"}
-									</Typography>
-								</Box>
-
-								<Box display="flex" alignItems="center">
-									<DonorsIcon fontSize="small" color="action" sx={{ mr: 1 }} />
-									<Typography variant="body2" color="text.secondary">
-										{campaign.donorCount || 0} donors
-									</Typography>
-								</Box>
-							</Box>
-						</Grid>
-
-						<Grid item xs={12} md={4}>
-							<Card
-								sx={{ mb: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}
-							>
-								<CardContent>
-									<Box sx={{ mb: 2 }}>
-										<Box
-											display="flex"
-											justifyContent="space-between"
-											alignItems="center"
-											mb={0.5}
-										>
-											<Typography variant="body2" color="text.secondary">
-												Progress
-											</Typography>
-											<Typography variant="body2" fontWeight="medium">
-												{progressPercentage.toFixed(0)}%
-											</Typography>
-										</Box>
-										<LinearProgress
-											variant="determinate"
-											value={progressPercentage}
-											sx={{ height: 8, borderRadius: 4 }}
-										/>
-									</Box>
-
-									<Grid container spacing={1}>
-										<Grid item xs={6}>
-											<Typography variant="body2" color="text.secondary">
-												Raised
-											</Typography>
-											<Typography
-												variant="h6"
-												fontWeight="bold"
-												color="primary"
-											>
-												${campaign.totalRaisedAmount?.toLocaleString() || "0"}
-											</Typography>
-										</Grid>
-
-										<Grid item xs={6}>
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												align="right"
-											>
-												Goal
-											</Typography>
-											<Typography variant="h6" fontWeight="bold" align="right">
-												${campaign.totalTargetAmount?.toLocaleString() || "0"}
-											</Typography>
-										</Grid>
-									</Grid>
-								</CardContent>
-							</Card>
-
-							{isAuthorized && (
-								<Stack direction="row" spacing={2} sx={{ width: "100%" }}>
-									<Button
-										variant="outlined"
-										startIcon={<EditIcon />}
-										onClick={handleEditCampaign}
-										fullWidth
-									>
-										Edit
-									</Button>
-									<Button
-										variant="outlined"
-										color="error"
-										startIcon={<DeleteIcon />}
-										onClick={handleDeleteDialogOpen}
-										fullWidth
-									>
-										Delete
-									</Button>
-								</Stack>
-							)}
-						</Grid>
-					</Grid>
-				</Box>
-			</Paper>
-
-			{/* Tabs Section */}
-			<Box sx={{ mt: 4 }}>
-				<Paper elevation={2} sx={{ borderRadius: 2 }}>
-					<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-						<Tabs
-							value={tabValue}
-							onChange={handleTabChange}
-							aria-label="campaign tabs"
-							variant="scrollable"
-							scrollButtons="auto"
+					{isAuthorized && !isEditMode && (
+						<Button
+							variant="contained"
+							color="primary"
+							startIcon={<EditIcon />}
+							onClick={toggleEditMode}
 						>
-							<Tab label="Details" {...a11yProps(0)} />
-							<Tab label="Causes" {...a11yProps(1)} />
-							<Tab label="Donations" {...a11yProps(2)} />
-						</Tabs>
-					</Box>
+							Edit Campaign
+						</Button>
+					)}
 
-					{/* Details Tab */}
-					<TabPanel value={tabValue} index={0}>
-						<Box sx={{ px: { xs: 2, md: 4 } }}>
-							<Typography variant="h6" gutterBottom>
-								Campaign Description
-							</Typography>
-							<Typography variant="body1" paragraph>
-								{campaign.description}
-							</Typography>
+					{isAuthorized && isEditMode && (
+						<Box>
+							<Button
+								variant="outlined"
+								startIcon={<CancelIcon />}
+								onClick={toggleEditMode}
+								sx={{ mr: 2 }}
+							>
+								Cancel
+							</Button>
+							<Button
+								variant="contained"
+								color="primary"
+								startIcon={<SaveIcon />}
+								onClick={handleSaveChanges}
+								disabled={isUpdating}
+							>
+								{isUpdating ? "Saving..." : "Save Changes"}
+							</Button>
+						</Box>
+					)}
+				</Box>
 
-							<Divider sx={{ my: 3 }} />
+				{/* Campaign Header */}
+				<Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
+					{/* Campaign Image */}
+					{!isEditMode ? (
+						<Box
+							sx={{
+								height: { xs: 200, md: 300 },
+								position: "relative",
+								background: `url(${campaign?.imageUrl || "https://placehold.co/1200x400?text=Campaign"})`,
+								backgroundSize: "cover",
+								backgroundPosition: "center",
+							}}
+						>
+							{/* Status Overlay */}
+							<Box
+								sx={{
+									position: "absolute",
+									top: 16,
+									right: 16,
+									backgroundColor: "rgba(255,255,255,0.9)",
+									borderRadius: 2,
+									p: 1,
+								}}
+							>
+								<Chip
+									label={campaign?.status || "Unknown"}
+									color={
+										(campaign?.status || "").toLowerCase() === "active"
+											? "success"
+											: (campaign?.status || "").toLowerCase() === "draft"
+												? "default"
+												: (campaign?.status || "").toLowerCase() === "paused"
+													? "warning"
+													: "info"
+									}
+									sx={{ fontWeight: "bold" }}
+								/>
+							</Box>
+						</Box>
+					) : (
+						<Box sx={{ p: 3 }}>
+							<TextField
+								fullWidth
+								label="Image URL"
+								name="imageUrl"
+								value={formData.imageUrl}
+								onChange={handleInputChange}
+								sx={{ mb: 2 }}
+							/>
+							<FormControl fullWidth sx={{ mb: 2 }}>
+								<InputLabel>Status</InputLabel>
+								<Select
+									name="status"
+									value={formData.status}
+									onChange={handleSelectChange}
+								>
+									<MenuItem value="draft">Draft</MenuItem>
+									<MenuItem value="active">Active</MenuItem>
+									<MenuItem value="paused">Paused</MenuItem>
+									<MenuItem value="completed">Completed</MenuItem>
+								</Select>
+							</FormControl>
+						</Box>
+					)}
 
-							<Grid container spacing={4}>
-								<Grid item xs={12} md={6}>
-									<Typography variant="h6" gutterBottom>
-										Campaign Details
-									</Typography>
-
-									<List>
-										<ListItem>
-											<ListItemAvatar>
-												<Avatar sx={{ bgcolor: "primary.light" }}>
-													<CalendarIcon />
-												</Avatar>
-											</ListItemAvatar>
-											<ListItemText
-												primary="Start Date"
-												secondary={formatDate(campaign.startDate)}
-											/>
-										</ListItem>
-
-										<ListItem>
-											<ListItemAvatar>
-												<Avatar sx={{ bgcolor: "primary.light" }}>
-													<CalendarIcon />
-												</Avatar>
-											</ListItemAvatar>
-											<ListItemText
-												primary="End Date"
-												secondary={formatDate(campaign.endDate)}
-											/>
-										</ListItem>
-
-										<ListItem>
-											<ListItemAvatar>
-												<Avatar sx={{ bgcolor: "primary.light" }}>
-													<CategoryIcon />
-												</Avatar>
-											</ListItemAvatar>
-											<ListItemText
-												primary="Status"
-												secondary={
+					{/* Campaign Info */}
+					<Box sx={{ p: 4 }}>
+						<Grid container spacing={3}>
+							<Grid item xs={12} md={8}>
+								{!isEditMode ? (
+									<>
+										<Typography variant="h4" fontWeight="bold" gutterBottom>
+											{campaign?.title || "Untitled Campaign"}
+										</Typography>
+										<Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+											{campaign?.causes &&
+												campaign.causes.map((cause: any) => (
 													<Chip
-														label={campaign.status}
+														key={cause.id}
+														label={cause.title}
 														size="small"
-														color={
-															campaign.status.toLowerCase() === "active"
-																? "success"
-																: campaign.status.toLowerCase() === "draft"
-																? "default"
-																: campaign.status.toLowerCase() === "paused"
-																? "warning"
-																: "info"
-														}
+														color="primary"
+														variant="outlined"
 													/>
-												}
-											/>
-										</ListItem>
-									</List>
-								</Grid>
+												))}
+										</Box>
+									</>
+								) : (
+									<>
+										<TextField
+											fullWidth
+											label="Campaign Title"
+											name="title"
+											value={formData.title}
+											onChange={handleInputChange}
+											sx={{ mb: 3 }}
+										/>
+										<TextField
+											fullWidth
+											label="Description"
+											name="description"
+											value={formData.description}
+											onChange={handleInputChange}
+											multiline
+											rows={4}
+											sx={{ mb: 3 }}
+										/>
+									</>
+								)}
 
-								<Grid item xs={12} md={6}>
-									<Typography variant="h6" gutterBottom>
-										Donation Types Accepted
-									</Typography>
-
-									<Box display="flex" flexWrap="wrap" gap={1} mb={3}>
-										{campaign.acceptedDonationTypes &&
-											campaign.acceptedDonationTypes.map((type: string) => (
-												<Chip
-													key={type}
-													label={type}
-													icon={<DonationIcon />}
-													variant="outlined"
-												/>
-											))}
+								<Box display="flex" alignItems="center" gap={3} mb={3}>
+									<Box display="flex" alignItems="center">
+										<CalendarIcon
+											fontSize="small"
+											color="action"
+											sx={{ mr: 1 }}
+										/>
+										<Typography variant="body2" color="text.secondary">
+											{daysLeft > 0 ? `${daysLeft} days left` : "Campaign ended"}
+										</Typography>
 									</Box>
 
-									<Typography variant="h6" gutterBottom>
-										Organization
-									</Typography>
-
-									<Card variant="outlined" sx={{ maxWidth: "100%" }}>
-										<CardContent
-											sx={{ display: "flex", alignItems: "center", gap: 2 }}
-										>
-											<Avatar
-												sx={{
-													bgcolor: "secondary.main",
-													width: 50,
-													height: 50,
-												}}
-											>
-												<PersonIcon fontSize="large" />
-											</Avatar>
-											<Box>
-												<Typography variant="h6">
-													{campaign.organizationName || "Organization"}
-												</Typography>
-												<Typography variant="body2" color="text.secondary">
-													Campaign Organizer
-												</Typography>
-											</Box>
-										</CardContent>
-									</Card>
-								</Grid>
+									<Box display="flex" alignItems="center">
+										<DonorsIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+										<Typography variant="body2" color="text.secondary">
+											{campaign?.donorCount || 0} donors
+										</Typography>
+									</Box>
+								</Box>
 							</Grid>
-						</Box>
-					</TabPanel>
 
-					{/* Causes Tab */}
-					<TabPanel value={tabValue} index={1}>
-						<Box sx={{ px: { xs: 2, md: 4 } }}>
-							<Typography variant="h6" gutterBottom>
-								Related Causes
-							</Typography>
+							<Grid item xs={12} md={4}>
+								<Card
+									sx={{ mb: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}
+								>
+									<CardContent>
+										{isEditMode ? (
+											<Box sx={{ mb: 2 }}>
+												<TextField
+													fullWidth
+													label="Total Target Amount"
+													name="totalTargetAmount"
+													type="number"
+													value={formData.totalTargetAmount}
+													onChange={handleInputChange}
+													InputProps={{
+														startAdornment: <span>$</span>,
+													}}
+													sx={{ mb: 2 }}
+												/>
+												<Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+													<DatePicker
+														label="Start Date"
+														value={formData.startDate}
+														onChange={handleDateChange("startDate")}
+														slotProps={{
+															textField: {
+																fullWidth: true,
+															},
+														}}
+													/>
 
-							{campaign.causes && campaign.causes.length > 0 ? (
-								<Grid container spacing={3}>
-									{campaign.causes.map((cause: any) => (
-										<Grid item xs={12} md={6} key={cause.id}>
-											<Card
-												sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}
-											>
-												<CardContent>
-													<Typography variant="h6" gutterBottom>
-														{cause.title}
-													</Typography>
+													<DatePicker
+														label="End Date"
+														value={formData.endDate}
+														onChange={handleDateChange("endDate")}
+														slotProps={{
+															textField: {
+																fullWidth: true,
+															},
+														}}
+													/>
+												</Box>
+											</Box>
+										) : (
+											<>
+												<Box sx={{ mb: 2 }}>
+													<Box
+														display="flex"
+														justifyContent="space-between"
+														alignItems="center"
+														mb={0.5}
+													>
+														<Typography variant="body2" color="text.secondary">
+															Progress
+														</Typography>
+														<Typography variant="body2" fontWeight="medium">
+															{progressPercentage.toFixed(0)}%
+														</Typography>
+													</Box>
+													<LinearProgress
+														variant="determinate"
+														value={progressPercentage}
+														sx={{ height: 8, borderRadius: 4 }}
+													/>
+												</Box>
 
-													{cause.description && (
+												<Grid container spacing={1}>
+													<Grid item xs={6}>
+														<Typography variant="body2" color="text.secondary">
+															Raised
+														</Typography>
+														<Typography
+															variant="h6"
+															fontWeight="bold"
+															color="primary"
+														>
+															${(campaign?.totalRaisedAmount || 0).toLocaleString()}
+														</Typography>
+													</Grid>
+
+													<Grid item xs={6}>
 														<Typography
 															variant="body2"
 															color="text.secondary"
-															paragraph
+															align="right"
 														>
-															{cause.description}
+															Goal
 														</Typography>
-													)}
-
-													<Divider sx={{ my: 2 }} />
-
-													<Grid container spacing={1}>
-														<Grid item xs={6}>
-															<Typography
-																variant="body2"
-																color="text.secondary"
-															>
-																Target
-															</Typography>
-															<Typography variant="body1" fontWeight="bold">
-																${cause.targetAmount?.toLocaleString() || "0"}
-															</Typography>
-														</Grid>
-
-														<Grid item xs={6}>
-															<Typography
-																variant="body2"
-																color="text.secondary"
-																align="right"
-															>
-																Raised
-															</Typography>
-															<Typography
-																variant="body1"
-																fontWeight="bold"
-																color="primary"
-																align="right"
-															>
-																${cause.raisedAmount?.toLocaleString() || "0"}
-															</Typography>
-														</Grid>
+														<Typography variant="h6" fontWeight="bold" align="right">
+															${(campaign?.totalTargetAmount || 0).toLocaleString()}
+														</Typography>
 													</Grid>
-												</CardContent>
-											</Card>
-										</Grid>
-									))}
-								</Grid>
-							) : (
-								<Alert severity="info">
-									No causes are associated with this campaign.
-								</Alert>
-							)}
-						</Box>
-					</TabPanel>
+												</Grid>
+											</>
+										)}
+									</CardContent>
+								</Card>
 
-					{/* Donations Tab */}
-					<TabPanel value={tabValue} index={2}>
-						<Box sx={{ px: { xs: 2, md: 4 } }}>
-							<Typography variant="h6" gutterBottom>
-								Recent Donations
-							</Typography>
-
-							{campaign.donations && campaign.donations.length > 0 ? (
-								<List sx={{ width: "100%" }}>
-									{campaign.donations.map((donation: any) => (
-										<ListItem
-											key={donation.id}
-											secondaryAction={
-												<Typography
-													variant="h6"
-													color="primary"
-													fontWeight="bold"
-												>
-													${donation.amount?.toLocaleString() || "0"}
-												</Typography>
-											}
-										>
-											<ListItemAvatar>
-												<Avatar sx={{ bgcolor: "success.light" }}>
-													<DonorsIcon />
-												</Avatar>
-											</ListItemAvatar>
-											<ListItemText
-												primary={donation.donorName || "Anonymous"}
-												secondary={`${donation.type} | ${new Date(
-													donation.date
-												).toLocaleDateString()}`}
-											/>
-										</ListItem>
-									))}
-								</List>
-							) : (
-								<Alert severity="info">
-									No donations have been made to this campaign yet.
-								</Alert>
-							)}
-						</Box>
-					</TabPanel>
+								{isEditMode ? (
+									<Box sx={{ mb: 2 }}>
+										<Typography variant="subtitle1" gutterBottom>
+											Accepted Donation Types
+										</Typography>
+										<Box display="flex" gap={1} flexWrap="wrap">
+											{DONATION_TYPES.map((type) => (
+												<Chip
+													key={type.value}
+													label={type.label}
+													onClick={() => handleDonationTypeChange(type.value)}
+													color={
+														formData.acceptedDonationTypes.includes(type.value)
+															? "primary"
+															: "default"
+													}
+													variant={
+														formData.acceptedDonationTypes.includes(type.value)
+															? "filled"
+															: "outlined"
+													}
+												/>
+											))}
+										</Box>
+									</Box>
+								) : (
+									isAuthorized && (
+										<Stack direction="row" spacing={2} sx={{ width: "100%" }}>
+											<Button
+												variant="outlined"
+												startIcon={<EditIcon />}
+												onClick={handleEditCampaign}
+												fullWidth
+											>
+												Edit
+											</Button>
+											<Button
+												variant="outlined"
+												color="error"
+												startIcon={<DeleteIcon />}
+												onClick={handleDeleteDialogOpen}
+												fullWidth
+											>
+												Delete
+											</Button>
+										</Stack>
+									)
+								)}
+							</Grid>
+						</Grid>
+					</Box>
 				</Paper>
-			</Box>
 
-			{/* Delete Confirmation Dialog */}
-			<Dialog open={deleteDialogOpen} onClose={handleDeleteDialogClose}>
-				<DialogTitle>Confirm Deletion</DialogTitle>
-				<DialogContent>
-					<Typography>
-						Are you sure you want to delete this campaign? This action cannot be
-						undone.
-					</Typography>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleDeleteDialogClose} startIcon={<CancelIcon />}>
-						Cancel
-					</Button>
-					<Button
-						onClick={handleDeleteCampaign}
-						color="error"
-						startIcon={<DeleteIcon />}
-						disabled={isDeleting}
-					>
-						{isDeleting ? "Deleting..." : "Delete"}
-					</Button>
-				</DialogActions>
-			</Dialog>
-		</Box>
+				{/* Tabs Section */}
+				<Box sx={{ mt: 4 }}>
+					<Paper elevation={2} sx={{ borderRadius: 2 }}>
+						<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+							<Tabs
+								value={tabValue}
+								onChange={handleTabChange}
+								aria-label="campaign tabs"
+								variant="scrollable"
+								scrollButtons="auto"
+							>
+								<Tab label="Details" {...a11yProps(0)} />
+								<Tab label="Causes" {...a11yProps(1)} />
+								<Tab label="Donations" {...a11yProps(2)} />
+							</Tabs>
+						</Box>
+
+						{/* Details Tab */}
+						<TabPanel value={tabValue} index={0}>
+							<Box sx={{ px: { xs: 2, md: 4 } }}>
+								<Typography variant="h6" gutterBottom>
+									Campaign Description
+								</Typography>
+								<Typography variant="body1" paragraph>
+									{campaign?.description || "No description available."}
+								</Typography>
+
+								<Divider sx={{ my: 3 }} />
+
+								<Grid container spacing={4}>
+									<Grid item xs={12} md={6}>
+										<Typography variant="h6" gutterBottom>
+											Campaign Details
+										</Typography>
+
+										<List>
+											<ListItem>
+												<ListItemAvatar>
+													<Avatar sx={{ bgcolor: "primary.light" }}>
+														<CalendarIcon />
+													</Avatar>
+												</ListItemAvatar>
+												<ListItemText
+													primary="Start Date"
+													secondary={formatDate(campaign?.startDate || new Date().toISOString())}
+												/>
+											</ListItem>
+
+											<ListItem>
+												<ListItemAvatar>
+													<Avatar sx={{ bgcolor: "primary.light" }}>
+														<CalendarIcon />
+													</Avatar>
+												</ListItemAvatar>
+												<ListItemText
+													primary="End Date"
+													secondary={formatDate(campaign?.endDate || new Date().toISOString())}
+												/>
+											</ListItem>
+
+											<ListItem>
+												<ListItemAvatar>
+													<Avatar sx={{ bgcolor: "primary.light" }}>
+														<CategoryIcon />
+													</Avatar>
+												</ListItemAvatar>
+												<ListItemText
+													primary="Status"
+													secondary={
+														<Chip
+															label={campaign?.status || "Unknown"}
+															size="small"
+															color={
+																(campaign?.status || "").toLowerCase() === "active"
+																	? "success"
+																	: (campaign?.status || "").toLowerCase() === "draft"
+																		? "default"
+																		: (campaign?.status || "").toLowerCase() === "paused"
+																			? "warning"
+																			: "info"
+															}
+														/>
+													}
+												/>
+											</ListItem>
+										</List>
+									</Grid>
+
+									<Grid item xs={12} md={6}>
+										<Typography variant="h6" gutterBottom>
+											Organization
+										</Typography>
+
+										<Card variant="outlined" sx={{ maxWidth: "100%" }}>
+											<CardContent
+												sx={{ display: "flex", alignItems: "center", gap: 2 }}
+											>
+												<Avatar
+													sx={{
+														bgcolor: "secondary.main",
+														width: 50,
+														height: 50,
+													}}
+												>
+													<PersonIcon fontSize="large" />
+												</Avatar>
+												<Box>
+													<Typography variant="h6">
+														{campaign?.organizationName || "Organization"}
+													</Typography>
+													<Typography variant="body2" color="text.secondary">
+														Campaign Organizer
+													</Typography>
+												</Box>
+											</CardContent>
+										</Card>
+									</Grid>
+								</Grid>
+							</Box>
+						</TabPanel>
+
+						{/* Causes Tab */}
+						<TabPanel value={tabValue} index={1}>
+							<Box sx={{ px: { xs: 2, md: 4 } }}>
+								<Typography variant="h6" gutterBottom>
+									Related Causes
+								</Typography>
+
+								{campaign?.causes && campaign.causes.length > 0 ? (
+									<Grid container spacing={3}>
+										{campaign.causes.map((cause: any) => (
+											<Grid item xs={12} md={6} key={cause.id}>
+												<Card
+													sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}
+												>
+													<CardContent>
+														<Typography variant="h6" gutterBottom>
+															{cause.title}
+														</Typography>
+
+														{cause.description && (
+															<Typography
+																variant="body2"
+																color="text.secondary"
+																paragraph
+															>
+																{cause.description}
+															</Typography>
+														)}
+
+														<Divider sx={{ my: 2 }} />
+
+														<Grid container spacing={1}>
+															<Grid item xs={6}>
+																<Typography
+																	variant="body2"
+																	color="text.secondary"
+																>
+																	Target
+																</Typography>
+																<Typography variant="body1" fontWeight="bold">
+																	${(cause.targetAmount || 0).toLocaleString()}
+																</Typography>
+															</Grid>
+
+															<Grid item xs={6}>
+																<Typography
+																	variant="body2"
+																	color="text.secondary"
+																	align="right"
+																>
+																	Raised
+																</Typography>
+																<Typography
+																	variant="body1"
+																	fontWeight="bold"
+																	color="primary"
+																	align="right"
+																>
+																	${(cause.raisedAmount || 0).toLocaleString()}
+																</Typography>
+															</Grid>
+														</Grid>
+													</CardContent>
+												</Card>
+											</Grid>
+										))}
+									</Grid>
+								) : (
+									<Alert severity="info">
+										No causes are associated with this campaign.
+									</Alert>
+								)}
+							</Box>
+						</TabPanel>
+
+						{/* Donations Tab */}
+						<TabPanel value={tabValue} index={2}>
+							<Box sx={{ px: { xs: 2, md: 4 } }}>
+								<Typography variant="h6" gutterBottom>
+									Recent Donations
+								</Typography>
+
+								<Alert severity="info">
+									Donation information will be available here when donations are made to this campaign.
+								</Alert>
+							</Box>
+						</TabPanel>
+					</Paper>
+				</Box>
+
+				{/* Delete Confirmation Dialog */}
+				<Dialog open={deleteDialogOpen} onClose={handleDeleteDialogClose}>
+					<DialogTitle>Confirm Deletion</DialogTitle>
+					<DialogContent>
+						<Typography>
+							Are you sure you want to delete this campaign? This action cannot be
+							undone.
+						</Typography>
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={handleDeleteDialogClose} startIcon={<CancelIcon />}>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleDeleteCampaign}
+							color="error"
+							startIcon={<DeleteIcon />}
+							disabled={isDeleting}
+						>
+							{isDeleting ? "Deleting..." : "Delete"}
+						</Button>
+					</DialogActions>
+				</Dialog>
+			</Box>
+		</LocalizationProvider>
 	);
 }
