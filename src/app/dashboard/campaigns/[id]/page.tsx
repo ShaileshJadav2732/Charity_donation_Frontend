@@ -161,12 +161,6 @@ export default function CampaignDetailPage({
 	return <CampaignDetail params={params} />;
 }
 
-// // Component that uses React.use() to unwrap params
-// function CampaignDetail({ params }: { params: { id: string } }) {
-// 	// Properly unwrap params with React.use()
-// 	const unwrappedParams = React.use(params as any);
-// 	const id = unwrappedParams.id;
-
 function CampaignDetail({ params }: { params: { id: string } }) {
 	const id = params.id;
 
@@ -196,6 +190,14 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		skip: skipQuery,
 	});
 
+	const {
+		data: organizationCausesData,
+		isLoading: isLoadingOrgCauses,
+		error: orgCausesError,
+	} = useGetCausesQuery(
+		{ organizationId: user?.id },
+		{ skip: user?.role !== "organization" }
+	);
 	console.log("campaignData", campaignData);
 
 	const [deleteCampaign, { isLoading: isDeleting }] =

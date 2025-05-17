@@ -1,4 +1,4 @@
-import { DonationFormData } from "@/types/donation";
+import { DonationFormData, DonorStatsResponse } from "@/types/donation";
 import apiSlice from "./apiSlice";
 
 export const donationApi = apiSlice.injectEndpoints({
@@ -27,6 +27,30 @@ export const donationApi = apiSlice.injectEndpoints({
 				params,
 			}),
 		}),
+
+		getDonorDonations: builder.query<
+			DonationFormData,
+			{ status?: string; type?: string; page?: number; limit?: number }
+		>({
+			query: ({ status, type, page = 1, limit = 10 }) => {
+				const params = new URLSearchParams();
+				if (status) params.append("status", status);
+				if (type) params.append("type", type);
+				params.append("page", page.toString());
+				params.append("limit", limit.toString());
+
+				return {
+					url: `/donations/my?${params.toString()}`,
+					method: "GET",
+				};
+			},
+		}),
+		getDonorStats: builder.query<DonorStatsResponse, void>({
+			query: () => ({
+				url: "/donations/donor/stats",
+				method: "GET",
+			}),
+		}),
 	}),
 });
 
@@ -35,4 +59,5 @@ export const {
 	useGetDonationsQuery,
 	useGetDonationByIdQuery,
 	useGetOrganizationDonationsQuery,
+	useGetDonorStatsQuery,
 } = donationApi;

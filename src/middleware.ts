@@ -50,7 +50,9 @@ export async function middleware(request: NextRequest) {
 			console.log(
 				`Middleware: User already logged in, redirecting from ${pathname} to /dashboard`
 			);
-			return NextResponse.redirect(new URL("/dashboard/home", request.url));
+			return NextResponse.redirect(
+				new URL("/dashboard/campaigns", request.url)
+			);
 		}
 	}
 

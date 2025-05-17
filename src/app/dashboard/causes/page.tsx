@@ -103,7 +103,7 @@ const CausesPage = () => {
 		skip: user?.role !== "donor",
 	});
 
-	// Determine which data to use based on user role
+	// // Determine which data to use based on user role
 	const causesData =
 		user?.role === "organization"
 			? organizationCausesData
@@ -113,26 +113,26 @@ const CausesPage = () => {
 	const error =
 		user?.role === "organization" ? orgCausesError : activeCausesError;
 
-	const [deleteCause, { isLoading: isDeleting }] = useDeleteCauseMutation();
+	// const [deleteCause, { isLoading: isDeleting }] = useDeleteCauseMutation();
 
 	// Only for organizations
-	const handleCreateCause = () => {
-		router.push("/dashboard/causes/create");
-	};
+	// const handleCreateCause = () => {
+	// 	router.push("/dashboard/causes/create");
+	// };
 
-	const handleEditCause = (id: string) => {
-		router.push(`/dashboard/causes/${id}/edit`);
-	};
+	// const handleEditCause = (id: string) => {
+	// 	router.push(`/dashboard/causes/${id}/edit`);
+	// };
 
-	const handleDeleteCause = async (id: string) => {
-		if (window.confirm("Are you sure you want to delete this cause?")) {
-			try {
-				await deleteCause(id).unwrap();
-			} catch (err) {
-				console.error("Failed to delete cause:", err);
-			}
-		}
-	};
+	// const handleDeleteCause = async (id: string) => {
+	// 	if (window.confirm("Are you sure you want to delete this cause?")) {
+	// 		try {
+	// 			await deleteCause(id).unwrap();
+	// 		} catch (err) {
+	// 			console.error("Failed to delete cause:", err);
+	// 		}
+	// 	}
+	// };
 
 	const handleViewCause = (id: string) => {
 		router.push(`/dashboard/causes/${id}`);
@@ -160,141 +160,143 @@ const CausesPage = () => {
 	});
 
 	// Filter causes (only used for organization view to filter locally)
-	const filteredCauses =
-		user?.role === "organization"
-			? causesData?.causes?.filter((cause: Cause) =>
-					cause.title.toLowerCase().includes(searchTerm.toLowerCase())
-			  )
-			: causesData?.causes;
+	// const filteredCauses =
+	// 	user?.role === "organization"
+	// 		? causesData?.causes?.filter((cause: Cause) =>
+	// 				cause.title.toLowerCase().includes(searchTerm.toLowerCase())
+	// 		  )
+	// 		: causesData?.causes;
 
 	// Organization View
 	if (user?.role === "organization") {
 		return (
-			<Box p={4}>
-				<Box
-					display="flex"
-					justifyContent="space-between"
-					alignItems="center"
-					mb={4}
-				>
-					<Typography variant="h4">Manage Causes</Typography>
-					<Button
-						variant="contained"
-						color="primary"
-						startIcon={<AddIcon />}
-						onClick={handleCreateCause}
-					>
-						Create Cause
-					</Button>
-				</Box>
+			// <Box p={4}>
+			// 	<Box
+			// 		display="flex"
+			// 		justifyContent="space-between"
+			// 		alignItems="center"
+			// 		mb={4}
+			// 	>
+			// 		<Typography variant="h4">Manage Causes</Typography>
+			// 		<Button
+			// 			variant="contained"
+			// 			color="primary"
+			// 			startIcon={<AddIcon />}
+			// 			onClick={handleCreateCause}
+			// 		>
+			// 			Create Cause
+			// 		</Button>
+			// 	</Box>
 
-				<Box display="flex" gap={2} mb={4}>
-					<TextField
-						placeholder="Search causes..."
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
-						size="small"
-						InputProps={{
-							startAdornment: <SearchIcon color="action" />,
-						}}
-						sx={{ flexGrow: 1 }}
-					/>
-				</Box>
+			// 	<Box display="flex" gap={2} mb={4}>
+			// 		<TextField
+			// 			placeholder="Search causes..."
+			// 			value={searchTerm}
+			// 			onChange={(e) => setSearchTerm(e.target.value)}
+			// 			size="small"
+			// 			InputProps={{
+			// 				startAdornment: <SearchIcon color="action" />,
+			// 			}}
+			// 			sx={{ flexGrow: 1 }}
+			// 		/>
+			// 	</Box>
 
-				{isLoading ? (
-					<Box display="flex" justifyContent="center" p={4}>
-						<CircularProgress />
-					</Box>
-				) : error ? (
-					<Alert severity="error">Failed to load causes</Alert>
-				) : filteredCauses?.length === 0 ? (
-					<Alert severity="info">
-						No causes found. Create your first cause!
-					</Alert>
-				) : (
-					<Grid container spacing={3}>
-						{filteredCauses?.map((cause: Cause) => (
-							<Grid item xs={12} sm={6} md={4} key={cause.id}>
-								<Card>
-									<CardContent>
-										<Box
-											display="flex"
-											justifyContent="space-between"
-											alignItems="flex-start"
-											mb={2}
-										>
-											<Typography variant="h6" gutterBottom>
-												{cause.title}
-											</Typography>
-										</Box>
-										<Typography
-											variant="body2"
-											color="text.secondary"
-											sx={{
-												overflow: "hidden",
-												textOverflow: "ellipsis",
-												display: "-webkit-box",
-												WebkitLineClamp: 3,
-												WebkitBoxOrient: "vertical",
-												mb: 2,
-											}}
-										>
-											{cause.description}
-										</Typography>
-										<Box display="flex" justifyContent="space-between" mb={1}>
-											<Typography variant="body2" color="text.secondary">
-												Target:
-											</Typography>
-											<Typography variant="body2" fontWeight="bold">
-												${cause.targetAmount.toLocaleString()}
-											</Typography>
-										</Box>
-										<Box display="flex" justifyContent="space-between">
-											<Typography variant="body2" color="text.secondary">
-												Raised:
-											</Typography>
-											<Typography
-												variant="body2"
-												fontWeight="bold"
-												color="success.main"
-											>
-												${cause.raisedAmount.toLocaleString()}
-											</Typography>
-										</Box>
-										{cause.tags && cause.tags.length > 0 && (
-											<Box display="flex" gap={0.5} mt={2} flexWrap="wrap">
-												{cause.tags.map((tag) => (
-													<Chip
-														key={tag}
-														label={tag}
-														size="small"
-														variant="outlined"
-													/>
-												))}
-											</Box>
-										)}
-									</CardContent>
-									<CardActions sx={{ justifyContent: "flex-end" }}>
-										<IconButton
-											size="small"
-											onClick={() => handleEditCause(cause.id)}
-										>
-											<EditIcon />
-										</IconButton>
-										<IconButton
-											size="small"
-											onClick={() => handleDeleteCause(cause.id)}
-											disabled={isDeleting}
-										>
-											<DeleteIcon />
-										</IconButton>
-									</CardActions>
-								</Card>
-							</Grid>
-						))}
-					</Grid>
-				)}
-			</Box>
+			// 	{/* {isLoading ? (
+			// 		<Box display="flex" justifyContent="center" p={4}>
+			// 			<CircularProgress />
+			// 		</Box>
+			// 	) : error ? (
+			// 		<Alert severity="error">Failed to load causes</Alert>
+			// 	) : filteredCauses?.length === 0 ? (
+			// 		<Alert severity="info">
+			// 			No causes found. Create your first cause!
+			// 		</Alert>
+			// 	) : (
+			// 		// cause all data fake
+			// 		<Grid container spacing={3}>
+			// 			{filteredCauses?.map((cause: Cause) => (
+			// 				<Grid item xs={12} sm={6} md={4} key={cause.id}>
+			// 					<Card>
+			// 						<CardContent>
+			// 							<Box
+			// 								display="flex"
+			// 								justifyContent="space-between"
+			// 								alignItems="flex-start"
+			// 								mb={2}
+			// 							>
+			// 								<Typography variant="h6" gutterBottom>
+			// 									{cause.title}
+			// 								</Typography>
+			// 							</Box>
+			// 							<Typography
+			// 								variant="body2"
+			// 								color="text.secondary"
+			// 								sx={{
+			// 									overflow: "hidden",
+			// 									textOverflow: "ellipsis",
+			// 									display: "-webkit-box",
+			// 									WebkitLineClamp: 3,
+			// 									WebkitBoxOrient: "vertical",
+			// 									mb: 2,
+			// 								}}
+			// 							>
+			// 								{cause.description}
+			// 							</Typography>
+			// 							<Box display="flex" justifyContent="space-between" mb={1}>
+			// 								<Typography variant="body2" color="text.secondary">
+			// 									Target:
+			// 								</Typography>
+			// 								<Typography variant="body2" fontWeight="bold">
+			// 									${cause.targetAmount.toLocaleString()}
+			// 								</Typography>
+			// 							</Box>
+			// 							<Box display="flex" justifyContent="space-between">
+			// 								<Typography variant="body2" color="text.secondary">
+			// 									Raised:
+			// 								</Typography>
+			// 								<Typography
+			// 									variant="body2"
+			// 									fontWeight="bold"
+			// 									color="success.main"
+			// 								>
+			// 									${cause.raisedAmount.toLocaleString()}
+			// 								</Typography>
+			// 							</Box>
+			// 							{cause.tags && cause.tags.length > 0 && (
+			// 								<Box display="flex" gap={0.5} mt={2} flexWrap="wrap">
+			// 									{cause.tags.map((tag) => (
+			// 										<Chip
+			// 											key={tag}
+			// 											label={tag}
+			// 											size="small"
+			// 											variant="outlined"
+			// 										/>
+			// 									))}
+			// 								</Box>
+			// 							)}
+			// 						</CardContent>
+			// 						<CardActions sx={{ justifyContent: "flex-end" }}>
+			// 							<IconButton
+			// 								size="small"
+			// 								onClick={() => handleEditCause(cause.id)}
+			// 							>
+			// 								<EditIcon />
+			// 							</IconButton>
+			// 							<IconButton
+			// 								size="small"
+			// 								onClick={() => handleDeleteCause(cause.id)}
+			// 								disabled={isDeleting}
+			// 							>
+			// 								<DeleteIcon />
+			// 							</IconButton>
+			// 						</CardActions>
+			// 					</Card>
+			// 				</Grid>
+			// 			))}
+			// 		</Grid>
+			// 	)} */}
+			// </Box>
+			<div>hello</div>
 		);
 	}
 
