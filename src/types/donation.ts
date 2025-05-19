@@ -64,16 +64,29 @@ export interface DonationFormData {
 }
 
 export interface Donation {
-	id: string;
-	userId: string;
-	causeId: string;
-	amount: number;
-	paymentMethod: string;
-	isAnonymous: boolean;
-	comment?: string;
+	_id: string;
+	donor: {
+		_id: string;
+		name: string;
+		email: string;
+		phone?: string;
+	};
+	cause: {
+		_id: string;
+		title: string;
+	};
+	organization: {
+		_id: string;
+		name: string;
+		email: string;
+		phone: string;
+	};
+	amount?: number;
+	type: string;
 	status: string;
 	createdAt: string;
-	updatedAt: string;
+	description: string;
+	receiptImage?: string;
 }
 
 export interface DonationResponse {
@@ -101,26 +114,6 @@ export interface DonationStats {
 	totalDonated: number;
 	totalCauses: number;
 	averageDonation: number;
-}
-
-export interface Donation {
-	_id: string;
-	cause: {
-		_id: string;
-		title: string;
-	};
-	organization: {
-		_id: string;
-		name: string;
-		email: string;
-		phone: string;
-	};
-	amount?: number;
-	type: string;
-	status: string;
-	createdAt: string;
-	description: string;
-	receiptImage?: string;
 }
 
 export interface Pagination {
@@ -176,4 +169,15 @@ export interface DonationQueryParams {
 	status?: string;
 	page?: number;
 	limit?: number;
+}
+
+export interface UpdateDonationStatusRequest {
+	donationId: string;
+	status: DonationStatus;
+}
+
+export interface UpdateDonationStatusResponse {
+	success: boolean;
+	data: Donation;
+	message?: string;
 }

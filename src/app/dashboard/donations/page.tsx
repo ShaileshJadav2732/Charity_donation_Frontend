@@ -9,7 +9,8 @@ import {
   FaHeart,
 } from "react-icons/fa";
 import { useGetDonorStatsQuery, useGetDonorDonationsQuery } from "@/store/api/donationApi";
-import { Donation, DonationStats } from "@/types/donation";
+import { Donation, DonationStats, DonationResponse } from "@/types/donation";
+import Link from "next/link";
 
 export default function DonationsPage() {
   const [activeTab, setActiveTab] = useState<"all" | "completed" | "pending">("all");
@@ -32,8 +33,8 @@ export default function DonationsPage() {
     return <p className="text-red-600 text-center py-10">Failed to load donation data</p>;
   }
 
-  const stats: DonationStats = statsData.data;
-  const donations: Donation[] = donationsData.data.donations;
+  const stats = statsData.data as DonationStats;
+  const donations = donationsData.data as Donation[];
   const pagination = donationsData.pagination;
 
   const DonationCard = ({ donation }: { donation: Donation }) => (
@@ -51,16 +52,24 @@ export default function DonationsPage() {
             Organization: {donation.organization.name}
           </p>
         </div>
-        <span
-          className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${donation.status === "CONFIRMED"
-            ? "bg-green-100 text-green-800"
-            : donation.status === "PENDING"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-red-100 text-red-800"
-            }`}
-        >
-          {donation.status.charAt(0).toUpperCase() + donation.status.slice(1).toLowerCase()}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span
+            className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${donation.status === "CONFIRMED"
+              ? "bg-green-100 text-green-800"
+              : donation.status === "PENDING"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-red-100 text-red-800"
+              }`}
+          >
+            {donation.status.charAt(0).toUpperCase() + donation.status.slice(1).toLowerCase()}
+          </span>
+          <Link
+            href={`/dashboard/donations/status/${donation._id}`}
+            className="text-sm text-primary hover:text-primary-dark"
+          >
+            Update Status
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -178,8 +187,8 @@ export default function DonationsPage() {
 
         {/* Donations List */}
         <div className="grid gap-6 md:grid-cols-2">
-          {donationsData && donationsData.data.length > 0 ? (
-            donationsData.data.map((donation) => (
+          {donations && donations.length > 0 ? (
+            donations.map((donation: Donation) => (
               <DonationCard key={donation._id} donation={donation} />
             ))
           ) : (

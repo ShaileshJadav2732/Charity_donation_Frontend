@@ -57,39 +57,44 @@ export default function DashboardLayout({
 		{ icon: FaUser, text: "Profile", path: "/dashboard/profile" },
 		...(user?.role === "donor"
 			? [
-					{
-						icon: FaHandsHelping,
-						text: "Causes",
-						path: "/dashboard/causes",
-					},
-					{
-						icon: FaHeart,
-						text: "My Donations",
-						path: "/dashboard/donations",
-					},
-			  ]
+				{
+					icon: FaHandsHelping,
+					text: "Causes",
+					path: "/dashboard/causes",
+				},
+				{
+					icon: FaHeart,
+					text: "My Donations",
+					path: "/dashboard/donations",
+				},
+			]
 			: [
-					{
-						icon: FaUsers,
-						text: "Campaigns and Causes",
-						path: "/dashboard/campaigns",
-					},
-					{
-						icon: FaHeart,
-						text: "Donors",
-						path: "/dashboard/donors",
-					},
-					{
-						icon: FaChartBar,
-						text: "Analytics",
-						path: "/dashboard/analytics",
-					},
-					{
-						icon: FaComments,
-						text: "Feedback",
-						path: "/dashboard/feedback",
-					},
-			  ]),
+				{
+					icon: FaUsers,
+					text: "Campaigns and Causes",
+					path: "/dashboard/campaigns",
+				},
+				{
+					icon: FaUsers,
+					text: "Donation",
+					path: "/dashboard/donations/pending",
+				},
+				{
+					icon: FaHeart,
+					text: "Donors",
+					path: "/dashboard/donors",
+				},
+				{
+					icon: FaChartBar,
+					text: "Analytics",
+					path: "/dashboard/analytics",
+				},
+				{
+					icon: FaComments,
+					text: "Feedback",
+					path: "/dashboard/feedback",
+				},
+			]),
 	];
 
 	return (
@@ -135,9 +140,8 @@ export default function DashboardLayout({
 
 				{/* Sidebar */}
 				<aside
-					className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${
-						isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-					} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16`}
+					className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+						} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16`}
 				>
 					<div className="h-full flex flex-col">
 						{/* Sidebar header */}
@@ -156,11 +160,10 @@ export default function DashboardLayout({
 								<Link
 									key={item.path}
 									href={item.path}
-									className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${
-										pathname === item.path
+									className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${pathname === item.path
 											? "bg-teal-50 text-teal-600"
 											: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
-									}`}
+										}`}
 									onClick={() => setIsMobileMenuOpen(false)}
 								>
 									<item.icon className="mr-3 h-5 w-5" />

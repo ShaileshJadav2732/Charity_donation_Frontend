@@ -4,6 +4,8 @@ import {
 	DonationQueryParams,
 	DonationResponse,
 	DonorDonationsResponse,
+	UpdateDonationStatusRequest,
+	UpdateDonationStatusResponse,
 } from "@/types/donation";
 import apiSlice from "./apiSlice";
 
@@ -24,11 +26,11 @@ export const donationApi = apiSlice.injectEndpoints({
 		}),
 		// Get donations for a specific organization
 		getOrganizationDonations: builder.query<
-			DonationFormData[],
+			DonationResponse,
 			{ organizationId: string; params?: Record<string, any> }
 		>({
 			query: ({ organizationId, params }) => ({
-				url: `/organizations/${organizationId}/donations`,
+				url: `/donations/organization/${organizationId}`,
 				method: "GET",
 				params,
 			}),
@@ -65,13 +67,25 @@ export const donationApi = apiSlice.injectEndpoints({
 			providesTags: (result) =>
 				result
 					? [
-							...result.data.map(({ _id }) => ({
-								type: "Donations" as const,
-								id: _id,
-							})),
-							{ type: "Donations", id: "LIST" },
-					  ]
+						...result.data.map(({ _id }) => ({
+							type: "Donations" as const,
+							id: _id,
+						})),
+						{ type: "Donations", id: "LIST" },
+					]
 					: [{ type: "Donations", id: "LIST" }],
+		}),
+
+		updateDonationStatus: builder.mutation<UpdateDonationStatusResponse, UpdateDonationStatusRequest>({
+			query: ({ donationId, status }) => ({
+				url: `/donations/${donationId}/status`,
+				method: "PATCH",
+				body: { status },
+			}),
+			invalidatesTags: (result, error, { donationId }) => [
+				{ type: "Donations", id: donationId },
+				{ type: "Donations", id: "LIST" },
+			],
 		}),
 	}),
 	overrideExisting: true,
@@ -85,4 +99,5 @@ export const {
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
 	useFindOrganizationPendingDonationsQuery,
+	useUpdateDonationStatusMutation,
 } = donationApi;
