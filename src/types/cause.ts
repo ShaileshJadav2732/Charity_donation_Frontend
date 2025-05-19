@@ -52,3 +52,19 @@ export interface CauseQueryParams {
 	maxRaised?: number;
 	donationType?: DonationType;
 }
+
+export interface CauseResponse {
+	cause: {
+		id: string;
+		title: string;
+		description: string;
+		targetAmount: number;
+		raisedAmount: number;
+		imageUrl: string;
+		tags: string[];
+		organizationId: string;
+		organizationName?: string;
+		createdAt: string;
+		updatedAt: string;
+	};
+}

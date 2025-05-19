@@ -1,7 +1,8 @@
 import { RootState } from "@/store/store";
-import { CauseResponse } from "@/types/campaigns";
+
 import {
 	CauseQueryParams,
+	CauseResponse,
 	CausesResponse,
 	CreateCauseBody,
 	UpdateCauseBody,
@@ -20,16 +21,6 @@ const baseQuery = fetchBaseQuery({
 		}
 
 		return headers;
-	},
-	// Add debug logging
-	onRequest: (req) => {
-		console.log("API Request:", req.url, req.method, req.body);
-	},
-	onResponse: (res) => {
-		console.log("API Response:", res.status, res.data);
-	},
-	onError: (err) => {
-		console.error("API Error:", err);
 	},
 });
 

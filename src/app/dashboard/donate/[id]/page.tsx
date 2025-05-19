@@ -12,8 +12,8 @@ import {
 	FormLabel,
 	RadioGroup,
 	Radio,
+	Stack,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
 import { useParams } from "next/navigation";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -55,28 +55,41 @@ export default function DonationForm() {
 			description: Yup.string().required("Description is required"),
 			amount: Yup.number().when("type", {
 				is: "MONEY",
-				then: (schema) => schema.min(1, "Amount must be at least 1").required("Amount is required for monetary donations"),
-				otherwise: (schema) => schema.notRequired()
+				then: (schema) =>
+					schema
+						.min(1, "Amount must be at least 1")
+						.required("Amount is required for monetary donations"),
+				otherwise: (schema) => schema.notRequired(),
 			}),
 			quantity: Yup.number().when("type", {
 				is: (val: string) => val !== "MONEY",
-				then: (schema) => schema.min(1, "Quantity must be at least 1").required("Quantity is required for non-monetary donations"),
-				otherwise: (schema) => schema.notRequired()
+				then: (schema) =>
+					schema
+						.min(1, "Quantity must be at least 1")
+						.required("Quantity is required for non-monetary donations"),
+				otherwise: (schema) => schema.notRequired(),
 			}),
 			unit: Yup.string().when("type", {
 				is: (val: string) => val !== "MONEY",
-				then: (schema) => schema.required("Unit is required for non-monetary donations"),
-				otherwise: (schema) => schema.notRequired()
+				then: (schema) =>
+					schema.required("Unit is required for non-monetary donations"),
+				otherwise: (schema) => schema.notRequired(),
 			}),
 			scheduledDate: Yup.string().when("type", {
 				is: (val: string) => val !== "MONEY",
-				then: (schema) => schema.required("Scheduled date is required for non-monetary donations"),
-				otherwise: (schema) => schema.notRequired()
+				then: (schema) =>
+					schema.required(
+						"Scheduled date is required for non-monetary donations"
+					),
+				otherwise: (schema) => schema.notRequired(),
 			}),
 			scheduledTime: Yup.string().when("type", {
 				is: (val: string) => val !== "MONEY",
-				then: (schema) => schema.required("Scheduled time is required for non-monetary donations"),
-				otherwise: (schema) => schema.notRequired()
+				then: (schema) =>
+					schema.required(
+						"Scheduled time is required for non-monetary donations"
+					),
+				otherwise: (schema) => schema.notRequired(),
 			}),
 			contactPhone: Yup.string().required("Phone number is required"),
 			contactEmail: Yup.string()
@@ -84,14 +97,15 @@ export default function DonationForm() {
 				.required("Email is required"),
 			pickupAddress: Yup.object().when("isPickup", {
 				is: true,
-				then: (schema) => schema.shape({
-					street: Yup.string().required("Street is required"),
-					city: Yup.string().required("City is required"),
-					state: Yup.string().required("State is required"),
-					zipCode: Yup.string().required("Zip code is required"),
-					country: Yup.string().required("Country is required"),
-				}),
-				otherwise: (schema) => schema.notRequired()
+				then: (schema) =>
+					schema.shape({
+						street: Yup.string().required("Street is required"),
+						city: Yup.string().required("City is required"),
+						state: Yup.string().required("State is required"),
+						zipCode: Yup.string().required("Zip code is required"),
+						country: Yup.string().required("Country is required"),
+					}),
+				otherwise: (schema) => schema.notRequired(),
 			}),
 		}),
 		onSubmit: async (values) => {
@@ -100,13 +114,15 @@ export default function DonationForm() {
 			const payload = {
 				...values,
 				donor: "current_user",
-				organization: cause.data.cause.organizationId,
+				organization: cause.cause.organizationId,
 				cause: causeId,
 				amount: values.type === "MONEY" ? Number(values.amount) : undefined,
 				quantity: values.type !== "MONEY" ? Number(values.quantity) : undefined,
 				unit: values.type !== "MONEY" ? values.unit : undefined,
-				scheduledDate: values.type !== "MONEY" ? values.scheduledDate : undefined,
-				scheduledTime: values.type !== "MONEY" ? values.scheduledTime : undefined,
+				scheduledDate:
+					values.type !== "MONEY" ? values.scheduledDate : undefined,
+				scheduledTime:
+					values.type !== "MONEY" ? values.scheduledTime : undefined,
 			};
 
 			try {
@@ -119,7 +135,9 @@ export default function DonationForm() {
 		},
 	});
 
-	const handleDonationTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+	const handleDonationTypeChange = (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
 		const value = event.target.value === "MONEY";
 		setIsMonetary(value);
 		formik.setFieldValue("type", value ? "MONEY" : "FOOD");
@@ -139,11 +157,11 @@ export default function DonationForm() {
 			sx={{ maxWidth: 800, mx: "auto", p: 3 }}
 		>
 			<Typography variant="h5" gutterBottom>
-				Donate to: {cause?.data.cause.title}
+				Donate to: {cause?.cause.title}
 			</Typography>
 
-			<Grid container spacing={2}>
-				<Grid item xs={12}>
+			<Stack spacing={2}>
+				<Box>
 					<FormControl component="fieldset">
 						<FormLabel component="legend">Donation Category</FormLabel>
 						<RadioGroup
@@ -152,28 +170,34 @@ export default function DonationForm() {
 							value={isMonetary ? "MONEY" : "NON_MONETARY"}
 							onChange={handleDonationTypeChange}
 						>
-							<FormControlLabel value="MONEY" control={<Radio />} label="Monetary" />
-							<FormControlLabel value="NON_MONETARY" control={<Radio />} label="Non-Monetary" />
+							<FormControlLabel
+								value="MONEY"
+								control={<Radio />}
+								label="Monetary"
+							/>
+							<FormControlLabel
+								value="NON_MONETARY"
+								control={<Radio />}
+								label="Non-Monetary"
+							/>
 						</RadioGroup>
 					</FormControl>
-				</Grid>
+				</Box>
 
 				{isMonetary ? (
-					<Grid item xs={12}>
-						<TextField
-							fullWidth
-							label="Amount ($)"
-							name="amount"
-							type="number"
-							value={formik.values.amount}
-							onChange={formik.handleChange}
-							error={formik.touched.amount && Boolean(formik.errors.amount)}
-							helperText={formik.touched.amount && formik.errors.amount}
-						/>
-					</Grid>
+					<TextField
+						fullWidth
+						label="Amount ($)"
+						name="amount"
+						type="number"
+						value={formik.values.amount}
+						onChange={formik.handleChange}
+						error={formik.touched.amount && Boolean(formik.errors.amount)}
+						helperText={formik.touched.amount && formik.errors.amount}
+					/>
 				) : (
 					<>
-						<Grid item xs={12} sm={6}>
+						<Box sx={{ display: "flex", gap: 2 }}>
 							<TextField
 								select
 								fullWidth
@@ -184,15 +208,21 @@ export default function DonationForm() {
 								error={formik.touched.type && Boolean(formik.errors.type)}
 								helperText={formik.touched.type && formik.errors.type}
 							>
-								{["FOOD", "CLOTHES", "BOOKS", "TOYS", "FURNITURE", "HOUSEHOLD", "OTHER"].map((type) => (
+								{[
+									"FOOD",
+									"CLOTHES",
+									"BOOKS",
+									"TOYS",
+									"FURNITURE",
+									"HOUSEHOLD",
+									"OTHER",
+								].map((type) => (
 									<MenuItem key={type} value={type}>
 										{type}
 									</MenuItem>
 								))}
 							</TextField>
-						</Grid>
 
-						<Grid item xs={12} sm={6}>
 							<TextField
 								fullWidth
 								label="Quantity"
@@ -200,12 +230,14 @@ export default function DonationForm() {
 								type="number"
 								value={formik.values.quantity}
 								onChange={formik.handleChange}
-								error={formik.touched.quantity && Boolean(formik.errors.quantity)}
+								error={
+									formik.touched.quantity && Boolean(formik.errors.quantity)
+								}
 								helperText={formik.touched.quantity && formik.errors.quantity}
 							/>
-						</Grid>
+						</Box>
 
-						<Grid item xs={12} sm={6}>
+						<Box sx={{ display: "flex", gap: 2 }}>
 							<TextField
 								fullWidth
 								label="Unit (e.g., kg, items)"
@@ -215,9 +247,7 @@ export default function DonationForm() {
 								error={formik.touched.unit && Boolean(formik.errors.unit)}
 								helperText={formik.touched.unit && formik.errors.unit}
 							/>
-						</Grid>
 
-						<Grid item xs={12} sm={6}>
 							<TextField
 								fullWidth
 								type="date"
@@ -226,108 +256,133 @@ export default function DonationForm() {
 								InputLabelProps={{ shrink: true }}
 								value={formik.values.scheduledDate}
 								onChange={formik.handleChange}
-								error={formik.touched.scheduledDate && Boolean(formik.errors.scheduledDate)}
-								helperText={formik.touched.scheduledDate && formik.errors.scheduledDate}
+								error={
+									formik.touched.scheduledDate &&
+									Boolean(formik.errors.scheduledDate)
+								}
+								helperText={
+									formik.touched.scheduledDate && formik.errors.scheduledDate
+								}
 							/>
-						</Grid>
+						</Box>
 
-						<Grid item xs={12} sm={6}>
-							<TextField
-								fullWidth
-								type="time"
-								name="scheduledTime"
-								label="Pickup/Drop Time"
-								InputLabelProps={{ shrink: true }}
-								value={formik.values.scheduledTime}
-								onChange={formik.handleChange}
-								error={formik.touched.scheduledTime && Boolean(formik.errors.scheduledTime)}
-								helperText={formik.touched.scheduledTime && formik.errors.scheduledTime}
-							/>
-						</Grid>
+						<TextField
+							fullWidth
+							type="time"
+							name="scheduledTime"
+							label="Pickup/Drop Time"
+							InputLabelProps={{ shrink: true }}
+							value={formik.values.scheduledTime}
+							onChange={formik.handleChange}
+							error={
+								formik.touched.scheduledTime &&
+								Boolean(formik.errors.scheduledTime)
+							}
+							helperText={
+								formik.touched.scheduledTime && formik.errors.scheduledTime
+							}
+						/>
 					</>
 				)}
 
-				<Grid item xs={12}>
-					<TextField
-						fullWidth
-						label="Description"
-						name="description"
-						multiline
-						rows={3}
-						value={formik.values.description}
-						onChange={formik.handleChange}
-						error={formik.touched.description && Boolean(formik.errors.description)}
-						helperText={formik.touched.description && formik.errors.description}
-					/>
-				</Grid>
+				<TextField
+					fullWidth
+					label="Description"
+					name="description"
+					multiline
+					rows={3}
+					value={formik.values.description}
+					onChange={formik.handleChange}
+					error={
+						formik.touched.description && Boolean(formik.errors.description)
+					}
+					helperText={formik.touched.description && formik.errors.description}
+				/>
 
 				{!isMonetary && (
-					<Grid item xs={12}>
-						<FormControlLabel
-							control={
-								<Checkbox
-									name="isPickup"
-									checked={formik.values.isPickup}
-									onChange={formik.handleChange}
-								/>
-							}
-							label="I want pickup service"
-						/>
-					</Grid>
+					<FormControlLabel
+						control={
+							<Checkbox
+								name="isPickup"
+								checked={formik.values.isPickup}
+								onChange={formik.handleChange}
+							/>
+						}
+						label="I want pickup service"
+					/>
 				)}
 
-				<Grid item xs={12}>
-					<TextField
-						fullWidth
-						label="Phone"
-						name="contactPhone"
-						value={formik.values.contactPhone}
-						onChange={formik.handleChange}
-						error={formik.touched.contactPhone && Boolean(formik.errors.contactPhone)}
-						helperText={formik.touched.contactPhone && formik.errors.contactPhone}
-					/>
-				</Grid>
+				<TextField
+					fullWidth
+					label="Phone"
+					name="contactPhone"
+					value={formik.values.contactPhone}
+					onChange={formik.handleChange}
+					error={
+						formik.touched.contactPhone && Boolean(formik.errors.contactPhone)
+					}
+					helperText={formik.touched.contactPhone && formik.errors.contactPhone}
+				/>
 
-				<Grid item xs={12}>
-					<TextField
-						fullWidth
-						label="Email"
-						name="contactEmail"
-						value={formik.values.contactEmail}
-						onChange={formik.handleChange}
-						error={formik.touched.contactEmail && Boolean(formik.errors.contactEmail)}
-						helperText={formik.touched.contactEmail && formik.errors.contactEmail}
-					/>
-				</Grid>
+				<TextField
+					fullWidth
+					label="Email"
+					name="contactEmail"
+					value={formik.values.contactEmail}
+					onChange={formik.handleChange}
+					error={
+						formik.touched.contactEmail && Boolean(formik.errors.contactEmail)
+					}
+					helperText={formik.touched.contactEmail && formik.errors.contactEmail}
+				/>
 
 				{formik.values.isPickup && !isMonetary && (
 					<>
-						<Grid item xs={12}>
-							<Typography variant="h6">Pickup Address</Typography>
-						</Grid>
-						{["street", "city", "state", "zipCode", "country"].map((field) => (
-							<Grid item xs={12} sm={6} key={field}>
-								<TextField
-									fullWidth
-									label={field.charAt(0).toUpperCase() + field.slice(1)}
-									name={`pickupAddress.${field}`}
-									value={formik.values.pickupAddress[field as keyof typeof formik.values.pickupAddress]}
-									onChange={formik.handleChange}
-									error={
-										formik.touched.pickupAddress?.[field as keyof typeof formik.values.pickupAddress] &&
-										Boolean(formik.errors.pickupAddress?.[field as keyof typeof formik.values.pickupAddress])
-									}
-									helperText={
-										formik.touched.pickupAddress?.[field as keyof typeof formik.values.pickupAddress] &&
-										formik.errors.pickupAddress?.[field as keyof typeof formik.values.pickupAddress]
-									}
-								/>
-							</Grid>
-						))}
+						<Typography variant="h6">Pickup Address</Typography>
+						<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+							{["street", "city", "state", "zipCode", "country"].map(
+								(field) => (
+									<Box
+										key={field}
+										sx={{ flex: "1 1 calc(50% - 8px)", minWidth: "240px" }}
+									>
+										<TextField
+											fullWidth
+											label={field.charAt(0).toUpperCase() + field.slice(1)}
+											name={`pickupAddress.${field}`}
+											value={
+												formik.values.pickupAddress[
+													field as keyof typeof formik.values.pickupAddress
+												]
+											}
+											onChange={formik.handleChange}
+											error={
+												formik.touched.pickupAddress?.[
+													field as keyof typeof formik.values.pickupAddress
+												] &&
+												Boolean(
+													formik.errors.pickupAddress?.[
+														field as keyof typeof formik.values.pickupAddress
+													]
+												)
+											}
+											helperText={
+												formik.touched.pickupAddress?.[
+													field as keyof typeof formik.values.pickupAddress
+												] &&
+												formik.errors.pickupAddress?.[
+													field as keyof typeof formik.values.pickupAddress
+												]
+											}
+										/>
+									</Box>
+								)
+							)}
+						</Box>
 					</>
 				)}
 
-				<Grid item xs={12}>
+				<Box>
 					<Button
 						type="submit"
 						variant="contained"
@@ -336,8 +391,8 @@ export default function DonationForm() {
 					>
 						{creating ? "Submitting..." : "Donate Now"}
 					</Button>
-				</Grid>
-			</Grid>
+				</Box>
+			</Stack>
 		</Box>
 	);
 }

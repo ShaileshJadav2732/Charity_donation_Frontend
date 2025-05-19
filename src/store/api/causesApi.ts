@@ -30,18 +30,18 @@ export const causeApi = createApi({
 			}),
 			providesTags: ["Causes"],
 		}),
-		getCauseById: builder.query<CauseResponse, string>({
-			query: (id) => `/causes/${id}`,
-			providesTags: (result, error, id) => [{ type: "Cause", id }],
-		}),
-		createCause: builder.mutation<CauseResponse, CreateCauseBody>({
-			query: (body) => ({
-				url: "/causes",
-				method: "POST",
-				body,
-			}),
-			invalidatesTags: ["Causes"],
-		}),
+		// getCauseById: builder.query<CauseResponse, string>({
+		// 	query: (id) => `/causes/${id}`,
+		// 	providesTags: (result, error, id) => [{ type: "Cause", id }],
+		// }),
+		// createCause: builder.mutation<CauseResponse, CreateCauseBody>({
+		// 	query: (body) => ({
+		// 		url: "/causes",
+		// 		method: "POST",
+		// 		body,
+		// 	}),
+		// 	invalidatesTags: ["Causes"],
+		// }),
 		updateCause: builder.mutation<
 			CauseResponse,
 			{ id: string; data: UpdateCauseBody }
@@ -85,8 +85,8 @@ export const causeApi = createApi({
 
 export const {
 	useGetCausesQuery,
-	useGetCauseByIdQuery,
-	useCreateCauseMutation,
+	// useGetCauseByIdQuery,
+	// useCreateCauseMutation,
 	useUpdateCauseMutation,
 	useDeleteCauseMutation,
 	useGetOrganizationCausesQuery,

@@ -33,7 +33,6 @@ export interface Organization {
 	address: string;
 }
 
-
 export interface DonationFormData {
 	donor: string; // Optional if backend uses auth token
 	organization: string;
@@ -77,7 +76,6 @@ export interface Donation {
 	updatedAt: string;
 }
 
-
 export interface DonationResponse {
 	donation: Donation;
 }
@@ -85,11 +83,8 @@ export interface DonationResponse {
 export interface DonationQueryParams {
 	page?: number;
 	limit?: number;
-	userId?: string;
 	causeId?: string;
 	status?: string;
-	minAmount?: number;
-	maxAmount?: number;
 }
 
 export interface DonorDonationsResponse {
@@ -102,47 +97,83 @@ export interface DonorDonationsResponse {
 	};
 }
 
-
 export interface DonationStats {
-  totalDonated: number;
-  totalCauses: number;
-  averageDonation: number;
+	totalDonated: number;
+	totalCauses: number;
+	averageDonation: number;
 }
 
 export interface Donation {
-  _id: string;
-  cause: {
-    _id: string;
-    title: string;
-  };
-  organization: {
-    _id: string;
-    name: string;
-    email: string;
-    phone: string;
-  };
-  amount?: number;
-  type: string;
-  status: string;
-  createdAt: string;
-  description: string;
-  receiptImage?: string;
+	_id: string;
+	cause: {
+		_id: string;
+		title: string;
+	};
+	organization: {
+		_id: string;
+		name: string;
+		email: string;
+		phone: string;
+	};
+	amount?: number;
+	type: string;
+	status: string;
+	createdAt: string;
+	description: string;
+	receiptImage?: string;
 }
 
 export interface Pagination {
-  total: number;
-  page: number;
-  pages: number;
+	total: number;
+	page: number;
+	pages: number;
 }
 
 export interface DonationResponse {
-  donations: Donation[];
-  pagination: Pagination;
+	donations: Donation[];
+	pagination: Pagination;
 }
 
 export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  pagination?: Pagination;
+	success: boolean;
+	data: T;
+	message?: string;
+	pagination?: Pagination;
+}
+
+// Interface for DonationsResponse
+// export interface IDonation {
+// 	_id: string;
+// 	donor: {
+// 		_id: string;
+// 		name: string;
+// 		email: string;
+// 		contactPhone: string;
+// 	};
+// 	type: string;
+// 	status: string;
+// 	amount?: number;
+// 	description: string;
+// 	quantity?: number;
+// 	unit?: string;
+// 	scheduledDate?: string;
+// 	scheduledTime?: string;
+// 	isPickup: boolean;
+// 	contactPhone: string;
+// 	contactEmail: string;
+// 	createdAt: string;
+// 	updatedAt: string;
+// }
+
+export interface DonationResponse {
+	success: boolean;
+	data: Donation[];
+	pagination: Pagination;
+}
+
+export interface DonationQueryParams {
+	organizationId: string;
+	status?: string;
+	page?: number;
+	limit?: number;
 }

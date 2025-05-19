@@ -43,21 +43,18 @@ export interface Campaign {
 }
 
 export interface CauseResponse {
-	success: boolean;
-	data: {
-		cause: {
-			id: string;
-			title: string;
-			description: string;
-			targetAmount: number;
-			raisedAmount: number;
-			imageUrl: string;
-			tags: string[];
-			organizationId: string;
-			organizationName?: string;
-			createdAt: string;
-			updatedAt: string;
-		};
+	cause: {
+		id: string;
+		title: string;
+		description: string;
+		targetAmount: number;
+		raisedAmount: number;
+		imageUrl: string;
+		tags: string[];
+		organizationId: string;
+		organizationName?: string;
+		createdAt: string;
+		updatedAt: string;
 	};
 }
 export interface CausesResponse {

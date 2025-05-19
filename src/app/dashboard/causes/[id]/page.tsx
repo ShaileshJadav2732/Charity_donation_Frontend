@@ -1,54 +1,53 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
-import { DonationType } from "@/types/donation";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
+import { RootState } from "@/store/store";
+import { DonationType } from "@/types/donation";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { useSelector } from "react-redux";
 
 import {
+	ArrowBack as ArrowBackIcon,
+	Bloodtype as BloodIcon,
+	MenuBook as BooksIcon,
+	Business as BusinessIcon,
+	CalendarToday as CalendarIcon,
+	Category as CategoryIcon,
+	AccessTime as ClockIcon,
+	Email as EmailIcon,
+	Fastfood as FoodIcon,
+	Living as FurnitureIcon,
+	FavoriteOutlined as HeartIcon,
+	Living as HouseholdIcon,
+	LocationOn as LocationIcon,
+	MonetizationOn as MoneyIcon,
+	People as PeopleIcon,
+	Phone as PhoneIcon,
+	Public as PublicIcon,
+	ChildCare as ToysIcon,
+} from "@mui/icons-material";
+import {
+	Alert,
+	Avatar,
 	Box,
 	Button,
 	Card,
 	CardContent,
-	CircularProgress,
-	Typography,
-	Grid,
 	Chip,
-	LinearProgress,
-	Tab,
-	Tabs,
+	CircularProgress,
 	Divider,
-	Alert,
-	Avatar,
+	LinearProgress,
 	List,
 	ListItem,
-	ListItemText,
 	ListItemAvatar,
+	ListItemText,
 	Paper,
+	Tab,
+	Tabs,
+	Typography,
 } from "@mui/material";
-import {
-	FavoriteOutlined as HeartIcon,
-	MonetizationOn as MoneyIcon,
-	People as PeopleIcon,
-	AccessTime as ClockIcon,
-	Category as CategoryIcon,
-	ArrowBack as ArrowBackIcon,
-	CalendarToday as CalendarIcon,
-	Public as PublicIcon,
-	Bloodtype as BloodIcon,
-	Fastfood as FoodIcon,
-	ChildCare as ToysIcon,
-	MenuBook as BooksIcon,
-	Living as FurnitureIcon,
-	Living as HouseholdIcon,
-	Business as BusinessIcon,
-	LocationOn as LocationIcon,
-	Email as EmailIcon,
-	Phone as PhoneIcon,
-} from "@mui/icons-material";
 
 // Extended DonationType to include missing types
 enum ExtendedDonationType {
@@ -60,10 +59,10 @@ enum ExtendedDonationType {
 	FURNITURE = "FURNITURE",
 	HOUSEHOLD = "HOUSEHOLD",
 	IN_KIND = "IN_KIND",
-	VOLUNTEER = "VOLUNTEER"
+	VOLUNTEER = "VOLUNTEER",
 }
 
-const donationTypeIcons: Record<string, React.ComponentType<any>> = {
+const donationTypeIcons = {
 	[DonationType.MONEY]: MoneyIcon,
 	[DonationType.BLOOD]: BloodIcon,
 	[DonationType.FOOD]: FoodIcon,
@@ -72,7 +71,7 @@ const donationTypeIcons: Record<string, React.ComponentType<any>> = {
 	[DonationType.FURNITURE]: FurnitureIcon,
 	[DonationType.HOUSEHOLD]: HouseholdIcon,
 	[ExtendedDonationType.IN_KIND]: MoneyIcon,
-	[ExtendedDonationType.VOLUNTEER]: PeopleIcon
+	[ExtendedDonationType.VOLUNTEER]: PeopleIcon,
 };
 
 export default function CauseDetailPage({
@@ -92,7 +91,7 @@ export default function CauseDetailPage({
 	const {
 		data: organizationData,
 		isLoading: orgLoading,
-		error: orgError
+		error: orgError,
 	} = useGetOrganizationByCauseIdQuery(id, { skip: !id });
 
 	console.log("Cause data:", data);
@@ -112,8 +111,8 @@ export default function CauseDetailPage({
 	};
 
 	const handleViewOrganization = () => {
-		if (data?.data.cause.organizationId) {
-			router.push(`/dashboard/organizations/${data.data.cause.organizationId}`);
+		if (data?.cause.organizationId) {
+			router.push(`/dashboard/organizations/${data.cause.organizationId}`);
 		}
 	};
 
@@ -144,15 +143,13 @@ export default function CauseDetailPage({
 			</Box>
 		);
 	}
-	console.log(data.data.cause.targetAmount);
+	console.log(data?.cause.targetAmount);
 	const progress =
-		data?.data.cause.raisedAmount && data.data.cause.targetAmount
+		data?.cause.raisedAmount && data.cause.targetAmount
 			? Math.min(
-				100,
-				Math.round(
-					(data?.data.cause.raisedAmount / data.data.cause.targetAmount) * 100
-				)
-			)
+					100,
+					Math.round((data?.cause.raisedAmount / data.cause.targetAmount) * 100)
+			  )
 			: 0;
 
 	// We'll assume these values if they're not in the API response
@@ -175,11 +172,11 @@ export default function CauseDetailPage({
 						bgcolor: "grey.100",
 					}}
 				>
-					{data.data.cause.imageUrl ? (
+					{data?.cause.imageUrl ? (
 						<Box
 							component="img"
-							src={data?.data.cause?.imageUrl}
-							alt={data?.data.cause?.title || "Cause"}
+							src={data?.cause?.imageUrl}
+							alt={data?.cause?.title || "Cause"}
 							sx={{
 								width: "100%",
 								height: "100%",
@@ -200,19 +197,19 @@ export default function CauseDetailPage({
 
 				<CardContent sx={{ p: 4 }}>
 					<Typography variant="h4" fontWeight="bold" gutterBottom>
-						{data?.data.cause?.title || "Untitled Cause"}
+						{data?.cause?.title || "Untitled Cause"}
 					</Typography>
 
 					<Box display="flex" alignItems="center" mb={3}>
 						<PeopleIcon sx={{ mr: 1, color: "grey.500" }} />
 						<Typography variant="body2" color="text.secondary">
-							{data.data.cause.organizationName || "Organization"}
+							{data?.cause.organizationName || "Organization"}
 						</Typography>
 					</Box>
 
 					{/* Cause Stats */}
-					<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
-						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: '220px' }}>
+					<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 4 }}>
+						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: "220px" }}>
 							<CardContent>
 								<Box
 									display="flex"
@@ -227,21 +224,21 @@ export default function CauseDetailPage({
 								</Box>
 								<Typography variant="h5" fontWeight="bold">
 									$
-									{data?.data.cause.raisedAmount
-										? data.data.cause.raisedAmount.toLocaleString()
+									{data?.cause.raisedAmount
+										? data.cause.raisedAmount.toLocaleString()
 										: "0"}
 								</Typography>
 								<Typography variant="caption" color="text.secondary">
 									of $
-									{data?.data.cause.targetAmount
-										? data.data.cause.targetAmount.toLocaleString()
+									{data?.cause.targetAmount
+										? data.cause.targetAmount.toLocaleString()
 										: "0"}{" "}
 									goal
 								</Typography>
 							</CardContent>
 						</Card>
 
-						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: '220px' }}>
+						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: "220px" }}>
 							<CardContent>
 								<Box
 									display="flex"
@@ -263,7 +260,7 @@ export default function CauseDetailPage({
 							</CardContent>
 						</Card>
 
-						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: '220px' }}>
+						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: "220px" }}>
 							<CardContent>
 								<Box
 									display="flex"
@@ -277,15 +274,15 @@ export default function CauseDetailPage({
 									<CalendarIcon color="info" />
 								</Box>
 								<Typography variant="h5" fontWeight="bold">
-									{data?.data.cause.createdAt
-										? new Date(data.data.cause.createdAt).toLocaleDateString(
-											undefined,
-											{
-												month: "short",
-												day: "numeric",
-												year: "numeric",
-											}
-										)
+									{data?.cause.createdAt
+										? new Date(data.cause.createdAt).toLocaleDateString(
+												undefined,
+												{
+													month: "short",
+													day: "numeric",
+													year: "numeric",
+												}
+										  )
 										: "N/A"}
 								</Typography>
 								<Typography variant="caption" color="text.secondary">
@@ -308,8 +305,8 @@ export default function CauseDetailPage({
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
 								$
-								{data?.data.cause.targetAmount
-									? data.data.cause.targetAmount.toLocaleString()
+								{data?.cause.targetAmount
+									? data.cause.targetAmount.toLocaleString()
 									: "0"}{" "}
 								goal
 							</Typography>
@@ -317,7 +314,7 @@ export default function CauseDetailPage({
 					</Box>
 
 					{/* Action Buttons */}
-					<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+					<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 4 }}>
 						<Button
 							fullWidth
 							variant="contained"
@@ -326,7 +323,7 @@ export default function CauseDetailPage({
 							startIcon={<HeartIcon />}
 							onClick={handleDonate}
 							disabled={user?.role !== "donor"}
-							sx={{ flexGrow: 1, minWidth: '200px' }}
+							sx={{ flexGrow: 1, minWidth: "200px" }}
 						>
 							Donate Now
 						</Button>
@@ -342,7 +339,7 @@ export default function CauseDetailPage({
 									ExtendedDonationType.VOLUNTEER as unknown as DonationType
 								)
 							}
-							sx={{ flexGrow: 1, minWidth: '200px' }}
+							sx={{ flexGrow: 1, minWidth: "200px" }}
 						>
 							Volunteer
 						</Button>
@@ -356,14 +353,27 @@ export default function CauseDetailPage({
 					)}
 
 					{/* Organization Information */}
-					{data?.data.cause.organizationName && (
+					{data?.cause.organizationName && (
 						<Box mb={4}>
 							<Typography variant="h6" gutterBottom>
 								About the Organization
 							</Typography>
 							<Paper variant="outlined" sx={{ p: 3 }}>
-								<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-									<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: { xs: '100%', md: '120px' } }}>
+								<Box
+									sx={{
+										display: "flex",
+										flexDirection: { xs: "column", md: "row" },
+										gap: 3,
+									}}
+								>
+									<Box
+										sx={{
+											display: "flex",
+											justifyContent: "center",
+											alignItems: "center",
+											minWidth: { xs: "100%", md: "120px" },
+										}}
+									>
 										<Avatar
 											sx={{
 												width: 80,
@@ -376,11 +386,13 @@ export default function CauseDetailPage({
 									</Box>
 									<Box sx={{ flexGrow: 1 }}>
 										<Typography variant="h6" gutterBottom>
-											{data.data.cause.organizationName}
+											{data.cause.organizationName}
 										</Typography>
 
-										<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-											<BusinessIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+										<Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+											<BusinessIcon
+												sx={{ mr: 1, color: "text.secondary", fontSize: 20 }}
+											/>
 											<Typography variant="body2" color="text.secondary">
 												Organization ID: {data.data.cause.organizationId}
 											</Typography>
@@ -388,35 +400,96 @@ export default function CauseDetailPage({
 
 										{!orgLoading && organization ? (
 											<>
-												{organization.email && organization.email !== "Not available" && (
-													<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-														<EmailIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
-														<Typography variant="body2" color="text.secondary">
-															{organization.email}
-														</Typography>
-													</Box>
-												)}
+												{organization.email &&
+													organization.email !== "Not available" && (
+														<Box
+															sx={{
+																display: "flex",
+																alignItems: "center",
+																mb: 1,
+															}}
+														>
+															<EmailIcon
+																sx={{
+																	mr: 1,
+																	color: "text.secondary",
+																	fontSize: 20,
+																}}
+															/>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																{organization.email}
+															</Typography>
+														</Box>
+													)}
 
-												{organization.phoneNumber && organization.phoneNumber !== "Not available" && (
-													<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-														<PhoneIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
-														<Typography variant="body2" color="text.secondary">
-															{organization.phoneNumber}
-														</Typography>
-													</Box>
-												)}
+												{organization.phoneNumber &&
+													organization.phoneNumber !== "Not available" && (
+														<Box
+															sx={{
+																display: "flex",
+																alignItems: "center",
+																mb: 1,
+															}}
+														>
+															<PhoneIcon
+																sx={{
+																	mr: 1,
+																	color: "text.secondary",
+																	fontSize: 20,
+																}}
+															/>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																{organization.phoneNumber}
+															</Typography>
+														</Box>
+													)}
 
 												{organization.address && (
-													<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-														<LocationIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+													<Box
+														sx={{
+															display: "flex",
+															alignItems: "center",
+															mb: 1,
+														}}
+													>
+														<LocationIcon
+															sx={{
+																mr: 1,
+																color: "text.secondary",
+																fontSize: 20,
+															}}
+														/>
 														<Typography variant="body2" color="text.secondary">
-															{`${organization.address}${organization.city ? `, ${organization.city}` : ''}${organization.state ? `, ${organization.state}` : ''}${organization.country ? `, ${organization.country}` : ''}`}
+															{`${organization.address}${
+																organization.city
+																	? `, ${organization.city}`
+																	: ""
+															}${
+																organization.state
+																	? `, ${organization.state}`
+																	: ""
+															}${
+																organization.country
+																	? `, ${organization.country}`
+																	: ""
+															}`}
 														</Typography>
 													</Box>
 												)}
 
-												<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-													{organization.description || "This is the organization managing this charitable cause. Click below to view their complete profile."}
+												<Typography
+													variant="body2"
+													color="text.secondary"
+													sx={{ mt: 2 }}
+												>
+													{organization.description ||
+														"This is the organization managing this charitable cause. Click below to view their complete profile."}
 												</Typography>
 											</>
 										) : orgLoading ? (
@@ -427,8 +500,13 @@ export default function CauseDetailPage({
 												</Typography>
 											</Box>
 										) : (
-											<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-												This is the organization managing this charitable cause. Click below to view their complete profile.
+											<Typography
+												variant="body2"
+												color="text.secondary"
+												sx={{ mt: 2 }}
+											>
+												This is the organization managing this charitable cause.
+												Click below to view their complete profile.
 											</Typography>
 										)}
 
@@ -448,13 +526,13 @@ export default function CauseDetailPage({
 					)}
 
 					{/* Tags */}
-					{data?.data.cause.tags && data.data.cause.tags.length > 0 && (
+					{data?.cause.tags && data.cause.tags.length > 0 && (
 						<Box mb={4}>
 							<Typography variant="subtitle2" gutterBottom>
 								Categories
 							</Typography>
 							<Box display="flex" flexWrap="wrap" gap={1}>
-								{data.data.cause.tags.map((tag) => (
+								{data.cause.tags.map((tag) => (
 									<Chip
 										key={tag}
 										label={tag}
@@ -492,7 +570,7 @@ export default function CauseDetailPage({
 								variant="body1"
 								sx={{ whiteSpace: "pre-wrap", mb: 4 }}
 							>
-								{data?.data.cause.description || "No description available."}
+								{data?.cause.description || "No description available."}
 							</Typography>
 
 							{acceptedDonationTypes && acceptedDonationTypes.length > 0 && (
@@ -500,75 +578,75 @@ export default function CauseDetailPage({
 									<Typography variant="h6" gutterBottom>
 										Ways You Can Help
 									</Typography>
-									<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-										{acceptedDonationTypes.map(
-											(type, index) => {
-												const TypeIcon = donationTypeIcons[type] || MoneyIcon;
-												let title = "Donation";
-												let description = "Support this cause";
+									<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+										{acceptedDonationTypes.map((type, index) => {
+											const TypeIcon = donationTypeIcons[type] || MoneyIcon;
+											let title = "Donation";
+											let description = "Support this cause";
 
-												switch (type) {
-													case DonationType.MONEY:
-														title = "Monetary Donations";
-														description =
-															"Support this cause with financial contributions.";
-														break;
-													case ExtendedDonationType.IN_KIND as unknown as DonationType:
-														title = "In-Kind Donations";
-														description =
-															"Donate goods, supplies, or services.";
-														break;
-													case ExtendedDonationType.VOLUNTEER as unknown as DonationType:
-														title = "Volunteer Work";
-														description = "Contribute your time and skills.";
-														break;
-													case DonationType.BLOOD:
-														title = "Blood Donations";
-														description = "Donate blood to save lives.";
-														break;
-													case DonationType.FOOD:
-														title = "Food Donations";
-														description = "Donate food items to those in need.";
-														break;
-													case DonationType.BOOKS:
-														title = "Book Donations";
-														description = "Donate books for education and knowledge.";
-														break;
-													default:
-														title = `${type} Donations`;
-														description = `Donate ${type.toLowerCase()} to support this cause.`;
-												}
-
-												return (
-													<Card key={index} variant="outlined" sx={{ flexGrow: 1, minWidth: '240px', maxWidth: '350px' }}>
-														<CardContent>
-															<Box
-																display="flex"
-																alignItems="center"
-																mb={2}
-															>
-																<Box
-																	sx={{
-																		bgcolor: "primary.50",
-																		borderRadius: "50%",
-																		p: 1,
-																		mr: 2,
-																	}}
-																>
-																	{TypeIcon && <TypeIcon color="primary" />}
-																</Box>
-																<Typography variant="h6">
-																	{title}
-																</Typography>
-															</Box>
-															<Typography variant="body2">
-																{description}
-															</Typography>
-														</CardContent>
-													</Card>
-												);
+											switch (type) {
+												case DonationType.MONEY:
+													title = "Monetary Donations";
+													description =
+														"Support this cause with financial contributions.";
+													break;
+												case ExtendedDonationType.IN_KIND as unknown as DonationType:
+													title = "In-Kind Donations";
+													description = "Donate goods, supplies, or services.";
+													break;
+												case ExtendedDonationType.VOLUNTEER as unknown as DonationType:
+													title = "Volunteer Work";
+													description = "Contribute your time and skills.";
+													break;
+												case DonationType.BLOOD:
+													title = "Blood Donations";
+													description = "Donate blood to save lives.";
+													break;
+												case DonationType.FOOD:
+													title = "Food Donations";
+													description = "Donate food items to those in need.";
+													break;
+												case DonationType.BOOKS:
+													title = "Book Donations";
+													description =
+														"Donate books for education and knowledge.";
+													break;
+												default:
+													title = `${type} Donations`;
+													description = `Donate ${type.toLowerCase()} to support this cause.`;
 											}
-										)}
+
+											return (
+												<Card
+													key={index}
+													variant="outlined"
+													sx={{
+														flexGrow: 1,
+														minWidth: "240px",
+														maxWidth: "350px",
+													}}
+												>
+													<CardContent>
+														<Box display="flex" alignItems="center" mb={2}>
+															<Box
+																sx={{
+																	bgcolor: "primary.50",
+																	borderRadius: "50%",
+																	p: 1,
+																	mr: 2,
+																}}
+															>
+																{TypeIcon && <TypeIcon color="primary" />}
+															</Box>
+															<Typography variant="h6">{title}</Typography>
+														</Box>
+														<Typography variant="body2">
+															{description}
+														</Typography>
+													</CardContent>
+												</Card>
+											);
+										})}
 									</Box>
 								</Box>
 							)}
@@ -589,10 +667,11 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Funding Goal"
-										secondary={`$${data?.data.cause.targetAmount
-											? data.data.cause?.targetAmount.toLocaleString()
-											: "0"
-											}`}
+										secondary={`$${
+											data?.cause.targetAmount
+												? data.cause?.targetAmount.toLocaleString()
+												: "0"
+										}`}
 									/>
 								</ListItem>
 								<Divider variant="inset" component="li" />
@@ -605,14 +684,12 @@ export default function CauseDetailPage({
 									<ListItemText
 										primary="Created On"
 										secondary={
-											data?.data.cause?.createdAt
-												? new Date(
-													data.data.cause?.createdAt
-												).toLocaleDateString()
+											data?.cause?.createdAt
+												? new Date(data.cause?.createdAt).toLocaleDateString()
 												: "N/A"
 										}
 									/>
-									{console.log("cause data",data?.data.cause)}
+									{/* {console.log("cause data", data?.data.cause)} */}
 								</ListItem>
 								<Divider variant="inset" component="li" />
 								<ListItem>
@@ -623,9 +700,7 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Organization"
-										secondary={
-											data?.data.cause?.organizationId.name || "Organization"
-										}
+										secondary={data?.cause?.organizationName || "Organization"}
 									/>
 								</ListItem>
 								<Divider variant="inset" component="li" />
@@ -637,13 +712,13 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Organization ID"
-										secondary={data?.data.cause?.organizationId._id || "N/A"}
+										secondary={data?.cause?.organizationId || "N/A"}
 									/>
 								</ListItem>
 							</List>
 
 							{/* Organization Contact Information */}
-							{data?.data.cause.organizationId && (
+							{data?.cause.organizationId && (
 								<Box mt={4}>
 									<Typography variant="h6" gutterBottom>
 										Organization Contact Information
@@ -668,39 +743,41 @@ export default function CauseDetailPage({
 														/>
 													</ListItem>
 
-													{organization.email && organization.email !== "Not available" && (
-														<>
-															<Divider variant="inset" component="li" />
-															<ListItem>
-																<ListItemAvatar>
-																	<Avatar sx={{ bgcolor: "primary.light" }}>
-																		<EmailIcon />
-																	</Avatar>
-																</ListItemAvatar>
-																<ListItemText
-																	primary="Email"
-																	secondary={organization.email}
-																/>
-															</ListItem>
-														</>
-													)}
+													{organization.email &&
+														organization.email !== "Not available" && (
+															<>
+																<Divider variant="inset" component="li" />
+																<ListItem>
+																	<ListItemAvatar>
+																		<Avatar sx={{ bgcolor: "primary.light" }}>
+																			<EmailIcon />
+																		</Avatar>
+																	</ListItemAvatar>
+																	<ListItemText
+																		primary="Email"
+																		secondary={organization.email}
+																	/>
+																</ListItem>
+															</>
+														)}
 
-													{organization.phoneNumber && organization.phoneNumber !== "Not available" && (
-														<>
-															<Divider variant="inset" component="li" />
-															<ListItem>
-																<ListItemAvatar>
-																	<Avatar sx={{ bgcolor: "primary.light" }}>
-																		<PhoneIcon />
-																	</Avatar>
-																</ListItemAvatar>
-																<ListItemText
-																	primary="Phone"
-																	secondary={organization.phoneNumber}
-																/>
-															</ListItem>
-														</>
-													)}
+													{organization.phoneNumber &&
+														organization.phoneNumber !== "Not available" && (
+															<>
+																<Divider variant="inset" component="li" />
+																<ListItem>
+																	<ListItemAvatar>
+																		<Avatar sx={{ bgcolor: "primary.light" }}>
+																			<PhoneIcon />
+																		</Avatar>
+																	</ListItemAvatar>
+																	<ListItemText
+																		primary="Phone"
+																		secondary={organization.phoneNumber}
+																	/>
+																</ListItem>
+															</>
+														)}
 
 													{organization.address && (
 														<>
@@ -713,7 +790,19 @@ export default function CauseDetailPage({
 																</ListItemAvatar>
 																<ListItemText
 																	primary="Address"
-																	secondary={`${organization.address}${organization.city ? `, ${organization.city}` : ''}${organization.state ? `, ${organization.state}` : ''}${organization.country ? `, ${organization.country}` : ''}`}
+																	secondary={`${organization.address}${
+																		organization.city
+																			? `, ${organization.city}`
+																			: ""
+																	}${
+																		organization.state
+																			? `, ${organization.state}`
+																			: ""
+																	}${
+																		organization.country
+																			? `, ${organization.country}`
+																			: ""
+																	}`}
 																/>
 															</ListItem>
 														</>
@@ -721,7 +810,11 @@ export default function CauseDetailPage({
 												</List>
 											) : (
 												<Box p={3}>
-													<Typography variant="body2" color="text.secondary" align="center">
+													<Typography
+														variant="body2"
+														color="text.secondary"
+														align="center"
+													>
 														Click below to view full organization details.
 													</Typography>
 												</Box>
