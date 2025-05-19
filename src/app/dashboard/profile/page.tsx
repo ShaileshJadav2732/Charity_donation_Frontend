@@ -7,16 +7,9 @@ import {
 	useGetDonorProfileQuery,
 	useGetOrganizationProfileQuery,
 } from "@/store/api/profileApi";
-import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function ProfilePage() {
 	const { user } = useSelector((state: RootState) => state.auth);
-
-	// Protect route based on user role
-	const { isAuthorized } = useRouteGuard({
-		allowedRoles: ["donor", "organization"],
-		redirectTo: "/dashboard",
-	});
 
 	// Fetch profile data based on user role
 	const { isLoading: isDonorLoading, error: donorError } =
@@ -28,11 +21,6 @@ export default function ProfilePage() {
 		useGetOrganizationProfileQuery(undefined, {
 			skip: user?.role !== "organization",
 		});
-
-	// If not authorized, don't render anything
-	if (!isAuthorized) {
-		return null;
-	}
 
 	// Show loading state
 	if (

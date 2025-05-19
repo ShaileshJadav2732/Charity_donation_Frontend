@@ -3,33 +3,39 @@
 import {
 	Box,
 	Button,
-	Grid,
 	MenuItem,
 	TextField,
 	Typography,
 	FormControlLabel,
 	Checkbox,
+	FormControl,
+	FormLabel,
+	RadioGroup,
+	Radio,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { useParams } from "next/navigation";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useCreateDonationMutation } from "@/store/api/donationApi";
 import toast from "react-hot-toast";
-import { useGetCauseByIdQuery } from "@/store/api/causeApi"; // Assuming you have this
+import { useGetCauseByIdQuery } from "@/store/api/causeApi";
+import { useState } from "react";
 
 export default function DonationForm() {
 	const params = useParams();
 	const causeId = params.id;
-
 	const { data: cause, isLoading } = useGetCauseByIdQuery(causeId as string);
 	const [createDonation, { isLoading: creating }] = useCreateDonationMutation();
+	const [isMonetary, setIsMonetary] = useState(false);
 
 	const formik = useFormik({
 		initialValues: {
-			type: "FOOD",
+			type: isMonetary ? "MONEY" : "FOOD",
+			amount: "",
 			description: "",
 			quantity: 1,
-			unit: "kg",
+			unit: isMonetary ? "" : "kg",
 			scheduledDate: "",
 			scheduledTime: "",
 			isPickup: true,
@@ -42,39 +48,89 @@ export default function DonationForm() {
 				zipCode: "",
 				country: "",
 			},
+			status: "PENDING",
 		},
 		validationSchema: Yup.object({
-			type: Yup.string().required(),
-			description: Yup.string().required(),
-			quantity: Yup.number().min(1).required(),
-			unit: Yup.string().required(),
-			scheduledDate: Yup.string().required(),
-			scheduledTime: Yup.string().required(),
-			contactPhone: Yup.string().required(),
-			contactEmail: Yup.string().email().required(),
+			type: Yup.string().required("Donation type is required"),
+			description: Yup.string().required("Description is required"),
+			amount: Yup.number().when("type", {
+				is: "MONEY",
+				then: (schema) => schema.min(1, "Amount must be at least 1").required("Amount is required for monetary donations"),
+				otherwise: (schema) => schema.notRequired()
+			}),
+			quantity: Yup.number().when("type", {
+				is: (val: string) => val !== "MONEY",
+				then: (schema) => schema.min(1, "Quantity must be at least 1").required("Quantity is required for non-monetary donations"),
+				otherwise: (schema) => schema.notRequired()
+			}),
+			unit: Yup.string().when("type", {
+				is: (val: string) => val !== "MONEY",
+				then: (schema) => schema.required("Unit is required for non-monetary donations"),
+				otherwise: (schema) => schema.notRequired()
+			}),
+			scheduledDate: Yup.string().when("type", {
+				is: (val: string) => val !== "MONEY",
+				then: (schema) => schema.required("Scheduled date is required for non-monetary donations"),
+				otherwise: (schema) => schema.notRequired()
+			}),
+			scheduledTime: Yup.string().when("type", {
+				is: (val: string) => val !== "MONEY",
+				then: (schema) => schema.required("Scheduled time is required for non-monetary donations"),
+				otherwise: (schema) => schema.notRequired()
+			}),
+			contactPhone: Yup.string().required("Phone number is required"),
+			contactEmail: Yup.string()
+				.email("Invalid email address")
+				.required("Email is required"),
+			pickupAddress: Yup.object().when("isPickup", {
+				is: true,
+				then: (schema) => schema.shape({
+					street: Yup.string().required("Street is required"),
+					city: Yup.string().required("City is required"),
+					state: Yup.string().required("State is required"),
+					zipCode: Yup.string().required("Zip code is required"),
+					country: Yup.string().required("Country is required"),
+				}),
+				otherwise: (schema) => schema.notRequired()
+			}),
 		}),
 		onSubmit: async (values) => {
-			if (!cause) return;
-
-			if (!causeId || typeof causeId !== "string") return;
+			if (!cause || !causeId || typeof causeId !== "string") return;
 
 			const payload = {
 				...values,
-				donor: "", // remove if backend uses auth
+				donor: "current_user",
 				organization: cause.data.cause.organizationId,
 				cause: causeId,
+				amount: values.type === "MONEY" ? Number(values.amount) : undefined,
+				quantity: values.type !== "MONEY" ? Number(values.quantity) : undefined,
+				unit: values.type !== "MONEY" ? values.unit : undefined,
+				scheduledDate: values.type !== "MONEY" ? values.scheduledDate : undefined,
+				scheduledTime: values.type !== "MONEY" ? values.scheduledTime : undefined,
 			};
-			console.log("orrrrganization id", payload.organizationId);
+
 			try {
 				await createDonation(payload).unwrap();
-				toast.success("Donation created!");
+				toast.success("Donation created successfully!");
+				formik.resetForm();
 			} catch (error: any) {
-				toast.error(error?.data?.message || "Donation failed");
+				toast.error(error?.data?.message || "Failed to create donation");
 			}
 		},
 	});
 
-	if (isLoading) return <p>Loading...</p>;
+	const handleDonationTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const value = event.target.value === "MONEY";
+		setIsMonetary(value);
+		formik.setFieldValue("type", value ? "MONEY" : "FOOD");
+		formik.setFieldValue("amount", "");
+		formik.setFieldValue("quantity", 1);
+		formik.setFieldValue("unit", value ? "" : "kg");
+		formik.setFieldValue("scheduledDate", "");
+		formik.setFieldValue("scheduledTime", "");
+	};
+
+	if (isLoading) return <Typography>Loading...</Typography>;
 
 	return (
 		<Box
@@ -83,71 +139,113 @@ export default function DonationForm() {
 			sx={{ maxWidth: 800, mx: "auto", p: 3 }}
 		>
 			<Typography variant="h5" gutterBottom>
-				Donate to: {cause?.title}
+				Donate to: {cause?.data.cause.title}
 			</Typography>
 
 			<Grid container spacing={2}>
-				<Grid item xs={12} sm={6}>
-					<TextField
-						select
-						fullWidth
-						label="Donation Type"
-						name="type"
-						value={formik.values.type}
-						onChange={formik.handleChange}
-					>
-						{["FOOD", "CLOTHES", "BOOKS", "TOYS", "FURNITURE"].map((type) => (
-							<MenuItem key={type} value={type}>
-								{type}
-							</MenuItem>
-						))}
-					</TextField>
+				<Grid item xs={12}>
+					<FormControl component="fieldset">
+						<FormLabel component="legend">Donation Category</FormLabel>
+						<RadioGroup
+							row
+							name="donationCategory"
+							value={isMonetary ? "MONEY" : "NON_MONETARY"}
+							onChange={handleDonationTypeChange}
+						>
+							<FormControlLabel value="MONEY" control={<Radio />} label="Monetary" />
+							<FormControlLabel value="NON_MONETARY" control={<Radio />} label="Non-Monetary" />
+						</RadioGroup>
+					</FormControl>
 				</Grid>
 
-				<Grid item xs={12} sm={6}>
-					<TextField
-						fullWidth
-						label="Quantity"
-						name="quantity"
-						value={formik.values.quantity}
-						onChange={formik.handleChange}
-						type="number"
-					/>
-				</Grid>
+				{isMonetary ? (
+					<Grid item xs={12}>
+						<TextField
+							fullWidth
+							label="Amount ($)"
+							name="amount"
+							type="number"
+							value={formik.values.amount}
+							onChange={formik.handleChange}
+							error={formik.touched.amount && Boolean(formik.errors.amount)}
+							helperText={formik.touched.amount && formik.errors.amount}
+						/>
+					</Grid>
+				) : (
+					<>
+						<Grid item xs={12} sm={6}>
+							<TextField
+								select
+								fullWidth
+								label="Donation Type"
+								name="type"
+								value={formik.values.type}
+								onChange={formik.handleChange}
+								error={formik.touched.type && Boolean(formik.errors.type)}
+								helperText={formik.touched.type && formik.errors.type}
+							>
+								{["FOOD", "CLOTHES", "BOOKS", "TOYS", "FURNITURE", "HOUSEHOLD", "OTHER"].map((type) => (
+									<MenuItem key={type} value={type}>
+										{type}
+									</MenuItem>
+								))}
+							</TextField>
+						</Grid>
 
-				<Grid item xs={12} sm={6}>
-					<TextField
-						fullWidth
-						label="Unit (e.g., kg, items)"
-						name="unit"
-						value={formik.values.unit}
-						onChange={formik.handleChange}
-					/>
-				</Grid>
+						<Grid item xs={12} sm={6}>
+							<TextField
+								fullWidth
+								label="Quantity"
+								name="quantity"
+								type="number"
+								value={formik.values.quantity}
+								onChange={formik.handleChange}
+								error={formik.touched.quantity && Boolean(formik.errors.quantity)}
+								helperText={formik.touched.quantity && formik.errors.quantity}
+							/>
+						</Grid>
 
-				<Grid item xs={12} sm={6}>
-					<TextField
-						fullWidth
-						type="date"
-						name="scheduledDate"
-						label="Pickup/Drop Date"
-						InputLabelProps={{ shrink: true }}
-						value={formik.values.scheduledDate}
-						onChange={formik.handleChange}
-					/>
-				</Grid>
+						<Grid item xs={12} sm={6}>
+							<TextField
+								fullWidth
+								label="Unit (e.g., kg, items)"
+								name="unit"
+								value={formik.values.unit}
+								onChange={formik.handleChange}
+								error={formik.touched.unit && Boolean(formik.errors.unit)}
+								helperText={formik.touched.unit && formik.errors.unit}
+							/>
+						</Grid>
 
-				<Grid item xs={12} sm={6}>
-					<TextField
-						fullWidth
-						type="time"
-						name="scheduledTime"
-						label="Pickup/Drop Time"
-						InputLabelProps={{ shrink: true }}
-						value={formik.values.scheduledTime}
-						onChange={formik.handleChange}
-					/>
-				</Grid>
+						<Grid item xs={12} sm={6}>
+							<TextField
+								fullWidth
+								type="date"
+								name="scheduledDate"
+								label="Pickup/Drop Date"
+								InputLabelProps={{ shrink: true }}
+								value={formik.values.scheduledDate}
+								onChange={formik.handleChange}
+								error={formik.touched.scheduledDate && Boolean(formik.errors.scheduledDate)}
+								helperText={formik.touched.scheduledDate && formik.errors.scheduledDate}
+							/>
+						</Grid>
+
+						<Grid item xs={12} sm={6}>
+							<TextField
+								fullWidth
+								type="time"
+								name="scheduledTime"
+								label="Pickup/Drop Time"
+								InputLabelProps={{ shrink: true }}
+								value={formik.values.scheduledTime}
+								onChange={formik.handleChange}
+								error={formik.touched.scheduledTime && Boolean(formik.errors.scheduledTime)}
+								helperText={formik.touched.scheduledTime && formik.errors.scheduledTime}
+							/>
+						</Grid>
+					</>
+				)}
 
 				<Grid item xs={12}>
 					<TextField
@@ -158,21 +256,25 @@ export default function DonationForm() {
 						rows={3}
 						value={formik.values.description}
 						onChange={formik.handleChange}
+						error={formik.touched.description && Boolean(formik.errors.description)}
+						helperText={formik.touched.description && formik.errors.description}
 					/>
 				</Grid>
 
-				<Grid item xs={12}>
-					<FormControlLabel
-						control={
-							<Checkbox
-								name="isPickup"
-								checked={formik.values.isPickup}
-								onChange={formik.handleChange}
-							/>
-						}
-						label="I want pickup service"
-					/>
-				</Grid>
+				{!isMonetary && (
+					<Grid item xs={12}>
+						<FormControlLabel
+							control={
+								<Checkbox
+									name="isPickup"
+									checked={formik.values.isPickup}
+									onChange={formik.handleChange}
+								/>
+							}
+							label="I want pickup service"
+						/>
+					</Grid>
+				)}
 
 				<Grid item xs={12}>
 					<TextField
@@ -181,6 +283,8 @@ export default function DonationForm() {
 						name="contactPhone"
 						value={formik.values.contactPhone}
 						onChange={formik.handleChange}
+						error={formik.touched.contactPhone && Boolean(formik.errors.contactPhone)}
+						helperText={formik.touched.contactPhone && formik.errors.contactPhone}
 					/>
 				</Grid>
 
@@ -191,10 +295,12 @@ export default function DonationForm() {
 						name="contactEmail"
 						value={formik.values.contactEmail}
 						onChange={formik.handleChange}
+						error={formik.touched.contactEmail && Boolean(formik.errors.contactEmail)}
+						helperText={formik.touched.contactEmail && formik.errors.contactEmail}
 					/>
 				</Grid>
 
-				{formik.values.isPickup && (
+				{formik.values.isPickup && !isMonetary && (
 					<>
 						<Grid item xs={12}>
 							<Typography variant="h6">Pickup Address</Typography>
@@ -203,10 +309,18 @@ export default function DonationForm() {
 							<Grid item xs={12} sm={6} key={field}>
 								<TextField
 									fullWidth
-									label={field}
+									label={field.charAt(0).toUpperCase() + field.slice(1)}
 									name={`pickupAddress.${field}`}
-									value={(formik.values.pickupAddress as any)[field]}
+									value={formik.values.pickupAddress[field as keyof typeof formik.values.pickupAddress]}
 									onChange={formik.handleChange}
+									error={
+										formik.touched.pickupAddress?.[field as keyof typeof formik.values.pickupAddress] &&
+										Boolean(formik.errors.pickupAddress?.[field as keyof typeof formik.values.pickupAddress])
+									}
+									helperText={
+										formik.touched.pickupAddress?.[field as keyof typeof formik.values.pickupAddress] &&
+										formik.errors.pickupAddress?.[field as keyof typeof formik.values.pickupAddress]
+									}
 								/>
 							</Grid>
 						))}
@@ -214,7 +328,12 @@ export default function DonationForm() {
 				)}
 
 				<Grid item xs={12}>
-					<Button type="submit" variant="contained" disabled={creating}>
+					<Button
+						type="submit"
+						variant="contained"
+						disabled={creating}
+						sx={{ mt: 2 }}
+					>
 						{creating ? "Submitting..." : "Donate Now"}
 					</Button>
 				</Grid>
@@ -222,672 +341,3 @@ export default function DonationForm() {
 		</Box>
 	);
 }
-
-// "use client";
-
-// import React, { useState, useEffect } from "react";
-// import { useRouter } from "next/navigation";
-// import { useGetCauseByIdQuery } from "@/store/api/causeApi";
-// import { useCreateDonationMutation } from "@/store/api/donationApi";
-// import { useSelector } from "react-redux";
-// import { RootState } from "@/store/store";
-// import {
-// 	Box,
-// 	Button,
-// 	Card,
-// 	CardContent,
-// 	CircularProgress,
-// 	Typography,
-// 	Grid,
-// 	TextField,
-// 	FormControl,
-// 	FormControlLabel,
-// 	RadioGroup,
-// 	Radio,
-// 	Divider,
-// 	Stepper,
-// 	Step,
-// 	StepLabel,
-// 	Alert,
-// 	Switch,
-// 	LinearProgress,
-// 	InputAdornment,
-// } from "@mui/material";
-// import {
-// 	ArrowBack as ArrowBackIcon,
-// 	CreditCard as CreditCardIcon,
-// 	AccountBalance as BankIcon,
-// 	PaymentOutlined as PaymentIcon,
-// 	FavoriteOutlined as HeartIcon,
-// 	VisibilityOff as AnonymousIcon,
-// 	Receipt as ReceiptIcon,
-// 	CheckCircleOutline as CheckIcon,
-// } from "@mui/icons-material";
-
-// const DONATION_AMOUNTS = [10, 25, 50, 100, 250, 500];
-
-// export default function DonatePage({ params }: { params: { id: string } }) {
-// 	const router = useRouter();
-// 	const resolvedParams = React.use(params);
-// 	const { id } = resolvedParams;
-// 	const { user } = useSelector((state: RootState) => state.auth);
-// 	const [activeStep, setActiveStep] = useState(0);
-// 	const [donationAmount, setDonationAmount] = useState<number | string>(25);
-// 	const [customAmount, setCustomAmount] = useState(false);
-// 	const [paymentMethod, setPaymentMethod] = useState("creditCard");
-// 	const [isAnonymous, setIsAnonymous] = useState(false);
-// 	const [comment, setComment] = useState("");
-// 	const [error, setError] = useState("");
-
-// 	const {
-// 		data: causeData,
-// 		isLoading: isCauseLoading,
-// 		error: causeError,
-// 	} = useGetCauseByIdQuery(id);
-
-// 	const [createDonation, { isLoading: isSubmitting }] =
-// 		useCreateDonationMutation();
-
-// 	const handleBack = () => {
-// 		router.push(`/dashboard/causes/${id}`);
-// 	};
-
-// 	const handleAmountSelect = (amount: number) => {
-// 		setDonationAmount(amount);
-// 		setCustomAmount(false);
-// 	};
-
-// 	const handleCustomAmountToggle = () => {
-// 		if (!customAmount) {
-// 			setDonationAmount("");
-// 		} else {
-// 			setDonationAmount(25);
-// 		}
-// 		setCustomAmount(!customAmount);
-// 	};
-
-// 	const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-// 		const value = e.target.value;
-// 		// Only allow numbers and prevent negative values
-// 		if (/^\d*\.?\d{0,2}$/.test(value) && !value.startsWith("-")) {
-// 			setDonationAmount(value);
-// 		}
-// 	};
-
-// 	const handlePaymentMethodChange = (
-// 		e: React.ChangeEvent<HTMLInputElement>
-// 	) => {
-// 		setPaymentMethod(e.target.value);
-// 	};
-
-// 	const handleAnonymousChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-// 		setIsAnonymous(e.target.checked);
-// 	};
-
-// 	const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-// 		setComment(e.target.value);
-// 	};
-
-// 	const validateStep = () => {
-// 		if (activeStep === 0) {
-// 			// Validate donation amount
-// 			const amount = Number(donationAmount);
-// 			if (!donationAmount || isNaN(amount) || amount <= 0) {
-// 				setError("Please enter a valid donation amount");
-// 				return false;
-// 			}
-// 			setError("");
-// 			return true;
-// 		}
-// 		return true;
-// 	};
-
-// 	const handleNext = () => {
-// 		if (validateStep()) {
-// 			if (activeStep === 1) {
-// 				handleSubmit();
-// 			} else {
-// 				setActiveStep((prevStep) => prevStep + 1);
-// 			}
-// 		}
-// 	};
-
-// 	const handlePrevious = () => {
-// 		setActiveStep((prevStep) => prevStep - 1);
-// 	};
-
-// 	const handleSubmit = async () => {
-// 		try {
-// 			const amount = Number(donationAmount);
-// 			await createDonation({
-// 				causeId: id,
-// 				amount,
-// 				paymentMethod,
-// 				isAnonymous,
-// 				comment: comment || undefined,
-// 			}).unwrap();
-// 			setActiveStep(2); // Success step
-// 		} catch (err) {
-// 			setError("Failed to process donation. Please try again.");
-// 			console.error(err);
-// 		}
-// 	};
-
-// 	// Redirect if not a donor
-// 	if (user && user.role !== "donor") {
-// 		return (
-// 			<Box p={4}>
-// 				<Alert severity="warning" sx={{ mb: 3 }}>
-// 					Only donors can make donations. Please log in as a donor to continue.
-// 				</Alert>
-// 				<Button
-// 					startIcon={<ArrowBackIcon />}
-// 					onClick={() => router.push("/dashboard/causes")}
-// 				>
-// 					Back to causes
-// 				</Button>
-// 			</Box>
-// 		);
-// 	}
-
-// 	if (isCauseLoading) {
-// 		return (
-// 			<Box display="flex" justifyContent="center" p={8}>
-// 				<CircularProgress />
-// 			</Box>
-// 		);
-// 	}
-
-// 	if (causeError || !causeData?.cause) {
-// 		return (
-// 			<Box p={4}>
-// 				<Alert severity="error">
-// 					This cause doesn&apos;t exist or has been removed.
-// 				</Alert>
-// 				<Button
-// 					startIcon={<ArrowBackIcon />}
-// 					onClick={() => router.push("/dashboard/causes")}
-// 					sx={{ mt: 2 }}
-// 				>
-// 					Back to causes
-// 				</Button>
-// 			</Box>
-// 		);
-// 	}
-
-// 	const cause = causeData.cause;
-// 	const progress = Math.min(
-// 		100,
-// 		Math.round((cause.raisedAmount / cause.targetAmount) * 100)
-// 	);
-
-// 	return (
-// 		<Box p={4}>
-// 			{/* Back button */}
-// 			<Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mb: 4 }}>
-// 				Back to cause
-// 			</Button>
-
-// 			{/* Page title */}
-// 			<Typography variant="h4" gutterBottom>
-// 				Donate to {cause.title}
-// 			</Typography>
-// 			<Typography variant="body1" color="text.secondary" paragraph>
-// 				Your generous donation helps make a real difference.
-// 			</Typography>
-
-// 			{/* Stepper */}
-// 			<Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-// 				<Step>
-// 					<StepLabel>Amount</StepLabel>
-// 				</Step>
-// 				<Step>
-// 					<StepLabel>Payment</StepLabel>
-// 				</Step>
-// 				<Step>
-// 					<StepLabel>Confirmation</StepLabel>
-// 				</Step>
-// 			</Stepper>
-
-// 			<Grid container spacing={4}>
-// 				{/* Left column: Donation form */}
-// 				<Grid item xs={12} md={8} component="div">
-// 					<Card>
-// 						<CardContent sx={{ p: 4 }}>
-// 							{activeStep === 0 && (
-// 								<>
-// 									<Typography variant="h6" gutterBottom>
-// 										Select Donation Amount
-// 									</Typography>
-// 									<Typography
-// 										variant="body2"
-// 										color="text.secondary"
-// 										sx={{ mb: 3 }}
-// 									>
-// 										Choose a donation amount or enter a custom amount.
-// 									</Typography>
-
-// 									{/* Donation amount buttons */}
-// 									<Grid container spacing={2} sx={{ mb: 3 }}>
-// 										{DONATION_AMOUNTS.map((amount) => (
-// 											<Grid item xs={6} sm={4} key={amount} component="div">
-// 												<Button
-// 													fullWidth
-// 													variant={
-// 														donationAmount === amount && !customAmount
-// 															? "contained"
-// 															: "outlined"
-// 													}
-// 													color="primary"
-// 													onClick={() => handleAmountSelect(amount)}
-// 													sx={{ height: "100%" }}
-// 												>
-// 													${amount}
-// 												</Button>
-// 											</Grid>
-// 										))}
-// 										<Grid item xs={6} sm={4} component="div">
-// 											<Button
-// 												fullWidth
-// 												variant={customAmount ? "contained" : "outlined"}
-// 												color="primary"
-// 												onClick={handleCustomAmountToggle}
-// 												sx={{ height: "100%" }}
-// 											>
-// 												Custom
-// 											</Button>
-// 										</Grid>
-// 									</Grid>
-
-// 									{/* Custom amount input */}
-// 									{customAmount && (
-// 										<TextField
-// 											fullWidth
-// 											label="Custom Amount"
-// 											variant="outlined"
-// 											type="text"
-// 											value={donationAmount}
-// 											onChange={handleCustomAmountChange}
-// 											InputProps={{
-// 												startAdornment: (
-// 													<InputAdornment position="start">$</InputAdornment>
-// 												),
-// 											}}
-// 											sx={{ mb: 3 }}
-// 										/>
-// 									)}
-
-// 									{/* Anonymous donation toggle */}
-// 									<FormControlLabel
-// 										control={
-// 											<Switch
-// 												checked={isAnonymous}
-// 												onChange={handleAnonymousChange}
-// 											/>
-// 										}
-// 										label="Make this donation anonymous"
-// 										sx={{ mb: 3 }}
-// 									/>
-
-// 									{/* Optional comment */}
-// 									<TextField
-// 										fullWidth
-// 										label="Add a comment (optional)"
-// 										variant="outlined"
-// 										multiline
-// 										rows={3}
-// 										value={comment}
-// 										onChange={handleCommentChange}
-// 									/>
-
-// 									{error && (
-// 										<Alert severity="error" sx={{ mt: 2 }}>
-// 											{error}
-// 										</Alert>
-// 									)}
-// 								</>
-// 							)}
-
-// 							{activeStep === 1 && (
-// 								<>
-// 									<Typography variant="h6" gutterBottom>
-// 										Payment Method
-// 									</Typography>
-// 									<Typography
-// 										variant="body2"
-// 										color="text.secondary"
-// 										sx={{ mb: 3 }}
-// 									>
-// 										Select a payment method to complete your donation.
-// 									</Typography>
-
-// 									<FormControl
-// 										component="fieldset"
-// 										sx={{ mb: 3, width: "100%" }}
-// 									>
-// 										<RadioGroup
-// 											aria-label="payment-method"
-// 											name="payment-method"
-// 											value={paymentMethod}
-// 											onChange={handlePaymentMethodChange}
-// 										>
-// 											<Card
-// 												variant="outlined"
-// 												sx={{
-// 													mb: 2,
-// 													borderColor:
-// 														paymentMethod === "creditCard"
-// 															? "primary.main"
-// 															: "divider",
-// 												}}
-// 											>
-// 												<CardContent>
-// 													<FormControlLabel
-// 														value="creditCard"
-// 														control={<Radio />}
-// 														label={
-// 															<Box display="flex" alignItems="center">
-// 																<CreditCardIcon color="action" sx={{ mr: 1 }} />
-// 																<Typography>Credit/Debit Card</Typography>
-// 															</Box>
-// 														}
-// 													/>
-// 												</CardContent>
-// 											</Card>
-
-// 											<Card
-// 												variant="outlined"
-// 												sx={{
-// 													mb: 2,
-// 													borderColor:
-// 														paymentMethod === "bankTransfer"
-// 															? "primary.main"
-// 															: "divider",
-// 												}}
-// 											>
-// 												<CardContent>
-// 													<FormControlLabel
-// 														value="bankTransfer"
-// 														control={<Radio />}
-// 														label={
-// 															<Box display="flex" alignItems="center">
-// 																<BankIcon color="action" sx={{ mr: 1 }} />
-// 																<Typography>Bank Transfer</Typography>
-// 															</Box>
-// 														}
-// 													/>
-// 												</CardContent>
-// 											</Card>
-
-// 											<Card
-// 												variant="outlined"
-// 												sx={{
-// 													borderColor:
-// 														paymentMethod === "paypal"
-// 															? "primary.main"
-// 															: "divider",
-// 												}}
-// 											>
-// 												<CardContent>
-// 													<FormControlLabel
-// 														value="paypal"
-// 														control={<Radio />}
-// 														label={
-// 															<Box display="flex" alignItems="center">
-// 																<PaymentIcon color="action" sx={{ mr: 1 }} />
-// 																<Typography>PayPal</Typography>
-// 															</Box>
-// 														}
-// 													/>
-// 												</CardContent>
-// 											</Card>
-// 										</RadioGroup>
-// 									</FormControl>
-
-// 									<Typography variant="h6" gutterBottom>
-// 										Donation Summary
-// 									</Typography>
-// 									<Box sx={{ mb: 3 }}>
-// 										<Box
-// 											display="flex"
-// 											justifyContent="space-between"
-// 											sx={{ mb: 1 }}
-// 										>
-// 											<Typography variant="body2">Donation Amount</Typography>
-// 											<Typography variant="body2" fontWeight="bold">
-// 												${Number(donationAmount).toFixed(2)}
-// 											</Typography>
-// 										</Box>
-// 										<Box
-// 											display="flex"
-// 											justifyContent="space-between"
-// 											sx={{ mb: 1 }}
-// 										>
-// 											<Typography variant="body2">Processing Fee</Typography>
-// 											<Typography variant="body2">$0.00</Typography>
-// 										</Box>
-// 										<Divider sx={{ my: 1 }} />
-// 										<Box
-// 											display="flex"
-// 											justifyContent="space-between"
-// 											sx={{ mb: 1 }}
-// 										>
-// 											<Typography variant="subtitle2">Total</Typography>
-// 											<Typography variant="subtitle2" fontWeight="bold">
-// 												${Number(donationAmount).toFixed(2)}
-// 											</Typography>
-// 										</Box>
-// 									</Box>
-
-// 									{error && (
-// 										<Alert severity="error" sx={{ mt: 2 }}>
-// 											{error}
-// 										</Alert>
-// 									)}
-// 								</>
-// 							)}
-
-// 							{activeStep === 2 && (
-// 								<Box
-// 									display="flex"
-// 									flexDirection="column"
-// 									alignItems="center"
-// 									py={4}
-// 								>
-// 									<CheckIcon color="success" sx={{ fontSize: 60, mb: 2 }} />
-// 									<Typography variant="h5" gutterBottom textAlign="center">
-// 										Thank you for your donation!
-// 									</Typography>
-// 									<Typography
-// 										variant="body1"
-// 										color="text.secondary"
-// 										textAlign="center"
-// 										paragraph
-// 									>
-// 										Your generous contribution of $
-// 										{Number(donationAmount).toFixed(2)} to {cause.title} has
-// 										been processed successfully.
-// 									</Typography>
-// 									<Typography
-// 										variant="body2"
-// 										color="text.secondary"
-// 										textAlign="center"
-// 										sx={{ mb: 4 }}
-// 									>
-// 										A confirmation receipt has been sent to your email.
-// 									</Typography>
-
-// 									<Box mt={4} width="100%">
-// 										<Button
-// 											fullWidth
-// 											variant="contained"
-// 											color="primary"
-// 											startIcon={<ReceiptIcon />}
-// 											sx={{ mb: 2 }}
-// 										>
-// 											View Receipt
-// 										</Button>
-// 										<Button
-// 											fullWidth
-// 											variant="outlined"
-// 											color="primary"
-// 											onClick={() => router.push("/dashboard/donations")}
-// 										>
-// 											View My Donations
-// 										</Button>
-// 									</Box>
-// 								</Box>
-// 							)}
-
-// 							{activeStep < 2 && (
-// 								<Box
-// 									display="flex"
-// 									justifyContent="space-between"
-// 									sx={{ mt: 4 }}
-// 								>
-// 									<Button
-// 										disabled={activeStep === 0}
-// 										onClick={handlePrevious}
-// 										variant="outlined"
-// 									>
-// 										Back
-// 									</Button>
-// 									<Button
-// 										variant="contained"
-// 										color="primary"
-// 										onClick={handleNext}
-// 										disabled={isSubmitting}
-// 									>
-// 										{isSubmitting ? (
-// 											<CircularProgress size={24} />
-// 										) : activeStep === 1 ? (
-// 											"Complete Donation"
-// 										) : (
-// 											"Continue"
-// 										)}
-// 									</Button>
-// 								</Box>
-// 							)}
-// 						</CardContent>
-// 					</Card>
-// 				</Grid>
-
-// 				{/* Right column: Cause summary */}
-// 				<Grid item xs={12} md={4} component="div">
-// 					<Card>
-// 						<CardContent>
-// 							<Typography variant="h6" gutterBottom>
-// 								Cause Details
-// 							</Typography>
-
-// 							{cause.imageUrl && (
-// 								<Box
-// 									component="img"
-// 									src={cause.imageUrl}
-// 									alt={cause.title}
-// 									sx={{
-// 										width: "100%",
-// 										height: 150,
-// 										objectFit: "cover",
-// 										borderRadius: 1,
-// 										mb: 2,
-// 									}}
-// 								/>
-// 							)}
-
-// 							<Typography variant="subtitle1" gutterBottom>
-// 								{cause.title}
-// 							</Typography>
-// 							<Typography
-// 								variant="body2"
-// 								color="text.secondary"
-// 								sx={{
-// 									mb: 2,
-// 									overflow: "hidden",
-// 									textOverflow: "ellipsis",
-// 									display: "-webkit-box",
-// 									WebkitLineClamp: 3,
-// 									WebkitBoxOrient: "vertical",
-// 								}}
-// 							>
-// 								{cause.description}
-// 							</Typography>
-
-// 							<Box sx={{ mb: 2 }}>
-// 								<Box
-// 									display="flex"
-// 									justifyContent="space-between"
-// 									sx={{ mb: 0.5 }}
-// 								>
-// 									<Typography variant="body2" color="text.secondary">
-// 										Raised
-// 									</Typography>
-// 									<Typography variant="body2" fontWeight="medium">
-// 										${cause.raisedAmount.toLocaleString()}
-// 									</Typography>
-// 								</Box>
-// 								<Box
-// 									display="flex"
-// 									justifyContent="space-between"
-// 									sx={{ mb: 1 }}
-// 								>
-// 									<Typography variant="body2" color="text.secondary">
-// 										Goal
-// 									</Typography>
-// 									<Typography variant="body2">
-// 										${cause.targetAmount.toLocaleString()}
-// 									</Typography>
-// 								</Box>
-// 								<LinearProgress
-// 									variant="determinate"
-// 									value={progress}
-// 									sx={{ height: 8, borderRadius: 4 }}
-// 								/>
-// 								<Typography
-// 									variant="caption"
-// 									color="text.secondary"
-// 									align="right"
-// 									display="block"
-// 									sx={{ mt: 0.5 }}
-// 								>
-// 									{progress}% funded
-// 								</Typography>
-// 							</Box>
-
-// 							<Box
-// 								display="flex"
-// 								alignItems="center"
-// 								gap={1}
-// 								sx={{ mt: 3, bgcolor: "info.50", p: 2, borderRadius: 1 }}
-// 							>
-// 								<HeartIcon color="info" />
-// 								<Typography variant="body2">
-// 									{cause.donorCount || 0} people have donated to this cause
-// 								</Typography>
-// 							</Box>
-
-// 							{isAnonymous && (
-// 								<Box
-// 									display="flex"
-// 									alignItems="center"
-// 									gap={1}
-// 									sx={{
-// 										mt: 2,
-// 										bgcolor: "background.default",
-// 										p: 2,
-// 										borderRadius: 1,
-// 									}}
-// 								>
-// 									<AnonymousIcon color="action" />
-// 									<Typography variant="body2">
-// 										Your donation will be anonymous
-// 									</Typography>
-// 								</Box>
-// 							)}
-// 						</CardContent>
-// 					</Card>
-// 				</Grid>
-// 			</Grid>
-// 		</Box>
-// 	);
-// }

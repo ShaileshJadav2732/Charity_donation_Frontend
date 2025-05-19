@@ -33,56 +33,7 @@ export interface Organization {
 	address: string;
 }
 
-interface MonetaryStats {
-	totalDonated: number;
-	averageDonation: number;
-	donationCount: number;
-	totalCauses: number;
-}
 
-// Non-monetary donation statistics
-interface NonMonetaryStats {
-	itemsDonated: number;
-	donationCount: number;
-	uniqueTypeCount: number;
-}
-
-// Status breakdown entry
-interface StatusBreakdown {
-	status: string;
-	count: number;
-}
-
-// Monthly trend data point
-interface MonthlyTrendData {
-	year: number;
-	month: number;
-	totalAmount: number;
-	count: number;
-}
-
-// Complete donor statistics data structure
-interface DonorStats {
-	monetary: MonetaryStats;
-	nonMonetary: NonMonetaryStats;
-	statusBreakdown: StatusBreakdown[];
-	monthlyTrend: MonthlyTrendData[];
-}
-
-// API response structure
-interface DonorStatsResponse {
-	success: boolean;
-	data: DonorStats;
-}
-
-export type {
-	MonetaryStats,
-	NonMonetaryStats,
-	StatusBreakdown,
-	MonthlyTrendData,
-	DonorStats,
-	DonorStatsResponse,
-};
 export interface DonationFormData {
 	donor: string; // Optional if backend uses auth token
 	organization: string;
@@ -126,12 +77,6 @@ export interface Donation {
 	updatedAt: string;
 }
 
-// export interface DonationsResponse {
-// 	donations: Donation[];
-// 	total: number;
-// 	page: number;
-// 	limit: number;
-// }
 
 export interface DonationResponse {
 	donation: Donation;
@@ -155,4 +100,49 @@ export interface DonorDonationsResponse {
 		page: number;
 		pages: number;
 	};
+}
+
+
+export interface DonationStats {
+  totalDonated: number;
+  totalCauses: number;
+  averageDonation: number;
+}
+
+export interface Donation {
+  _id: string;
+  cause: {
+    _id: string;
+    title: string;
+  };
+  organization: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  amount?: number;
+  type: string;
+  status: string;
+  createdAt: string;
+  description: string;
+  receiptImage?: string;
+}
+
+export interface Pagination {
+  total: number;
+  page: number;
+  pages: number;
+}
+
+export interface DonationResponse {
+  donations: Donation[];
+  pagination: Pagination;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  pagination?: Pagination;
 }

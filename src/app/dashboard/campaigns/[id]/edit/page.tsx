@@ -66,8 +66,7 @@ export default function EditCampaignPage({
 }) {
 	const router = useRouter();
 	// Use React.use() to unwrap params
-	const resolvedParams = React.use(params);
-	const { id } = resolvedParams;
+	const { id } = params;
 	const { user } = useSelector((state: RootState) => state.auth);
 
 	// Enhanced validation with debugging
@@ -127,7 +126,7 @@ export default function EditCampaignPage({
 				totalTargetAmount: campaign.totalTargetAmount.toString(),
 				status: campaign.status.toLowerCase(),
 				acceptedDonationTypes: campaign.acceptedDonationTypes?.map(
-					(type) => type as DonationType
+					(type: string) => type as DonationType
 				) || [DonationType.MONEY],
 				imageUrl: campaign.imageUrl || "",
 				causes: campaign.causes.map((cause: { id: string }) => cause.id) || [],
@@ -155,7 +154,7 @@ export default function EditCampaignPage({
 	};
 
 	const handleSelectChange = (
-		e: React.ChangeEvent<{ name?: string; value: unknown }>
+		e: React.ChangeEvent<HTMLInputElement> | (Event & { target: { value: string; name: string } })
 	) => {
 		const { name, value } = e.target;
 		if (name) {
@@ -217,7 +216,6 @@ export default function EditCampaignPage({
 				body: {
 					title: formData.title,
 					description: formData.description,
-					// Convert Dayjs to ISO string
 					startDate: formData.startDate.toISOString(),
 					endDate: formData.endDate.toISOString(),
 					status: formData.status,
@@ -241,17 +239,6 @@ export default function EditCampaignPage({
 		}
 	};
 
-	// // Early return for invalid ID
-	// if (!id || id === "undefined" || id === "[object Object]") {
-	// 	return (
-	// 		<Box p={4}>
-	// 			<Alert severity="error">
-	// 				Invalid campaign ID detected. Redirecting to campaigns list...
-	// 			</Alert>
-	// 		</Box>
-	// 	);
-	// }
-
 	if (!user || user.role !== "organization") {
 		return (
 			<Box p={4}>
@@ -274,33 +261,6 @@ export default function EditCampaignPage({
 			</Box>
 		);
 	}
-
-	// if (campaignError) {
-	// 	return (
-	// 		<Box p={4}>
-	// 			<Alert severity="error">
-	// 				Error loading campaign. Please try again later.
-	// 			</Alert>
-	// 		</Box>
-	// 	);
-	// }
-
-	// Check authorization
-	// const isAuthorized =
-	// 	user &&
-	// 	(campaignData?.data?.campaign?._id === user.id ||
-	// 		(campaignData?.data?.campaign?.organizations &&
-	// 			campaignData.data.campaign.organizations.some(
-	// 				(org) => org._id === user.id
-	// 			)));
-
-	// return (
-	// 	<Box p={4}>
-	// 		<Alert severity="error">
-	// 			You don&apos;t have permission to edit this campaign.
-	// 		</Alert>
-	// 	</Box>
-	// );
 
 	return (
 		<LocalizationProvider dateAdapter={AdapterDayjs}>

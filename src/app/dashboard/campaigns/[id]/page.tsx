@@ -55,6 +55,7 @@ import {
 	useDeleteCampaignMutation,
 	useUpdateCampaignMutation,
 } from "@/store/api/campaignApi";
+import { useGetCausesQuery } from "@/store/api/causeApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { DatePicker } from "@mui/x-date-pickers";
@@ -150,15 +151,16 @@ interface FormData {
 	status: string;
 	imageUrl: string;
 	acceptedDonationTypes: DonationType[];
+	causes: { id: string; title: string; description: string }[];
 }
 
 export default function CampaignDetailPage({
 	params,
 }: {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 }) {
-	// Use a wrapper component to handle params properly with React.use()
-	return <CampaignDetail params={params} />;
+	const actualParams = React.use(params);
+	return <CampaignDetail params={actualParams} />;
 }
 
 function CampaignDetail({ params }: { params: { id: string } }) {
@@ -215,6 +217,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		status: "",
 		imageUrl: "",
 		acceptedDonationTypes: [],
+		causes: [],
 	});
 
 	// Initialize form with campaign data when it loads
@@ -229,8 +232,8 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 				totalTargetAmount: campaign.totalTargetAmount.toString(),
 				status: campaign.status.toLowerCase(),
 				imageUrl: campaign.imageUrl || "",
-				// Check if acceptedDonationTypes exists on the campaign object
 				acceptedDonationTypes: [],
+				causes: campaign.causes || [],
 			});
 		}
 	}, [campaignData]);
@@ -297,9 +300,11 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 					description: formData.description,
 					startDate: formData.startDate.toISOString(),
 					endDate: formData.endDate.toISOString(),
-					status: formData.status as CampaignStatus,
+					status: formData.status,
 					totalTargetAmount: parseFloat(formData.totalTargetAmount),
 					imageUrl: formData.imageUrl,
+					causes: formData.causes,
+					acceptedDonationTypes: formData.acceptedDonationTypes
 				},
 			};
 
@@ -441,10 +446,9 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 							sx={{
 								height: { xs: 200, md: 300 },
 								position: "relative",
-								background: `url(${
-									campaign?.imageUrl ||
+								background: `url(${campaign?.imageUrl ||
 									"https://placehold.co/1200x400?text=Campaign"
-								})`,
+									})`,
 								backgroundSize: "cover",
 								backgroundPosition: "center",
 							}}
@@ -466,10 +470,10 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 										(campaign?.status || "").toLowerCase() === "active"
 											? "success"
 											: (campaign?.status || "").toLowerCase() === "draft"
-											? "default"
-											: (campaign?.status || "").toLowerCase() === "paused"
-											? "warning"
-											: "info"
+												? "default"
+												: (campaign?.status || "").toLowerCase() === "paused"
+													? "warning"
+													: "info"
 									}
 									sx={{ fontWeight: "bold" }}
 								/>
@@ -504,7 +508,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 					{/* Campaign Info */}
 					<Box sx={{ p: 4 }}>
 						<Grid container spacing={3}>
-							<Grid item xs={12} md={8}>
+							<Grid component="div" item xs={12} md={8}>
 								{!isEditMode ? (
 									<>
 										<Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -512,7 +516,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 										</Typography>
 										<Box display="flex" flexWrap="wrap" gap={1} mb={2}>
 											{campaign?.causes &&
-												campaign.causes.map((cause) => (
+												campaign.causes.map((cause: { id: string; title: string; description: string }) => (
 													<Chip
 														key={cause.id}
 														label={cause.title}
@@ -573,7 +577,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 								</Box>
 							</Grid>
 
-							<Grid item xs={12} md={4}>
+							<Grid component="div" item xs={12} md={4}>
 								<Card
 									sx={{ mb: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}
 								>
@@ -644,7 +648,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 												</Box>
 
 												<Grid container spacing={1}>
-													<Grid item xs={6}>
+													<Grid component="div" item xs={6}>
 														<Typography variant="body2" color="text.secondary">
 															Raised
 														</Typography>
@@ -660,7 +664,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 														</Typography>
 													</Grid>
 
-													<Grid item xs={6}>
+													<Grid component="div" item xs={6}>
 														<Typography
 															variant="body2"
 															color="text.secondary"
@@ -768,7 +772,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 								<Divider sx={{ my: 3 }} />
 
 								<Grid container spacing={4}>
-									<Grid item xs={12} md={6}>
+									<Grid component="div" item xs={12} md={6}>
 										<Typography variant="h6" gutterBottom>
 											Campaign Details
 										</Typography>
@@ -816,15 +820,15 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 															size="small"
 															color={
 																(campaign?.status || "").toLowerCase() ===
-																"active"
+																	"active"
 																	? "success"
 																	: (campaign?.status || "").toLowerCase() ===
-																	  "draft"
-																	? "default"
-																	: (campaign?.status || "").toLowerCase() ===
-																	  "paused"
-																	? "warning"
-																	: "info"
+																		"draft"
+																		? "default"
+																		: (campaign?.status || "").toLowerCase() ===
+																			"paused"
+																			? "warning"
+																			: "info"
 															}
 														/>
 													}
@@ -833,7 +837,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 										</List>
 									</Grid>
 
-									<Grid item xs={12} md={6}>
+									<Grid component="div" item xs={12} md={6}>
 										<Typography variant="h6" gutterBottom>
 											Organization
 										</Typography>
@@ -875,8 +879,8 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 
 								{campaign?.causes && campaign.causes.length > 0 ? (
 									<Grid container spacing={3}>
-										{campaign.causes.map((cause) => (
-											<Grid item xs={12} md={6} key={cause.id}>
+										{campaign.causes.map((cause: { id: string; title: string; description: string }) => (
+											<Grid component="div" item xs={12} md={6} key={cause.id}>
 												<Card
 													sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}
 												>
@@ -898,7 +902,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 														<Divider sx={{ my: 2 }} />
 
 														<Grid container spacing={1}>
-															<Grid item xs={6}>
+															<Grid component="div" item xs={6}>
 																<Typography
 																	variant="body2"
 																	color="text.secondary"
@@ -910,7 +914,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 																</Typography>
 															</Grid>
 
-															<Grid item xs={6}>
+															<Grid component="div" item xs={6}>
 																<Typography
 																	variant="body2"
 																	color="text.secondary"

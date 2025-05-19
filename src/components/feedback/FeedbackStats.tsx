@@ -6,11 +6,11 @@ import {
 	Card,
 	CardContent,
 	CircularProgress,
-	Grid,
 	LinearProgress,
 	Rating,
 	Typography,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import React, { useMemo } from "react";
 
 interface FeedbackStatsProps {
@@ -141,16 +141,16 @@ const FeedbackStats: React.FC<FeedbackStatsProps> = ({
 										rating >= 4
 											? "success"
 											: rating >= 3
-											? "info"
-											: rating >= 2
-											? "warning"
-											: "error"
+												? "info"
+												: rating >= 2
+													? "warning"
+													: "error"
 									}
 								/>
 								<Typography variant="body2" sx={{ minWidth: 30 }}>
 									{
 										stats.distribution[
-											rating as keyof typeof stats.distribution
+										rating as keyof typeof stats.distribution
 										]
 									}
 								</Typography>

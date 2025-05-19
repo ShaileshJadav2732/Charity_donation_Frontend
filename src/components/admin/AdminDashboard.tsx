@@ -6,7 +6,6 @@ import {
 } from "@/store/api/adminApi";
 import {
 	Box,
-	Grid,
 	Card,
 	CardContent,
 	Typography,
@@ -27,6 +26,7 @@ import {
 	Rating,
 	Pagination,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import {
 	TrendingUp,
 	People,
@@ -219,11 +219,9 @@ const AdminDashboard: React.FC = () => {
 											<Chip label="Donation" color="success" size="small" />
 										</TableCell>
 										<TableCell>
-											{`${donation.donor.firstName} ${
-												donation.donor.lastName
-											} donated $${donation.amount.toLocaleString()} to ${
-												donation.organization.name
-											}`}
+											{`${donation.donor.firstName} ${donation.donor.lastName
+												} donated $${donation.amount.toLocaleString()} to ${donation.organization.name
+												}`}
 										</TableCell>
 										<TableCell>
 											{formatDistanceToNow(new Date(donation.createdAt), {

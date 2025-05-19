@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import NoSSR from "@/components/common/NoSSR";
 import DonorProfileForm from "@/components/profile/DonorProfileForm";
 import OrganizationProfileForm from "@/components/profile/OrganizationProfileForm";
-import NoSSR from "@/components/common/NoSSR";
-import { FiUser, FiAlertCircle } from "react-icons/fi";
+import { RootState } from "@/store/store";
 import { motion } from "framer-motion";
-import { IUser } from "@/types"; // Import IUser type
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { FiAlertCircle, FiUser } from "react-icons/fi";
+import { useSelector } from "react-redux";
 
 export default function CompleteProfilePage() {
 	return (

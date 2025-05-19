@@ -26,8 +26,8 @@ import {
 	IconButton,
 	Divider,
 	CircularProgress,
-	Grid,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { DatePicker } from "@mui/x-date-pickers";
 import { useCreateCampaignMutation } from "@/store/api/campaignApi";
 import {
@@ -44,6 +44,7 @@ import {
 	Close as CloseIcon,
 	Refresh as RefreshIcon,
 } from "@mui/icons-material";
+import { SelectChangeEvent } from '@mui/material/Select';
 
 interface FormData {
 	title: string;
@@ -147,6 +148,8 @@ const CreateCampaignPage = () => {
 		}
 	}, [formData.selectedCauses, causesData]);
 
+	const [error, setError] = useState<string | null>(null);
+
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
 	) => {
@@ -159,9 +162,7 @@ const CreateCampaignPage = () => {
 		}
 	};
 
-	const handleSelectChange = (
-		e: React.ChangeEvent<{ name?: string; value: unknown }>
-	) => {
+	const handleSelectChange = (e: SelectChangeEvent) => {
 		const { name, value } = e.target;
 		if (name) {
 			setFormData((prev) => ({
@@ -277,10 +278,10 @@ const CreateCampaignPage = () => {
 			const response = await createCause(payload).unwrap();
 
 			// Add the newly created cause to selected causes
-			if (response.cause && response.cause.id) {
+			if (response.data && response.data.cause && response.data.cause.id) {
 				setFormData((prev) => ({
 					...prev,
-					selectedCauses: [...prev.selectedCauses, response.cause.id],
+					selectedCauses: [...prev.selectedCauses, response.data.cause.id],
 				}));
 
 				// Refresh the causes list
@@ -615,7 +616,7 @@ const CreateCampaignPage = () => {
 				<form onSubmit={handleCreateCause}>
 					<DialogContent>
 						<Grid container spacing={3}>
-							<Grid component="div" item xs={12}>
+							<Grid item xs={12}>
 								<TextField
 									fullWidth
 									label="Cause Title"
@@ -626,7 +627,7 @@ const CreateCampaignPage = () => {
 								/>
 							</Grid>
 
-							<Grid component="div" item xs={12}>
+							<Grid item xs={12}>
 								<TextField
 									fullWidth
 									label="Description"
@@ -639,7 +640,7 @@ const CreateCampaignPage = () => {
 								/>
 							</Grid>
 
-							<Grid component="div" item xs={12} sm={6}>
+							<Grid item xs={12} sm={6}>
 								<TextField
 									fullWidth
 									label="Target Amount"
@@ -654,7 +655,7 @@ const CreateCampaignPage = () => {
 								/>
 							</Grid>
 
-							<Grid component="div" item xs={12} sm={6}>
+							<Grid item xs={12} sm={6}>
 								<TextField
 									fullWidth
 									label="Image URL"
@@ -665,7 +666,7 @@ const CreateCampaignPage = () => {
 								/>
 							</Grid>
 
-							<Grid component="div" item xs={12}>
+							<Grid item xs={12}>
 								<Typography variant="subtitle2" gutterBottom>
 									Tags
 								</Typography>
@@ -688,7 +689,7 @@ const CreateCampaignPage = () => {
 							</Grid>
 
 							{causeError && (
-								<Grid component="div" item xs={12}>
+								<Grid item xs={12}>
 									<Alert severity="error">
 										Failed to create cause. Please try again.
 									</Alert>
@@ -704,7 +705,7 @@ const CreateCampaignPage = () => {
 							variant="contained"
 							disabled={isCreatingCause}
 						>
-							{isCreatingCause ? "Creating..." : "Create Cause"}
+							{isCreatingCause ? "Creating..." : "Create "}
 						</Button>
 					</DialogActions>
 				</form>
