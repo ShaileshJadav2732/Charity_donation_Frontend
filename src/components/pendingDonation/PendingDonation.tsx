@@ -1,20 +1,45 @@
 "use client";
-import { useGetOrganizationDonationsQuery } from "@/store/api/donationApi";
-import { Donation } from "@/types/donation";
+import {
+	useGetOrganizationDonationsQuery,
+	useUpdateDonationStatusMutation,
+} from "@/store/api/donationApi";
+import {
+	Donation,
+	DonationStatus,
+	organizationDonation,
+} from "@/types/donation";
+import {
+	Button,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+} from "@mui/material";
 import React, { useState } from "react";
-import { FiCheckCircle, FiEye, FiRefreshCw, FiSearch, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import {
+	FiCheckCircle,
+	FiChevronLeft,
+	FiChevronRight,
+	FiEye,
+	FiRefreshCw,
+	FiSearch,
+} from "react-icons/fi";
+import { toast } from "react-toastify";
 
 interface OrganizationDonationsProps {
 	organizationId: string;
 }
 
 const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
-	organizationId
+	organizationId,
 }) => {
 	const [status, setStatus] = useState<string>("PENDING");
 	const [page, setPage] = useState<number>(1);
 	const [limit] = useState<number>(10);
 	const [searchTerm, setSearchTerm] = useState<string>("");
+	const [showDonationModal, setShowDonationModal] = useState(false);
+	const [selectedDonation, setSelectedDonation] =
+		useState<organizationDonation | null>(null);
 
 	const { data, isLoading, isFetching, isError, refetch } =
 		useGetOrganizationDonationsQuery({
@@ -22,9 +47,12 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			params: {
 				status,
 				page,
-				limit
-			}
+				limit,
+			},
 		});
+
+	const [updateDonationStatus, { isLoading: isUpdating }] =
+		useUpdateDonationStatusMutation();
 
 	const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		setStatus(e.target.value);
@@ -33,6 +61,29 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 
 	const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setSearchTerm(e.target.value);
+	};
+
+	const handleApproveDonation = async (donationId: string) => {
+		try {
+			const response = await updateDonationStatus({
+				donationId,
+				status: DonationStatus.APPROVED,
+			}).unwrap();
+			toast.success(response.message);
+		} catch (error: unknown) {
+			const errorMessage =
+				error &&
+				typeof error === "object" &&
+				"data" in error &&
+				error.data &&
+				typeof error.data === "object" &&
+				"message" in error.data
+					? error.data.message
+					: error instanceof Error
+					? error.message
+					: "Unknown error";
+			toast.error("Error approving donation: " + errorMessage);
+		}
 	};
 
 	const filteredDonations = data?.data?.filter(
@@ -52,7 +103,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							Manage and track all donations to your organization
 						</p>
 					</div>
-
 					<div className="flex flex-col sm:flex-row gap-3">
 						<div className="relative flex-grow max-w-md">
 							<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -66,7 +116,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full transition-all"
 							/>
 						</div>
-
 						<select
 							value={status}
 							onChange={handleStatusChange}
@@ -78,7 +127,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							<option value="CANCELLED">Cancelled</option>
 							<option value="">All Status</option>
 						</select>
-
 						<button
 							onClick={() => refetch()}
 							className="flex items-center justify-center px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -160,14 +208,14 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 						{searchTerm
 							? "No donations match your search criteria."
 							: status === "PENDING"
-								? "You don't have any pending donations."
-								: status === "APPROVED"
-									? "You don't have any approved donations."
-									: status === "COMPLETED"
-										? "You don't have any completed donations."
-										: status === "CANCELLED"
-											? "You don't have any cancelled donations."
-											: "You haven't received any donations yet."}
+							? "You don't have any pending donations."
+							: status === "APPROVED"
+							? "You don't have any approved donations."
+							: status === "COMPLETED"
+							? "You don't have any completed donations."
+							: status === "CANCELLED"
+							? "You don't have any cancelled donations."
+							: "You haven't received any donations yet."}
 					</p>
 					{searchTerm && (
 						<button
@@ -230,7 +278,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								</thead>
 								<tbody className="bg-white divide-y divide-gray-200">
 									{filteredDonations.map((donation: Donation) => (
-										<tr key={donation._id} className="hover:bg-gray-50 transition-colors">
+										<tr
+											key={donation._id}
+											className="hover:bg-gray-50 transition-colors"
+										>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div className="flex items-center">
 													<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -254,33 +305,45 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 												</div>
 												{donation.cause && (
 													<div className="text-sm text-gray-500 mt-1">
-														<span className="font-medium">Cause:</span> {donation.cause.title}
+														<span className="font-medium">Cause:</span>{" "}
+														{donation.cause.title}
 													</div>
 												)}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div className="text-sm font-bold text-gray-900">
-													${donation.amount?.toFixed(2) || "0.00"}
+													{donation.type === "MONEY"
+														? `$${donation.amount?.toFixed(2) || "0.00"}`
+														: `${donation.quantity || 0} ${
+																donation.unit || ""
+														  }`}
 												</div>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<span
 													className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full 
-                            ${donation.status === "PENDING" ? "bg-yellow-100 text-yellow-800" : ""}
-                            ${donation.status === "APPROVED" ? "bg-blue-100 text-blue-800" : ""}
-                            ${donation.status === "COMPLETED" ? "bg-green-100 text-green-800" : ""}
-                            ${donation.status === "CANCELLED" ? "bg-red-100 text-red-800" : ""}
-                          `}
+                            ${
+															donation.status === "PENDING"
+																? "bg-yellow-100 text-yellow-800"
+																: donation.status === "APPROVED"
+																? "bg-blue-100 text-blue-800"
+																: donation.status === "COMPLETED"
+																? "bg-green-100 text-green-800"
+																: "bg-red-100 text-red-800"
+														}`}
 												>
 													{donation.status}
 												</span>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-												{new Date(donation.createdAt).toLocaleDateString('en-US', {
-													year: 'numeric',
-													month: 'short',
-													day: 'numeric'
-												})}
+												{new Date(donation.createdAt).toLocaleDateString(
+													"en-US",
+													{
+														year: "numeric",
+														month: "short",
+														day: "numeric",
+													}
+												)}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 												<div className="flex justify-end space-x-3">
@@ -288,7 +351,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 														className="text-blue-600 hover:text-blue-900 transition-colors"
 														title="View Details"
 														onClick={() => {
-															// Handle view action
+															setSelectedDonation(
+																donation as unknown as organizationDonation
+															);
+															setShowDonationModal(true);
 														}}
 													>
 														<FiEye className="h-5 w-5" />
@@ -297,11 +363,16 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 														<button
 															className="text-green-600 hover:text-green-900 transition-colors"
 															title="Approve Donation"
-															onClick={() => {
-																// Handle approve action
-															}}
+															onClick={() =>
+																handleApproveDonation(donation._id)
+															}
+															disabled={isUpdating}
 														>
-															<FiCheckCircle className="h-5 w-5" />
+															<FiCheckCircle
+																className={`h-5 w-5 ${
+																	isUpdating ? "animate-spin" : ""
+																}`}
+															/>
 														</button>
 													)}
 												</div>
@@ -314,14 +385,142 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 					</div>
 				)}
 
+			{/* Donation Details Modal */}
+			{showDonationModal && selectedDonation && (
+				<Dialog
+					open={showDonationModal}
+					onClose={() => {
+						setShowDonationModal(false);
+						setSelectedDonation(null);
+					}}
+					maxWidth="sm"
+					fullWidth
+					sx={{
+						"& .MuiDialog-paper": {
+							borderRadius: "12px",
+							boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+						},
+					}}
+				>
+					<DialogTitle className="text-2xl font-bold text-gray-900 border-b border-gray-200">
+						Donation Details
+					</DialogTitle>
+					<DialogContent className="p-6 bg-white">
+						<div className="space-y-4">
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">
+									Donor Email:
+								</strong>{" "}
+								{selectedDonation.donor?.email || "N/A"}
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">Quantity:</strong>{" "}
+								{selectedDonation.quantity || 0}{" "}
+								{selectedDonation.unit || "N/A"}
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">Type:</strong>{" "}
+								{selectedDonation.type || "N/A"}
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">Cause:</strong>{" "}
+								{selectedDonation.cause?.title || "N/A"}
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">
+									Scheduled Date:
+								</strong>{" "}
+								{selectedDonation.scheduledDate
+									? new Date(
+											selectedDonation.scheduledDate
+									  ).toLocaleDateString()
+									: "N/A"}{" "}
+								at {selectedDonation.scheduledTime || "N/A"}
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">
+									Description:
+								</strong>{" "}
+								{selectedDonation.description || "N/A"}
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">Status:</strong>{" "}
+								<span
+									className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                    ${
+											selectedDonation.status === "PENDING"
+												? "bg-yellow-100 text-yellow-800"
+												: selectedDonation.status === "APPROVED"
+												? "bg-blue-100 text-blue-800"
+												: selectedDonation.status === "COMPLETED"
+												? "bg-green-100 text-green-800"
+												: "bg-red-100 text-red-800"
+										}`}
+								>
+									{selectedDonation.status}
+								</span>
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">
+									Pickup Required:
+								</strong>{" "}
+								{selectedDonation.isPickup ? "Yes" : "No"}
+							</p>
+							{selectedDonation.isPickup && (
+								<p className="text-sm text-gray-700">
+									<strong className="font-medium text-gray-900">
+										Pickup Address:
+									</strong>{" "}
+									{selectedDonation.pickupAddress
+										? `${selectedDonation.pickupAddress.street || ""}, ${
+												selectedDonation.pickupAddress.city || ""
+										  }, ${selectedDonation.pickupAddress.state || ""}, ${
+												selectedDonation.pickupAddress.zipCode || ""
+										  }, ${selectedDonation.pickupAddress.country || ""}`
+										: "N/A"}
+								</p>
+							)}
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">
+									Contact Phone:
+								</strong>{" "}
+								{selectedDonation.contactPhone || "N/A"}
+							</p>
+							<p className="text-sm text-gray-700">
+								<strong className="font-medium text-gray-900">
+									Contact Email:
+								</strong>{" "}
+								{selectedDonation.contactEmail || "N/A"}
+							</p>
+						</div>
+					</DialogContent>
+					<DialogActions className="p-6 border-t border-gray-200">
+						<Button
+							onClick={() => {
+								setShowDonationModal(false);
+								setSelectedDonation(null);
+							}}
+							variant="contained"
+							className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-4 py-2 transition-colors"
+						>
+							Close
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
 			{/* Pagination */}
 			{data?.pagination && data.pagination.pages > 1 && (
 				<div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
 					<div className="flex flex-col sm:flex-row items-center justify-between">
 						<div className="text-sm text-gray-700 mb-4 sm:mb-0">
-							Showing <span className="font-medium">{(page - 1) * limit + 1}</span> to{' '}
-							<span className="font-medium">{Math.min(page * limit, data.pagination.total)}</span> of{' '}
-							<span className="font-medium">{data.pagination.total}</span> donations
+							Showing{" "}
+							<span className="font-medium">{(page - 1) * limit + 1}</span> to{" "}
+							<span className="font-medium">
+								{Math.min(page * limit, data.pagination.total)}
+							</span>{" "}
+							of <span className="font-medium">{data.pagination.total}</span>{" "}
+							donations
 						</div>
 						<nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
 							<button
@@ -332,30 +531,34 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								<span className="sr-only">Previous</span>
 								<FiChevronLeft className="h-5 w-5" />
 							</button>
-							{Array.from({ length: Math.min(5, data.pagination.pages) }, (_, i) => {
-								let pageNum;
-								if (data.pagination.pages <= 5) {
-									pageNum = i + 1;
-								} else if (page <= 3) {
-									pageNum = i + 1;
-								} else if (page >= data.pagination.pages - 2) {
-									pageNum = data.pagination.pages - 4 + i;
-								} else {
-									pageNum = page - 2 + i;
-								}
-								return (
-									<button
-										key={pageNum}
-										onClick={() => setPage(pageNum)}
-										className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === pageNum
-											? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-											: 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+							{Array.from(
+								{ length: Math.min(5, data.pagination.pages) },
+								(_, i) => {
+									let pageNum;
+									if (data.pagination.pages <= 5) {
+										pageNum = i + 1;
+									} else if (page <= 3) {
+										pageNum = i + 1;
+									} else if (page >= data.pagination.pages - 2) {
+										pageNum = data.pagination.pages - 4 + i;
+									} else {
+										pageNum = page - 2 + i;
+									}
+									return (
+										<button
+											key={pageNum}
+											onClick={() => setPage(pageNum)}
+											className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+												page === pageNum
+													? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+													: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
 											} transition-colors`}
-									>
-										{pageNum}
-									</button>
-								);
-							})}
+										>
+											{pageNum}
+										</button>
+									);
+								}
+							)}
 							<button
 								onClick={() => setPage(page + 1)}
 								disabled={page === data.pagination.pages}

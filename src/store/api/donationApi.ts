@@ -67,25 +67,25 @@ export const donationApi = apiSlice.injectEndpoints({
 			providesTags: (result) =>
 				result
 					? [
-						...result.data.map(({ _id }) => ({
-							type: "Donations" as const,
-							id: _id,
-						})),
-						{ type: "Donations", id: "LIST" },
-					]
+							...result.data.map(({ _id }) => ({
+								type: "Donations" as const,
+								id: _id,
+							})),
+							{ type: "Donations", id: "LIST" },
+					  ]
 					: [{ type: "Donations", id: "LIST" }],
 		}),
 
-		updateDonationStatus: builder.mutation<UpdateDonationStatusResponse, UpdateDonationStatusRequest>({
+		updateDonationStatus: builder.mutation<
+			UpdateDonationStatusResponse,
+			UpdateDonationStatusRequest
+		>({
 			query: ({ donationId, status }) => ({
 				url: `/donations/${donationId}/status`,
 				method: "PATCH",
 				body: { status },
 			}),
-			invalidatesTags: (result, error, { donationId }) => [
-				{ type: "Donations", id: donationId },
-				{ type: "Donations", id: "LIST" },
-			],
+			invalidatesTags: ["Donations"], // Invalidate cache to refresh donation list
 		}),
 	}),
 	overrideExisting: true,

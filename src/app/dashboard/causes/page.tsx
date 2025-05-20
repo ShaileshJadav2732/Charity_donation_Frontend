@@ -2,7 +2,7 @@
 
 import {
 	useGetActiveCampaignCausesQuery,
-	useGetCausesQuery
+	useGetCausesQuery,
 } from "@/store/api/causeApi";
 import { RootState } from "@/store/store";
 import { Cause } from "@/types/cause";
@@ -20,7 +20,7 @@ import {
 	MonetizationOn as MoneyIcon,
 	MoreHoriz as OtherIcon,
 	Search as SearchIcon,
-	Toys as ToysIcon
+	Toys as ToysIcon,
 } from "@mui/icons-material";
 import {
 	Alert,
@@ -31,17 +31,18 @@ import {
 	CardContent,
 	CardMedia,
 	Chip,
-	CircularProgress,
+	Collapse,
 	FormControl,
-	Grid,
 	InputAdornment,
 	InputLabel,
 	LinearProgress,
 	MenuItem,
 	Select,
 	SelectChangeEvent,
+	Skeleton,
 	TextField,
-	Typography
+	Typography,
+	useTheme,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -61,6 +62,7 @@ const DonationTypeIcons: Record<DonationType, React.ComponentType> = {
 
 const CausesPage = () => {
 	const router = useRouter();
+	const theme = useTheme();
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedTag, setSelectedTag] = useState<string>("");
@@ -98,7 +100,7 @@ const CausesPage = () => {
 		skip: user?.role !== "donor",
 	});
 
-	// // Determine which data to use based on user role
+	// Determine which data to use based on user role
 	const causesData =
 		user?.role === "organization"
 			? organizationCausesData
@@ -107,8 +109,6 @@ const CausesPage = () => {
 		user?.role === "organization" ? isLoadingOrgCauses : isLoadingActiveCauses;
 	const error =
 		user?.role === "organization" ? orgCausesError : activeCausesError;
-
-	
 
 	const handleViewCause = (id: string) => {
 		router.push(`/dashboard/causes/${id}`);
@@ -135,20 +135,27 @@ const CausesPage = () => {
 		cause.tags?.forEach((tag) => allTags.add(tag));
 	});
 
-	// Donor View - Shows only causes from active campaigns
 	return (
-		<Box p={4}>
-			<Typography variant="h4" gutterBottom>
+		<Box sx={{ p: { xs: 2, md: 4 }, bgcolor: "background.default" }}>
+			<Typography
+				variant="h4"
+				component="h1"
+				sx={{ fontWeight: 700, mb: 2, color: theme.palette.text.primary }}
+			>
 				Browse Active Causes
 			</Typography>
-			<Typography variant="body1" color="text.secondary" paragraph>
+			<Typography
+				variant="body1"
+				color="text.secondary"
+				sx={{ mb: 3, maxWidth: 600 }}
+			>
 				Discover causes from active campaigns that need your support.
 			</Typography>
 
 			{/* Search and Filters */}
-			<Box mb={4}>
-				<Grid container spacing={2}>
-					<Grid item xs={12} md={8}>
+			<Box mb={3}>
+				<Box display="flex" flexWrap="wrap" gap={2}>
+					<Box flexGrow={1} minWidth={{ xs: "100%", md: 350 }}>
 						<form onSubmit={handleSearch}>
 							<TextField
 								fullWidth
@@ -158,35 +165,76 @@ const CausesPage = () => {
 								InputProps={{
 									startAdornment: (
 										<InputAdornment position="start">
-											<SearchIcon />
+											<SearchIcon color="action" />
 										</InputAdornment>
 									),
+									sx: {
+										bgcolor: "background.paper",
+										borderRadius: 2,
+										"& .MuiOutlinedInput-root": {
+											"& fieldset": { borderColor: theme.palette.divider },
+											"&:hover fieldset": {
+												borderColor: theme.palette.primary.main,
+											},
+											"&.Mui-focused fieldset": {
+												borderColor: theme.palette.primary.main,
+											},
+										},
+									},
 								}}
+								sx={{ boxShadow: theme.shadows[1] }}
 							/>
 						</form>
-					</Grid>
-					<Grid item xs={12} md={4}>
+					</Box>
+					<Box width={{ xs: "100%", md: 180 }}>
 						<Button
 							fullWidth
 							variant="outlined"
 							startIcon={<FilterIcon />}
 							onClick={() => setShowFilters(!showFilters)}
+							sx={{
+								borderRadius: 2,
+								textTransform: "none",
+								fontWeight: 500,
+								py: 1,
+								transition: "all 0.3s ease",
+								"&:hover": {
+									bgcolor: theme.palette.primary.light,
+									color: "white",
+								},
+							}}
 						>
-							Filters
+							{showFilters ? "Hide Filters" : "Show Filters"}
 						</Button>
-					</Grid>
-				</Grid>
+					</Box>
+				</Box>
 
-				{showFilters && (
-					<Box mt={2} p={2} bgcolor="background.paper" borderRadius={1}>
-						<Grid container spacing={2}>
-							<Grid item xs={12} md={6}>
+				<Collapse in={showFilters}>
+					<Box
+						mt={2}
+						p={2}
+						sx={{
+							bgcolor: "background.paper",
+							borderRadius: 2,
+							boxShadow: theme.shadows[2],
+							transition: "all 0.3s ease",
+						}}
+					>
+						<Box display="flex" flexWrap="wrap" gap={2}>
+							<Box width={{ xs: "100%", md: 250 }}>
 								<FormControl fullWidth>
-									<InputLabel>Donation Type</InputLabel>
+									<InputLabel sx={{ fontWeight: 500 }}>
+										Donation Type
+									</InputLabel>
 									<Select
 										value={selectedDonationType}
 										onChange={handleDonationTypeChange}
 										label="Donation Type"
+										sx={{
+											bgcolor: "background.paper",
+											borderRadius: 1,
+											"& .MuiSelect-select": { py: 1 },
+										}}
 									>
 										<MenuItem value="all">All Types</MenuItem>
 										{Object.values(DonationType).map((type) => {
@@ -194,7 +242,13 @@ const CausesPage = () => {
 											return (
 												<MenuItem key={type} value={type}>
 													<Box display="flex" alignItems="center">
-														<Icon style={{ marginRight: 8 }} />
+														<Icon
+															sx={{
+																mr: 1,
+																color: theme.palette.primary.main,
+																fontSize: "1.2rem",
+															}}
+														/>
 														{type.charAt(0) +
 															type.slice(1).toLowerCase().replace("_", " ")}
 													</Box>
@@ -203,14 +257,21 @@ const CausesPage = () => {
 										})}
 									</Select>
 								</FormControl>
-							</Grid>
+							</Box>
 
 							{allTags.size > 0 && (
-								<Grid item xs={12}>
-									<Typography variant="subtitle2" gutterBottom>
+								<Box width="100%">
+									<Typography
+										variant="subtitle2"
+										sx={{
+											fontWeight: 600,
+											mb: 1,
+											color: theme.palette.text.primary,
+										}}
+									>
 										Categories
 									</Typography>
-									<Box display="flex" flexWrap="wrap" gap={1}>
+									<Box display="flex" flexWrap="wrap" gap={0.75}>
 										{Array.from(allTags).map((tag) => (
 											<Chip
 												key={tag}
@@ -218,169 +279,326 @@ const CausesPage = () => {
 												clickable
 												onClick={() => handleTagSelect(tag)}
 												color={selectedTag === tag ? "primary" : "default"}
-												icon={<CategoryIcon />}
+												icon={<CategoryIcon sx={{ fontSize: "1rem" }} />}
+												sx={{
+													borderRadius: 1,
+													fontSize: "0.75rem",
+													height: 28,
+													transition: "all 0.2s ease",
+													"&:hover": {
+														bgcolor: theme.palette.primary.light,
+														color: "white",
+													},
+												}}
 											/>
 										))}
 									</Box>
-								</Grid>
+								</Box>
 							)}
-						</Grid>
+						</Box>
 					</Box>
-				)}
+				</Collapse>
 			</Box>
 
-			{/* Causes Grid */}
+			{/* Causes List */}
 			{isLoading ? (
-				<Box display="flex" justifyContent="center" p={4}>
-					<CircularProgress />
+				<Box display="flex" flexWrap="wrap" gap={2}>
+					{[...Array(8)].map((_, index) => (
+						<Box
+							key={index}
+							sx={{
+								width: {
+									xs: "100%",
+									sm: "calc(50% - 8px)",
+									md: "calc(25% - 12px)",
+								},
+								minWidth: { xs: 240, sm: 260 },
+								maxWidth: { xs: 360, sm: "none" },
+								flexGrow: 0,
+								flexShrink: 0,
+							}}
+						>
+							<Skeleton
+								variant="rectangular"
+								height={120}
+								sx={{ borderRadius: 2 }}
+							/>
+							<Skeleton variant="text" width="80%" sx={{ mt: 1.5 }} />
+							<Skeleton variant="text" width="60%" />
+							<Skeleton
+								variant="rectangular"
+								height={16}
+								sx={{ mt: 1.5, borderRadius: 1 }}
+							/>
+							<Skeleton variant="text" width="40%" sx={{ mt: 1.5 }} />
+						</Box>
+					))}
 				</Box>
 			) : error ? (
-				<Alert severity="error">Failed to load causes</Alert>
+				<Alert severity="error" sx={{ borderRadius: 2, py: 2 }}>
+					Failed to load causes
+				</Alert>
 			) : causesData?.causes.length === 0 ? (
-				<Alert severity="info">
+				<Alert severity="info" sx={{ borderRadius: 2, py: 2 }}>
 					{searchTerm || selectedDonationType !== "all" || selectedTag
 						? "No causes match your search criteria. Try adjusting your filters."
 						: "No active causes available at the moment."}
 				</Alert>
 			) : (
-				<Grid container spacing={3}>
+				<Box display="flex" flexWrap="wrap" gap={2}>
 					{causesData?.causes.map((cause: Cause) => {
-						// Calculate progress
 						const progress = Math.min(
 							100,
 							Math.round((cause.raisedAmount / cause.targetAmount) * 100)
 						);
-
-						// Get primary donation type if available
 						const primaryDonationType =
 							cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
 						const DonationIcon = DonationTypeIcons[primaryDonationType];
 
 						return (
-							<Grid item xs={12} sm={6} md={4} key={cause.id}>
-								<Card
+							<Card
+								key={cause.id}
+								sx={{
+									width: {
+										xs: "100%",
+										sm: "calc(50% - 8px)",
+										md: "calc(25% - 12px)",
+									},
+									minWidth: { xs: 240, sm: 260 },
+									maxWidth: { xs: 360, sm: "none" },
+									minHeight: 320,
+									display: "flex",
+									flexDirection: "column",
+									borderRadius: 2,
+									boxShadow: theme.shadows[3],
+									transition: "transform 0.3s ease, box-shadow 0.3s ease",
+									"&:hover": {
+										transform: "translateY(-4px)",
+										boxShadow: theme.shadows[8],
+									},
+								}}
+								onClick={() => handleViewCause(cause.id)}
+							>
+								<CardMedia
+									component="img"
+									height="120"
+									image={
+										cause.imageUrl || "https://placehold.co/600x400?text=Cause"
+									}
+									alt={cause.title}
 									sx={{
-										height: "100%",
+										objectFit: "cover",
+										borderTopLeftRadius: 2,
+										borderTopRightRadius: 2,
+									}}
+								/>
+								<CardContent
+									sx={{
+										flexGrow: 1,
+										p: 1.5,
 										display: "flex",
 										flexDirection: "column",
-										cursor: "pointer",
-										"&:hover": {
-											boxShadow: 6,
-										},
 									}}
-									onClick={() => handleViewCause(cause.id)}
 								>
-									<CardMedia
-										component="img"
-										height="140"
-										image={
-											cause.imageUrl ||
-											"https://placehold.co/600x400?text=Cause"
-										}
-										alt={cause.title}
-									/>
-									<CardContent sx={{ flexGrow: 1 }}>
-										<Box display="flex" alignItems="center" mb={1}>
-											<DonationIcon
-												style={{ marginRight: 8, color: "#009688" }}
-											/>
-											<Typography variant="caption" color="text.secondary">
-												{cause.organizationName || "Organization"}
-											</Typography>
-										</Box>
-										<Typography variant="h6" gutterBottom component="div">
-											{cause.title}
+									<Box display="flex" alignItems="center" mb={1}>
+										<DonationIcon
+											sx={{
+												mr: 1,
+												color: theme.palette.primary.main,
+												fontSize: "1.2rem",
+											}}
+										/>
+										<Typography
+											variant="caption"
+											color="text.secondary"
+											sx={{
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap",
+											}}
+										>
+											{cause.organizationName || "Organization"}
+										</Typography>
+									</Box>
+									<Typography
+										variant="h6"
+										component="div"
+										sx={{
+											fontWeight: 600,
+											fontSize: "0.9rem",
+											mb: 1,
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap",
+										}}
+									>
+										{cause.title}
+									</Typography>
+									<Typography
+										variant="body2"
+										color="text.secondary"
+										sx={{
+											fontSize: "0.8rem",
+											mb: 1.5,
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											display: "-webkit-box",
+											WebkitLineClamp: 2,
+											WebkitBoxOrient: "vertical",
+											flexGrow: 1,
+										}}
+									>
+										{cause.description}
+									</Typography>
+
+									<Box sx={{ width: "100%", mb: 1 }}>
+										<LinearProgress
+											variant="determinate"
+											value={progress}
+											sx={{
+												height: 6,
+												borderRadius: 4,
+												backgroundColor: theme.palette.grey[200],
+												"& .MuiLinearProgress-bar": {
+													background: `linear-gradient(to right, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+												},
+											}}
+										/>
+									</Box>
+									<Box
+										display="flex"
+										justifyContent="space-between"
+										alignItems="center"
+									>
+										<Typography
+											variant="body2"
+											sx={{ fontWeight: 500, fontSize: "0.8rem" }}
+										>
+											${cause.raisedAmount.toLocaleString()}
 										</Typography>
 										<Typography
 											variant="body2"
 											color="text.secondary"
-											sx={{
-												mb: 2,
-												overflow: "hidden",
-												textOverflow: "ellipsis",
-												display: "-webkit-box",
-												WebkitLineClamp: 2,
-												WebkitBoxOrient: "vertical",
-											}}
+											sx={{ fontSize: "0.8rem" }}
 										>
-											{cause.description}
+											of ${cause.targetAmount.toLocaleString()} ({progress}%)
 										</Typography>
+									</Box>
 
-										{/* Progress bar */}
-										<Box sx={{ width: "100%", mb: 1 }}>
-											<LinearProgress
-												variant="determinate"
-												value={progress}
-												color="primary"
-											/>
+									{cause.tags && cause.tags.length > 0 && (
+										<Box display="flex" gap={0.75} mt={1.5} flexWrap="wrap">
+											{cause.tags.slice(0, 3).map((tag) => (
+												<Chip
+													key={tag}
+													label={tag}
+													size="small"
+													variant="outlined"
+													sx={{
+														borderRadius: 1,
+														borderColor: theme.palette.divider,
+														bgcolor: theme.palette.background.paper,
+														fontSize: "0.75rem",
+														height: 24,
+													}}
+												/>
+											))}
+											{cause.tags.length > 3 && (
+												<Chip
+													label={`+${cause.tags.length - 3}`}
+													size="small"
+													variant="outlined"
+													sx={{
+														borderRadius: 1,
+														borderColor: theme.palette.divider,
+														fontSize: "0.75rem",
+														height: 24,
+													}}
+												/>
+											)}
 										</Box>
-										<Box display="flex" justifyContent="space-between">
-											<Typography variant="body2">
-												${cause.raisedAmount.toLocaleString()}
-											</Typography>
-											<Typography variant="body2" color="text.secondary">
-												of ${cause.targetAmount.toLocaleString()} ({progress}%)
-											</Typography>
-										</Box>
-
-										{cause.tags && cause.tags.length > 0 && (
-											<Box display="flex" gap={0.5} mt={2} flexWrap="wrap">
-												{cause.tags.slice(0, 3).map((tag) => (
-													<Chip
-														key={tag}
-														label={tag}
-														size="small"
-														variant="outlined"
-													/>
-												))}
-												{cause.tags.length > 3 && (
-													<Chip
-														label={`+${cause.tags.length - 3}`}
-														size="small"
-														variant="outlined"
-													/>
-												)}
-											</Box>
-										)}
-									</CardContent>
-									<CardActions>
-										<Button
-											size="small"
-											color="primary"
-											startIcon={<FavoriteIcon />}
-											onClick={(e) => {
-												e.stopPropagation();
-												router.push(`/dashboard/donate/${cause.id}`);
-											}}
-										>
-											Donate Now
-										</Button>
-									</CardActions>
-								</Card>
-							</Grid>
+									)}
+								</CardContent>
+								<CardActions sx={{ p: 1.5, pt: 0 }}>
+									<Button
+										size="small"
+										color="primary"
+										variant="contained"
+										startIcon={<FavoriteIcon sx={{ fontSize: "1.2rem" }} />}
+										onClick={(e) => {
+											e.stopPropagation();
+											router.push(`/dashboard/donate/${cause.id}`);
+										}}
+										sx={{
+											borderRadius: 2,
+											textTransform: "none",
+											fontWeight: 500,
+											px: 2,
+											py: 0.75,
+											fontSize: "0.8rem",
+											transition: "all 0.3s ease",
+											"&:hover": {
+												bgcolor: theme.palette.primary.dark,
+												transform: "scale(1.05)",
+											},
+										}}
+									>
+										Donate Now
+									</Button>
+								</CardActions>
+							</Card>
 						);
 					})}
-				</Grid>
+				</Box>
 			)}
 
 			{/* Pagination */}
 			{causesData && causesData.totalPages > 1 && (
-				<Box display="flex" justifyContent="center" mt={4}>
+				<Box display="flex" justifyContent="center" mt={3} gap={2}>
 					<Button
 						disabled={page === 1}
 						onClick={() => setPage((p) => Math.max(1, p - 1))}
 						variant="outlined"
-						sx={{ mx: 1 }}
+						sx={{
+							borderRadius: 2,
+							textTransform: "none",
+							fontWeight: 500,
+							px: 2,
+							py: 0.75,
+							fontSize: "0.8rem",
+							transition: "all 0.3s ease",
+							"&:hover": {
+								bgcolor: theme.palette.primary.light,
+								color: "white",
+							},
+						}}
 					>
 						Previous
 					</Button>
+					<Typography
+						variant="body2"
+						sx={{ alignSelf: "center", fontSize: "0.8rem" }}
+					>
+						Page {page} of {causesData.totalPages}
+					</Typography>
 					<Button
 						disabled={page === causesData.totalPages}
 						onClick={() =>
 							setPage((p) => Math.min(causesData.totalPages, p + 1))
 						}
 						variant="outlined"
-						sx={{ mx: 1 }}
+						sx={{
+							borderRadius: 2,
+							textTransform: "none",
+							fontWeight: 500,
+							px: 2,
+							py: 0.75,
+							fontSize: "0.8rem",
+							transition: "all 0.3s ease",
+							"&:hover": {
+								bgcolor: theme.palette.primary.light,
+								color: "white",
+							},
+						}}
 					>
 						Next
 					</Button>
