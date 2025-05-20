@@ -36,8 +36,8 @@ export default function DonationsPage() {
 			activeTab === "all"
 				? undefined
 				: activeTab === "approved"
-				? "APPROVED"
-				: "PENDING",
+					? "APPROVED"
+					: "PENDING",
 		page,
 		limit,
 	});
@@ -83,13 +83,12 @@ export default function DonationsPage() {
 				</div>
 				<div className="flex flex-col items-end gap-2">
 					<span
-						className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-							donation.status === "CONFIRMED"
+						className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${donation.status === "CONFIRMED"
 								? "bg-green-100 text-green-800"
 								: donation.status === "PENDING"
-								? "bg-yellow-100 text-yellow-800"
-								: "bg-red-100 text-red-800"
-						}`}
+									? "bg-yellow-100 text-yellow-800"
+									: "bg-red-100 text-red-800"
+							}`}
 					>
 						{donation.status.charAt(0).toUpperCase() +
 							donation.status.slice(1).toLowerCase()}
@@ -198,31 +197,28 @@ export default function DonationsPage() {
 					<nav className="flex space-x-8">
 						<button
 							onClick={() => setActiveTab("all")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "all"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "all"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							All Donations
 						</button>
 						<button
 							onClick={() => setActiveTab("approved")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "approved"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "approved"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							Approved
 						</button>
 						<button
 							onClick={() => setActiveTab("pending")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "pending"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "pending"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							Pending
 						</button>

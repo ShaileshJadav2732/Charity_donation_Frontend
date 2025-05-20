@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { RootState } from "@/store/store";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
 	FaBars,
@@ -19,7 +19,7 @@ import {
 	FaComments,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
-import { useGetUserNotificationsQuery } from "@/store/api/notificationApi";
+import { useGetNotificationsQuery } from "@/store/api/notificationApi";
 import NotificationList from "@/components/notifications/NotificationList";
 import AuthGuard from "@/lib/AuthGuard";
 
@@ -34,10 +34,18 @@ export default function DashboardLayout({
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [showNotifications, setShowNotifications] = useState(false);
 
-	const { data: notificationData } = useGetUserNotificationsQuery({
+	// Use _id consistently for the user ID
+	const userId = user?.id || '';
+
+	const { data: notificationData } = useGetNotificationsQuery({
 		limit: 5,
 		unreadOnly: true,
+		userId: userId
+	}, {
+		skip: !userId
 	});
+
+	const unreadCount = notificationData?.notifications?.length || 0;
 
 	const handleLogout = async () => {
 		await logout();
@@ -109,11 +117,11 @@ export default function DashboardLayout({
 							className="relative p-2 rounded-full hover:bg-gray-100"
 						>
 							<FaBell className="h-6 w-6 text-teal-600" />
-							{notificationData?.unreadCount ? (
-								<span className="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-									{notificationData.unreadCount}
+							{unreadCount > 0 && (
+								<span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+									{unreadCount}
 								</span>
-							) : null}
+							)}
 						</button>
 					</div>
 				</div>
@@ -161,8 +169,8 @@ export default function DashboardLayout({
 									key={item.path}
 									href={item.path}
 									className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${pathname === item.path
-											? "bg-teal-50 text-teal-600"
-											: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
+										? "bg-teal-50 text-teal-600"
+										: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
 										}`}
 									onClick={() => setIsMobileMenuOpen(false)}
 								>

@@ -1,4 +1,25 @@
-import { apiSlice } from "./apiSlice";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { RootState } from '@/store/store';
+
+interface Notification {
+	id: string;
+	recipient: string;
+	type: string;
+	title: string;
+	message: string;
+	isRead: boolean;
+	createdAt: string;
+}
+
+interface GetNotificationsResponse {
+	success: boolean;
+	notifications: Notification[];
+}
+
+interface NotificationActionResponse {
+	success: boolean;
+	notification: Notification;
+}
 
 export enum NotificationType {
 	DONATION_RECEIVED = "DONATION_RECEIVED",
@@ -10,76 +31,64 @@ export enum NotificationType {
 	SYSTEM_NOTIFICATION = "SYSTEM_NOTIFICATION",
 }
 
-export interface Notification {
-	_id: string;
-	recipient: string;
-	type: NotificationType;
-	title: string;
-	message: string;
-	data?: Record<string, any>;
-	isRead: boolean;
-	createdAt: string;
-	updatedAt: string;
-}
-
-export interface NotificationListResponse {
-	success: boolean;
-	data: Notification[];
-	unreadCount: number;
-	pagination: {
-		page: number;
-		limit: number;
-		total: number;
-		pages: number;
-	};
-}
-
-export interface NotificationResponse {
-	success: boolean;
-	message: string;
-}
-
-export const notificationApi = apiSlice.injectEndpoints({
+export const notificationApi = createApi({
+	reducerPath: 'notificationApi',
+	baseQuery: fetchBaseQuery({
+		baseUrl: 'http://localhost:8080/api', // Adjust to your backend URL
+		prepareHeaders: (headers, { getState }) => {
+			const token = (getState() as RootState).auth.token;
+			if (token) {
+				headers.set('Authorization', `Bearer ${token}`);
+			}
+			return headers;
+		},
+	}),
+	tagTypes: ['Notifications'],
 	endpoints: (builder) => ({
-		getUserNotifications: builder.query<
-			NotificationListResponse,
-			{ page?: number; limit?: number; unreadOnly?: boolean }
-		>({
-			query: ({ page = 1, limit = 20, unreadOnly = false }) => ({
-				url: "/notifications",
-				params: { page, limit, unreadOnly },
+		getNotifications: builder.query<GetNotificationsResponse, { userId: string; limit?: number; unreadOnly?: boolean }>({
+			query: ({ userId, limit = 50, unreadOnly = false }) =>
+				`/notifications/${userId}?limit=${limit}&unreadOnly=${unreadOnly}`,
+			providesTags: (result, error, { userId }) =>
+				result
+					? [
+						{ type: 'Notifications', id: userId },
+						...result.notifications.map((notification) => ({
+							type: 'Notifications' as const,
+							id: notification.id,
+						})),
+					]
+					: [{ type: 'Notifications', id: userId }],
+			transformResponse: (response: GetNotificationsResponse) => ({
+				success: response.success,
+				notifications: response.notifications.map((n) => ({
+					...n,
+					id: n._id,
+				})),
 			}),
-			providesTags: ["Notifications"],
 		}),
-
-		markNotificationsAsRead: builder.mutation<
-			NotificationResponse,
-			{ notificationIds: string[] }
-		>({
-			query: (data) => ({
-				url: "/notifications/read",
-				method: "PATCH",
-				body: data,
+		markNotificationAsRead: builder.mutation<NotificationActionResponse, string>({
+			query: (notificationId) => ({
+				url: `/notifications/${notificationId}/read`,
+				method: 'PATCH',
 			}),
-			invalidatesTags: ["Notifications"],
+			invalidatesTags: (result, error, notificationId) => [
+				{ type: 'Notifications', id: notificationId },
+			],
 		}),
-
-		deleteNotifications: builder.mutation<
-			NotificationResponse,
-			{ notificationIds: string[] }
-		>({
-			query: (data) => ({
-				url: "/notifications",
-				method: "DELETE",
-				body: data,
+		dismissNotification: builder.mutation<NotificationActionResponse, string>({
+			query: (notificationId) => ({
+				url: `/notifications/${notificationId}`,
+				method: 'DELETE',
 			}),
-			invalidatesTags: ["Notifications"],
+			invalidatesTags: (result, error, notificationId) => [
+				{ type: 'Notifications', id: notificationId },
+			],
 		}),
 	}),
 });
 
 export const {
-	useGetUserNotificationsQuery,
-	useMarkNotificationsAsReadMutation,
-	useDeleteNotificationsMutation,
+	useGetNotificationsQuery,
+	useMarkNotificationAsReadMutation,
+	useDismissNotificationMutation,
 } = notificationApi;
