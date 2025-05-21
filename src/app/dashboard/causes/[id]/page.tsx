@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { LocalMall as ClothesIcon } from "@mui/icons-material";
 
 import {
 	ArrowBack as ArrowBackIcon,
@@ -73,9 +74,8 @@ const donationTypeIcons: Record<string, React.ComponentType<any>> = {
 	[DonationType.HOUSEHOLD]: HouseholdIcon,
 	[ExtendedDonationType.IN_KIND]: MoneyIcon,
 	[ExtendedDonationType.VOLUNTEER]: PeopleIcon,
-	// Add a fallback for any other types
-	"CLOTHES": MoneyIcon,
-	"OTHER": MoneyIcon,
+	"CLOTHES": ClothesIcon,
+	"OTHER": CategoryIcon,
 };
 
 export default function CauseDetailPage({
@@ -193,9 +193,40 @@ export default function CauseDetailPage({
 			)
 			: 0;
 
-	// We'll assume these values if they're not in the API response
-	const donorCount = 0; // Since this property doesn't exist in the type
-	const acceptedDonationTypes = [DonationType.MONEY]; // Default to money donations
+	// Extract data from the API response
+	const donorCount = data?.cause?.donorCount || 0;
+
+	// Handle donation types and acceptance type
+	let acceptanceType: 'money' | 'items' | 'both' = 'money';
+	let donationItems: string[] = [];
+	let acceptedDonationTypes: DonationType[] = [DonationType.MONEY];
+
+	// Check if the API response includes these fields
+	if (data?.cause) {
+		// @ts-ignore - These properties might exist in the API response but not in the TypeScript type
+		if (data.cause.acceptanceType) {
+			// @ts-ignore
+			acceptanceType = data.cause.acceptanceType;
+		}
+
+		// @ts-ignore
+		if (data.cause.donationItems && Array.isArray(data.cause.donationItems)) {
+			// @ts-ignore
+			donationItems = data.cause.donationItems;
+		}
+
+		// @ts-ignore
+		if (data.cause.acceptedDonationTypes && Array.isArray(data.cause.acceptedDonationTypes)) {
+			// @ts-ignore
+			acceptedDonationTypes = data.cause.acceptedDonationTypes;
+		} else if (acceptanceType === 'both') {
+			// If acceptanceType is 'both' but no acceptedDonationTypes, include MONEY and some default item types
+			acceptedDonationTypes = [DonationType.MONEY, DonationType.CLOTHES, DonationType.FOOD];
+		} else if (acceptanceType === 'items') {
+			// If acceptanceType is 'items' but no acceptedDonationTypes, include some default item types
+			acceptedDonationTypes = [DonationType.CLOTHES, DonationType.FOOD, DonationType.HOUSEHOLD];
+		}
+	}
 
 	return (
 		<Box p={4}>
@@ -356,42 +387,86 @@ export default function CauseDetailPage({
 
 					{/* Action Buttons */}
 					<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 4 }}>
-						<Button
-							fullWidth
-							variant="contained"
-							color="primary"
-							size="large"
-							startIcon={<HeartIcon />}
-							onClick={handleDonate}
-							disabled={user?.role !== "donor"}
-							sx={{ flexGrow: 1, minWidth: "200px" }}
-						>
-							Donate Now
-						</Button>
-						<Button
-							fullWidth
-							variant="outlined"
-							color="primary"
-							size="large"
-							startIcon={<PeopleIcon />}
-							disabled={
-								user?.role !== "donor" ||
-								!acceptedDonationTypes.includes(
-									ExtendedDonationType.VOLUNTEER as unknown as DonationType
-								)
-							}
-							sx={{ flexGrow: 1, minWidth: "200px" }}
-						>
-							Volunteer
-						</Button>
+						{/* Monetary Donation Button */}
+						{(acceptanceType === 'money' || acceptanceType === 'both') && (
+							<Button
+								fullWidth
+								variant="contained"
+								color="primary"
+								size="large"
+								startIcon={<MoneyIcon />}
+								onClick={handleDonate}
+								disabled={user?.role !== "donor"}
+								sx={{ flexGrow: 1, minWidth: "200px" }}
+							>
+								Donate Money
+							</Button>
+						)}
+
+						{/* Item Donation Button */}
+						{(acceptanceType === 'items' || acceptanceType === 'both') && (
+							<Button
+								fullWidth
+								variant={acceptanceType === 'both' ? "outlined" : "contained"}
+								color="primary"
+								size="large"
+								startIcon={<CategoryIcon />}
+								onClick={handleDonate}
+								disabled={user?.role !== "donor"}
+								sx={{ flexGrow: 1, minWidth: "200px" }}
+							>
+								Donate Items
+							</Button>
+						)}
+
+						{/* Volunteer Button */}
+						{acceptedDonationTypes.includes(
+							ExtendedDonationType.VOLUNTEER as unknown as DonationType
+						) && (
+								<Button
+									fullWidth
+									variant="outlined"
+									color="primary"
+									size="large"
+									startIcon={<PeopleIcon />}
+									disabled={user?.role !== "donor"}
+									sx={{ flexGrow: 1, minWidth: "200px" }}
+								>
+									Volunteer
+								</Button>
+							)}
 					</Box>
 
+					{/* User Role Alert */}
 					{user?.role !== "donor" && (
 						<Alert severity="info" sx={{ mb: 4 }}>
 							You are logged in as an organization. Donation features are only
 							available to donors.
 						</Alert>
 					)}
+
+					{/* Acceptance Type Alert */}
+					<Alert
+						severity="info"
+						sx={{ mb: 4 }}
+						icon={
+							acceptanceType === 'money' ? <MoneyIcon /> :
+								acceptanceType === 'items' ? <CategoryIcon /> :
+									<HeartIcon />
+						}
+					>
+						<Typography variant="body1">
+							{acceptanceType === 'money'
+								? 'This cause accepts monetary donations only.'
+								: acceptanceType === 'items'
+									? 'This cause accepts item donations only.'
+									: 'This cause accepts both monetary and item donations.'
+							}
+							{(acceptanceType === 'items' || acceptanceType === 'both') && donationItems.length > 0 && (
+								<span> See the "Details" tab for a list of specific items needed.</span>
+							)}
+						</Typography>
+					</Alert>
 
 					{/* Organization Information */}
 					{data?.cause.organizationName && (
@@ -611,83 +686,137 @@ export default function CauseDetailPage({
 								{data?.cause.description || "No description available."}
 							</Typography>
 
-							{acceptedDonationTypes && acceptedDonationTypes.length > 0 && (
-								<Box mt={4}>
-									<Typography variant="h6" gutterBottom>
-										Ways You Can Help
+							{/* Donation Acceptance Type */}
+							<Box mt={4}>
+								<Typography variant="h6" gutterBottom>
+									Ways You Can Help
+								</Typography>
+
+								{/* Acceptance Type Banner */}
+								<Alert
+									severity="info"
+									sx={{ mb: 3 }}
+									icon={
+										acceptanceType === 'money' ? <MoneyIcon /> :
+											acceptanceType === 'items' ? <CategoryIcon /> :
+												<HeartIcon />
+									}
+								>
+									<Typography variant="subtitle1">
+										{acceptanceType === 'money'
+											? 'This cause accepts monetary donations only'
+											: acceptanceType === 'items'
+												? 'This cause accepts item donations only'
+												: 'This cause accepts both monetary and item donations'
+										}
 									</Typography>
-									<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-										{acceptedDonationTypes.map((type, index) => {
-											const TypeIcon = donationTypeIcons[type] || MoneyIcon;
-											let title = "Donation";
-											let description = "Support this cause";
+								</Alert>
 
-											switch (type) {
-												case DonationType.MONEY:
-													title = "Monetary Donations";
-													description =
-														"Support this cause with financial contributions.";
-													break;
-												case ExtendedDonationType.IN_KIND as unknown as DonationType:
-													title = "In-Kind Donations";
-													description = "Donate goods, supplies, or services.";
-													break;
-												case ExtendedDonationType.VOLUNTEER as unknown as DonationType:
-													title = "Volunteer Work";
-													description = "Contribute your time and skills.";
-													break;
-												case DonationType.BLOOD:
-													title = "Blood Donations";
-													description = "Donate blood to save lives.";
-													break;
-												case DonationType.FOOD:
-													title = "Food Donations";
-													description = "Donate food items to those in need.";
-													break;
-												case DonationType.BOOKS:
-													title = "Book Donations";
-													description =
-														"Donate books for education and knowledge.";
-													break;
-												default:
-													title = `${type} Donations`;
-													description = `Donate ${type.toLowerCase()} to support this cause.`;
-											}
+								{/* Donation Types Cards */}
+								<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+									{acceptedDonationTypes.map((type: DonationType, index: number) => {
+										const TypeIcon = donationTypeIcons[type] || MoneyIcon;
+										let title = "Donation";
+										let description = "Support this cause";
 
-											return (
-												<Card
-													key={index}
-													variant="outlined"
-													sx={{
-														flexGrow: 1,
-														minWidth: "240px",
-														maxWidth: "350px",
-													}}
-												>
-													<CardContent>
-														<Box display="flex" alignItems="center" mb={2}>
-															<Box
-																sx={{
-																	bgcolor: "primary.50",
-																	borderRadius: "50%",
-																	p: 1,
-																	mr: 2,
-																}}
-															>
-																{TypeIcon && <TypeIcon color="primary" />}
-															</Box>
-															<Typography variant="h6">{title}</Typography>
+										switch (type) {
+											case DonationType.MONEY:
+												title = "Monetary Donations";
+												description =
+													"Support this cause with financial contributions.";
+												break;
+											case ExtendedDonationType.IN_KIND as unknown as DonationType:
+												title = "In-Kind Donations";
+												description = "Donate goods, supplies, or services.";
+												break;
+											case ExtendedDonationType.VOLUNTEER as unknown as DonationType:
+												title = "Volunteer Work";
+												description = "Contribute your time and skills.";
+												break;
+											case DonationType.BLOOD:
+												title = "Blood Donations";
+												description = "Donate blood to save lives.";
+												break;
+											case DonationType.FOOD:
+												title = "Food Donations";
+												description = "Donate food items to those in need.";
+												break;
+											case DonationType.BOOKS:
+												title = "Book Donations";
+												description =
+													"Donate books for education and knowledge.";
+												break;
+											case DonationType.CLOTHES:
+												title = "Clothing Donations";
+												description = "Donate clothes to those in need.";
+												break;
+											case DonationType.FURNITURE:
+												title = "Furniture Donations";
+												description = "Donate furniture to help furnish homes.";
+												break;
+											case DonationType.HOUSEHOLD:
+												title = "Household Items";
+												description = "Donate household items to support families.";
+												break;
+											default:
+												title = `${type} Donations`;
+												description = `Donate ${type.toLowerCase()} to support this cause.`;
+										}
+
+										return (
+											<Card
+												key={index}
+												variant="outlined"
+												sx={{
+													flexGrow: 1,
+													minWidth: "240px",
+													maxWidth: "350px",
+												}}
+											>
+												<CardContent>
+													<Box display="flex" alignItems="center" mb={2}>
+														<Box
+															sx={{
+																bgcolor: "primary.50",
+																borderRadius: "50%",
+																p: 1,
+																mr: 2,
+															}}
+														>
+															{TypeIcon && <TypeIcon color="primary" />}
 														</Box>
-														<Typography variant="body2">
-															{description}
-														</Typography>
-													</CardContent>
-												</Card>
-											);
-										})}
-									</Box>
+														<Typography variant="h6">{title}</Typography>
+													</Box>
+													<Typography variant="body2">
+														{description}
+													</Typography>
+												</CardContent>
+											</Card>
+										);
+									})}
 								</Box>
-							)}
+
+								{/* Donation Items Section */}
+								{(acceptanceType === 'items' || acceptanceType === 'both') && donationItems.length > 0 && (
+									<Box mt={4}>
+										<Typography variant="subtitle1" gutterBottom fontWeight="medium">
+											Specific Items Needed:
+										</Typography>
+										<Box display="flex" flexWrap="wrap" gap={1} mt={1}>
+											{donationItems.map((item: string, index: number) => (
+												<Chip
+													key={index}
+													label={item}
+													color="primary"
+													variant="outlined"
+													icon={<CategoryIcon />}
+													sx={{ m: 0.5 }}
+												/>
+											))}
+										</Box>
+									</Box>
+								)}
+							</Box>
 						</Box>
 					)}
 
@@ -752,7 +881,55 @@ export default function CauseDetailPage({
 										secondary={data?.cause?.organizationId || "N/A"}
 									/>
 								</ListItem>
+								<Divider variant="inset" component="li" />
+								<ListItem>
+									<ListItemAvatar>
+										<Avatar sx={{ bgcolor: "primary.light" }}>
+											<MoneyIcon />
+										</Avatar>
+									</ListItemAvatar>
+									<ListItemText
+										primary="Donation Acceptance Type"
+										secondary={
+											acceptanceType === 'money'
+												? 'Monetary Donations Only'
+												: acceptanceType === 'items'
+													? 'Item Donations Only'
+													: 'Both Monetary and Item Donations'
+										}
+									/>
+								</ListItem>
 							</List>
+
+							{/* Donation Items Section */}
+							{(acceptanceType === 'items' || acceptanceType === 'both') && donationItems.length > 0 && (
+								<Box mt={4}>
+									<Typography variant="h6" gutterBottom>
+										Accepted Donation Items
+									</Typography>
+									<Card variant="outlined">
+										<CardContent>
+											<Box display="flex" flexWrap="wrap" gap={1}>
+												{donationItems.map((item: string, index: number) => (
+													<Chip
+														key={index}
+														label={item}
+														color="primary"
+														variant="outlined"
+														icon={<CategoryIcon />}
+														sx={{ m: 0.5 }}
+													/>
+												))}
+											</Box>
+											{donationItems.length === 0 && (
+												<Typography variant="body2" color="text.secondary">
+													No specific items listed. Please contact the organization for details.
+												</Typography>
+											)}
+										</CardContent>
+									</Card>
+								</Box>
+							)}
 
 							{/* Organization Contact Information */}
 							{data?.cause.organizationId && (
@@ -900,15 +1077,29 @@ export default function CauseDetailPage({
 							</Typography>
 
 							{user?.role === "donor" && (
-								<Button
-									variant="contained"
-									color="primary"
-									onClick={handleDonate}
-									sx={{ mt: 3 }}
-									startIcon={<HeartIcon />}
-								>
-									Donate Now
-								</Button>
+								<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, mt: 3 }}>
+									{(acceptanceType === 'money' || acceptanceType === 'both') && (
+										<Button
+											variant="contained"
+											color="primary"
+											onClick={handleDonate}
+											startIcon={<MoneyIcon />}
+										>
+											Donate Money
+										</Button>
+									)}
+
+									{(acceptanceType === 'items' || acceptanceType === 'both') && (
+										<Button
+											variant={acceptanceType === 'both' ? "outlined" : "contained"}
+											color="primary"
+											onClick={handleDonate}
+											startIcon={<CategoryIcon />}
+										>
+											Donate Items
+										</Button>
+									)}
+								</Box>
 							)}
 						</Box>
 					)}

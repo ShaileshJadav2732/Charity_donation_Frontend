@@ -266,7 +266,35 @@ export const useAuth = () => {
 		dispatch(setError(null));
 
 		try {
-			const result = await signInWithPopup(auth, googleProvider);
+			console.log("Starting Google sign-in process...");
+
+			// Clear any previous auth errors
+			if (auth.currentUser) {
+				console.log("Existing user found, signing out first to prevent conflicts");
+				await signOut(auth);
+			}
+
+			// Use signInWithPopup with explicit error handling
+			const result = await signInWithPopup(auth, googleProvider)
+				.catch((error) => {
+					console.error("Google popup error:", error.code, error.message);
+					// Handle specific Firebase Auth errors
+					if (error.code === 'auth/popup-blocked') {
+						throw new Error("Popup was blocked by the browser. Please allow popups for this site.");
+					} else if (error.code === 'auth/popup-closed-by-user') {
+						throw new Error("Sign-in was cancelled. Please try again.");
+					} else if (error.code === 'auth/cancelled-popup-request') {
+						throw new Error("Multiple popup requests were made. Please try again.");
+					} else if (error.code === 'auth/network-request-failed') {
+						throw new Error("Network error occurred. Please check your internet connection.");
+					}
+					throw error;
+				});
+
+			if (!result) {
+				throw new Error("Failed to authenticate with Google. Please try again.");
+			}
+
 			const firebaseUser = result.user;
 			console.log(
 				"Google sign-in successful:",
@@ -278,11 +306,13 @@ export const useAuth = () => {
 				throw new Error("Google account must have an email address");
 			}
 
-			const idToken = await firebaseUser.getIdToken();
+			// Get the ID token with force refresh to ensure it's new
+			const idToken = await firebaseUser.getIdToken(true);
 			document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
 			console.log("Set authToken cookie for Google login");
 
 			try {
+				console.log("Attempting backend login with Firebase UID:", firebaseUser.uid);
 				const response = await login({
 					firebaseUid: firebaseUser.uid,
 				}).unwrap();

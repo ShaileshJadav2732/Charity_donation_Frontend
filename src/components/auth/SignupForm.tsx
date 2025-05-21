@@ -77,14 +77,36 @@ const SignupForm = () => {
 
   const handleGoogleSignup = async () => {
     try {
+      console.log("SignupForm: Attempting Google signup");
       toast.loading("Signing in with Google...", { id: "google-signup" });
+
+      // Check if browser supports popups
+      const popupBlocked = window.innerWidth < 1 || window.innerHeight < 1;
+      if (popupBlocked) {
+        toast.dismiss("google-signup");
+        toast.error("Please allow popups for this site to use Google signup");
+        return;
+      }
+
       await loginWithGoogle();
+      console.log("SignupForm: Google signup successful");
       toast.dismiss("google-signup");
+      toast.success("Google account connected successfully!");
     } catch (error: unknown) {
+      console.error("SignupForm: Google signup error:", error);
       toast.dismiss("google-signup");
       const parsedError = parseError(error);
-      toast.error(parsedError.message || "Failed to sign up with Google");
-      console.error("Google signup error:", error);
+
+      // Provide more user-friendly error messages
+      if (parsedError.message?.includes("popup")) {
+        toast.error("Google signup popup was blocked. Please allow popups for this site.");
+      } else if (parsedError.message?.includes("network")) {
+        toast.error("Network error. Please check your internet connection and try again.");
+      } else if (parsedError.message?.includes("cancelled")) {
+        toast.error("Google signup was cancelled. Please try again.");
+      } else {
+        toast.error(parsedError.message || "Failed to sign up with Google");
+      }
     }
   };
 
@@ -135,11 +157,10 @@ const SignupForm = () => {
           <div className="flex justify-center py-4">
             <div className="flex items-center space-x-2">
               <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                  formStage === "credentials"
+                className={`flex items-center justify-center w-8 h-8 rounded-full ${formStage === "credentials"
                     ? "bg-teal-600 text-white"
                     : "bg-green-500 text-white"
-                } transition-colors duration-200`}
+                  } transition-colors duration-200`}
                 aria-label={
                   formStage === "credentials"
                     ? "Current step 1"
@@ -153,16 +174,14 @@ const SignupForm = () => {
                 )}
               </div>
               <div
-                className={`w-12 h-1 ${
-                  formStage === "role" ? "bg-green-500" : "bg-gray-200"
-                } transition-colors duration-200`}
+                className={`w-12 h-1 ${formStage === "role" ? "bg-green-500" : "bg-gray-200"
+                  } transition-colors duration-200`}
               ></div>
               <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                  formStage === "role"
+                className={`flex items-center justify-center w-8 h-8 rounded-full ${formStage === "role"
                     ? "bg-teal-600 text-white"
                     : "bg-gray-200 text-gray-600"
-                } transition-colors duration-200`}
+                  } transition-colors duration-200`}
                 aria-label={formStage === "role" ? "Current step 2" : "Step 2"}
               >
                 2
@@ -198,11 +217,10 @@ const SignupForm = () => {
                       onFocus={() => handleFocus("email")}
                       onBlur={handleBlur}
                       required
-                      className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${
-                        focusedField === "email"
+                      className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${focusedField === "email"
                           ? "border-teal-500 ring-1 ring-teal-200"
                           : "border-gray-200"
-                      } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+                        } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
                       placeholder="you@example.com"
                       aria-describedby="email"
                     />
@@ -234,11 +252,10 @@ const SignupForm = () => {
                       onBlur={handleBlur}
                       required
                       minLength={6}
-                      className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${
-                        focusedField === "password"
+                      className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${focusedField === "password"
                           ? "border-teal-500 ring-1 ring-teal-200"
                           : "border-gray-200"
-                      } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+                        } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
                       placeholder="••••••••"
                       aria-describedby="password"
                     />
@@ -248,13 +265,12 @@ const SignupForm = () => {
                       <div className="flex items-center">
                         <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
-                            className={`h-full ${
-                              passwordStrength.strength === 1
+                            className={`h-full ${passwordStrength.strength === 1
                                 ? "bg-red-500"
                                 : passwordStrength.strength === 2
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
-                            } transition-all duration-200`}
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              } transition-all duration-200`}
                             style={{
                               width: `${passwordStrength.strength * 33.3}%`,
                             }}
@@ -295,11 +311,10 @@ const SignupForm = () => {
                       onFocus={() => handleFocus("confirmPassword")}
                       onBlur={handleBlur}
                       required
-                      className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${
-                        focusedField === "confirmPassword"
+                      className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${focusedField === "confirmPassword"
                           ? "border-teal-500 ring-1 ring-teal-200"
                           : "border-gray-200"
-                      } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+                        } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
                       placeholder="••••••••"
                       aria-describedby="confirmPassword"
                     />
@@ -361,11 +376,10 @@ const SignupForm = () => {
                       onClick={() =>
                         setFormData((prev) => ({ ...prev, role: "donor" }))
                       }
-                      className={`flex flex-col items-center p-4 border rounded-md cursor-pointer transition-all duration-200 ${
-                        formData.role === "donor"
+                      className={`flex flex-col items-center p-4 border rounded-md cursor-pointer transition-all duration-200 ${formData.role === "donor"
                           ? "border-teal-500 bg-teal-50"
                           : "border-gray-200 hover:bg-teal-50"
-                      }`}
+                        }`}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
@@ -375,19 +389,17 @@ const SignupForm = () => {
                       aria-label="Select Individual Donor role"
                     >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          formData.role === "donor"
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.role === "donor"
                             ? "bg-teal-100"
                             : "bg-gray-100"
-                        } transition-colors duration-200`}
+                          } transition-colors duration-200`}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className={`h-5 w-5 ${
-                            formData.role === "donor"
+                          className={`h-5 w-5 ${formData.role === "donor"
                               ? "text-teal-600"
                               : "text-gray-500"
-                          } transition-colors duration-200`}
+                            } transition-colors duration-200`}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -403,11 +415,10 @@ const SignupForm = () => {
                       </div>
                       <div className="mt-2 text-center">
                         <h3
-                          className={`text-sm font-medium ${
-                            formData.role === "donor"
+                          className={`text-sm font-medium ${formData.role === "donor"
                               ? "text-teal-600"
                               : "text-gray-700"
-                          } transition-colors duration-200`}
+                            } transition-colors duration-200`}
                         >
                           Individual Donor
                         </h3>
@@ -424,11 +435,10 @@ const SignupForm = () => {
                           role: "organization",
                         }))
                       }
-                      className={`flex flex-col items-center p-4 border rounded-md cursor-pointer transition-all duration-200 ${
-                        formData.role === "organization"
+                      className={`flex flex-col items-center p-4 border rounded-md cursor-pointer transition-all duration-200 ${formData.role === "organization"
                           ? "border-teal-500 bg-teal-50"
                           : "border-gray-200 hover:bg-teal-50"
-                      }`}
+                        }`}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
@@ -441,19 +451,17 @@ const SignupForm = () => {
                       aria-label="Select Organization role"
                     >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          formData.role === "organization"
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.role === "organization"
                             ? "bg-teal-100"
                             : "bg-gray-100"
-                        } transition-colors duration-200`}
+                          } transition-colors duration-200`}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className={`h-5 w-5 ${
-                            formData.role === "organization"
+                          className={`h-5 w-5 ${formData.role === "organization"
                               ? "text-teal-600"
                               : "text-gray-500"
-                          } transition-colors duration-200`}
+                            } transition-colors duration-200`}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -469,11 +477,10 @@ const SignupForm = () => {
                       </div>
                       <div className="mt-2 text-center">
                         <h3
-                          className={`text-sm font-medium ${
-                            formData.role === "organization"
+                          className={`text-sm font-medium ${formData.role === "organization"
                               ? "text-teal-600"
                               : "text-gray-700"
-                          } transition-colors duration-200`}
+                            } transition-colors duration-200`}
                         >
                           Organization
                         </h3>

@@ -4,6 +4,7 @@ import {
 	useUpdateCauseMutation,
 } from "@/store/api/causeApi";
 import { UpdateCauseBody } from "@/types/cause";
+import { DonationType } from "@/types/donation";
 import {
 	Box,
 	Button,
@@ -13,6 +14,14 @@ import {
 	Paper,
 	TextField,
 	Typography,
+	FormControl,
+	InputLabel,
+	Select,
+	MenuItem,
+	ListItemText,
+	Checkbox,
+	OutlinedInput,
+	SelectChangeEvent,
 } from "@mui/material";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useParams, useRouter } from "next/navigation";
@@ -26,7 +35,25 @@ interface Cause {
 	targetAmount: number;
 	imageUrl: string;
 	tags: string[];
+	acceptanceType?: 'money' | 'items' | 'both';
+	donationItems?: string[];
+	acceptedDonationTypes?: DonationType[];
 }
+
+const DONATION_ITEMS = [
+	"Clothes",
+	"Books",
+	"Toys",
+	"Food",
+	"Furniture",
+	"Electronics",
+	"Household Items",
+	"School Supplies",
+	"Medical Supplies",
+	"Hygiene Products",
+	"Baby Items",
+	"Sports Equipment",
+];
 
 const validationSchema = Yup.object().shape({
 	title: Yup.string().min(3, "Title must be at least 3 characters"),
@@ -45,13 +72,56 @@ export const UpdateCauseForm = () => {
 	const router = useRouter();
 	const [tags, setTags] = useState<string[]>([]);
 	const [tagInput, setTagInput] = useState("");
+	const [acceptanceType, setAcceptanceType] = useState<'money' | 'items' | 'both'>('money');
+	const [donationItems, setDonationItems] = useState<string[]>([]);
 
 	const { data: causesResponse } = useGetCauseByIdQuery(id || "");
 	const [updateCause, { isLoading: isUpdating }] = useUpdateCauseMutation();
 	console.log("cause respose", causesResponse);
+
 	useEffect(() => {
 		if (causesResponse?.cause) {
 			setTags(causesResponse.cause.tags || []);
+
+			// Set acceptance type based on cause data
+			if (causesResponse.cause.acceptanceType) {
+				setAcceptanceType(causesResponse.cause.acceptanceType);
+			} else if (causesResponse.cause.acceptedDonationTypes) {
+				// If no acceptanceType but has acceptedDonationTypes, infer from them
+				const hasMoneyType = causesResponse.cause.acceptedDonationTypes.includes(DonationType.MONEY);
+				const hasItemTypes = causesResponse.cause.acceptedDonationTypes.some(
+					type => type !== DonationType.MONEY
+				);
+
+				if (hasMoneyType && hasItemTypes) {
+					setAcceptanceType('both');
+				} else if (hasMoneyType) {
+					setAcceptanceType('money');
+				} else if (hasItemTypes) {
+					setAcceptanceType('items');
+				}
+			}
+
+			// Set donation items if available
+			if (causesResponse.cause.donationItems && causesResponse.cause.donationItems.length > 0) {
+				setDonationItems(causesResponse.cause.donationItems);
+			} else if (causesResponse.cause.acceptedDonationTypes) {
+				// If no donationItems but has acceptedDonationTypes, map them to items
+				const itemTypes = causesResponse.cause.acceptedDonationTypes
+					.filter(type => type !== DonationType.MONEY)
+					.map(type => {
+						switch (type) {
+							case DonationType.CLOTHES: return "Clothes";
+							case DonationType.BOOKS: return "Books";
+							case DonationType.TOYS: return "Toys";
+							case DonationType.FOOD: return "Food";
+							case DonationType.FURNITURE: return "Furniture";
+							case DonationType.HOUSEHOLD: return "Household Items";
+							default: return type.charAt(0) + type.slice(1).toLowerCase();
+						}
+					});
+				setDonationItems(itemTypes);
+			}
 		}
 	}, [causesResponse]);
 
@@ -77,9 +147,65 @@ export const UpdateCauseForm = () => {
 		setTags(tags.filter((tag) => tag !== tagToRemove));
 	};
 
+	const handleAcceptanceTypeChange = (event: SelectChangeEvent<string>) => {
+		const value = event.target.value as 'money' | 'items' | 'both';
+		setAcceptanceType(value);
+		// Reset donation items if changing to money-only
+		if (value === 'money') {
+			setDonationItems([]);
+		}
+	};
+
+	const handleDonationItemsChange = (event: SelectChangeEvent<string[]>) => {
+		const value = event.target.value as string[];
+		setDonationItems(value);
+	};
+
 	const handleSubmit = async (values: UpdateCauseBody) => {
 		try {
-			const body = { ...values, tags };
+			// Convert donation items to DonationType enum values
+			const acceptedDonationTypes: DonationType[] = [];
+
+			if (acceptanceType === 'money' || acceptanceType === 'both') {
+				acceptedDonationTypes.push(DonationType.MONEY);
+			}
+
+			if (acceptanceType === 'items' || acceptanceType === 'both') {
+				donationItems.forEach(item => {
+					switch (item.toUpperCase()) {
+						case 'CLOTHES':
+							acceptedDonationTypes.push(DonationType.CLOTHES);
+							break;
+						case 'BOOKS':
+							acceptedDonationTypes.push(DonationType.BOOKS);
+							break;
+						case 'TOYS':
+							acceptedDonationTypes.push(DonationType.TOYS);
+							break;
+						case 'FOOD':
+							acceptedDonationTypes.push(DonationType.FOOD);
+							break;
+						case 'FURNITURE':
+							acceptedDonationTypes.push(DonationType.FURNITURE);
+							break;
+						case 'HOUSEHOLD ITEMS':
+							acceptedDonationTypes.push(DonationType.HOUSEHOLD);
+							break;
+						default:
+							acceptedDonationTypes.push(DonationType.OTHER);
+							break;
+					}
+				});
+			}
+
+			const body = {
+				...values,
+				tags,
+				acceptanceType,
+				donationItems: acceptanceType !== 'money' ? donationItems : [],
+				acceptedDonationTypes
+			};
+
 			await updateCause({ id, body }).unwrap();
 			router.push(`/dashboard/causes/${id}`);
 		} catch (error) {
@@ -151,6 +277,47 @@ export const UpdateCauseForm = () => {
 									helperText={<ErrorMessage name="imageUrl" />}
 								/>
 							</Grid>
+
+							<Grid item xs={12}>
+								<FormControl fullWidth>
+									<InputLabel id="acceptance-type-label">Acceptance Type</InputLabel>
+									<Select
+										labelId="acceptance-type-label"
+										id="acceptance-type"
+										value={acceptanceType}
+										label="Acceptance Type"
+										onChange={handleAcceptanceTypeChange}
+									>
+										<MenuItem value="money">Money Only</MenuItem>
+										<MenuItem value="items">Items Only</MenuItem>
+										<MenuItem value="both">Both Money and Items</MenuItem>
+									</Select>
+								</FormControl>
+							</Grid>
+
+							{acceptanceType !== 'money' && (
+								<Grid item xs={12}>
+									<FormControl fullWidth>
+										<InputLabel id="donation-items-label">Donation Items</InputLabel>
+										<Select
+											labelId="donation-items-label"
+											id="donation-items"
+											multiple
+											value={donationItems}
+											onChange={handleDonationItemsChange}
+											input={<OutlinedInput label="Donation Items" />}
+											renderValue={(selected) => selected.join(', ')}
+										>
+											{DONATION_ITEMS.map((item) => (
+												<MenuItem key={item} value={item}>
+													<Checkbox checked={donationItems.indexOf(item) > -1} />
+													<ListItemText primary={item} />
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
+								</Grid>
+							)}
 
 							<Grid item xs={12}>
 								<Box sx={{ mb: 2 }}>

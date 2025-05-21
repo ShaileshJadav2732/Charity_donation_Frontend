@@ -10,10 +10,19 @@ import {
 	Paper,
 	Alert,
 	Chip,
+	FormControl,
+	InputLabel,
+	Select,
+	MenuItem,
+	ListItemText,
+	Checkbox,
+	OutlinedInput,
+	SelectChangeEvent,
 } from "@mui/material";
 import { useCreateCauseMutation } from "@/store/api/causeApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { DonationType } from "@/types/donation";
 
 interface FormData {
 	title: string;
@@ -21,6 +30,8 @@ interface FormData {
 	targetAmount: string;
 	imageUrl: string;
 	tags: string[];
+	acceptanceType: 'money' | 'items' | 'both';
+	donationItems: string[];
 }
 
 const SUGGESTED_TAGS = [
@@ -38,6 +49,21 @@ const SUGGESTED_TAGS = [
 	"Community",
 ];
 
+const DONATION_ITEMS = [
+	"Clothes",
+	"Books",
+	"Toys",
+	"Food",
+	"Furniture",
+	"Electronics",
+	"Household Items",
+	"School Supplies",
+	"Medical Supplies",
+	"Hygiene Products",
+	"Baby Items",
+	"Sports Equipment",
+];
+
 const CreateCausePage = () => {
 	const router = useRouter();
 	const { user } = useSelector((state: RootState) => state.auth);
@@ -49,6 +75,8 @@ const CreateCausePage = () => {
 		targetAmount: "",
 		imageUrl: "https://placehold.co/600x400?text=Cause",
 		tags: [],
+		acceptanceType: "money",
+		donationItems: [],
 	});
 
 	const handleChange = (
@@ -75,6 +103,24 @@ const CreateCausePage = () => {
 		});
 	};
 
+	const handleAcceptanceTypeChange = (event: SelectChangeEvent<string>) => {
+		const value = event.target.value as 'money' | 'items' | 'both';
+		setFormData((prev) => ({
+			...prev,
+			acceptanceType: value,
+			// Reset donation items if changing to money-only
+			donationItems: value === 'money' ? [] : prev.donationItems,
+		}));
+	};
+
+	const handleDonationItemsChange = (event: SelectChangeEvent<string[]>) => {
+		const value = event.target.value as string[];
+		setFormData((prev) => ({
+			...prev,
+			donationItems: value,
+		}));
+	};
+
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
@@ -92,6 +138,36 @@ const CreateCausePage = () => {
 				imageUrl: formData.imageUrl,
 				tags: formData.tags,
 				organizationId: user.id,
+				acceptanceType: formData.acceptanceType,
+				donationItems: formData.acceptanceType !== 'money' ? formData.donationItems : [],
+				// Convert accepted donation types based on acceptanceType
+				acceptedDonationTypes: formData.acceptanceType === 'money'
+					? [DonationType.MONEY]
+					: formData.acceptanceType === 'items'
+						? formData.donationItems.map(item => {
+							// Map donation items to DonationType enum values
+							switch (item.toUpperCase()) {
+								case 'CLOTHES': return DonationType.CLOTHES;
+								case 'BOOKS': return DonationType.BOOKS;
+								case 'TOYS': return DonationType.TOYS;
+								case 'FOOD': return DonationType.FOOD;
+								case 'FURNITURE': return DonationType.FURNITURE;
+								case 'HOUSEHOLD ITEMS': return DonationType.HOUSEHOLD;
+								default: return DonationType.OTHER;
+							}
+						})
+						: [DonationType.MONEY, ...formData.donationItems.map(item => {
+							// Map donation items to DonationType enum values for 'both' type
+							switch (item.toUpperCase()) {
+								case 'CLOTHES': return DonationType.CLOTHES;
+								case 'BOOKS': return DonationType.BOOKS;
+								case 'TOYS': return DonationType.TOYS;
+								case 'FOOD': return DonationType.FOOD;
+								case 'FURNITURE': return DonationType.FURNITURE;
+								case 'HOUSEHOLD ITEMS': return DonationType.HOUSEHOLD;
+								default: return DonationType.OTHER;
+							}
+						})],
 			};
 
 			console.log("Creating cause with payload:", payload);
@@ -104,17 +180,17 @@ const CreateCausePage = () => {
 			// Try to extract detailed error message
 			const errorMessage =
 				typeof apiError === "object" &&
-				apiError !== null &&
-				"data" in apiError &&
-				typeof apiError.data === "object" &&
-				apiError.data !== null &&
-				"message" in apiError.data
+					apiError !== null &&
+					"data" in apiError &&
+					typeof apiError.data === "object" &&
+					apiError.data !== null &&
+					"message" in apiError.data
 					? apiError.data.message
 					: typeof apiError === "object" &&
-					  apiError !== null &&
-					  "error" in apiError
-					? (apiError as { error: string }).error
-					: "Failed to create cause. Please try again.";
+						apiError !== null &&
+						"error" in apiError
+						? (apiError as { error: string }).error
+						: "Failed to create cause. Please try again.";
 			alert(`Error: ${errorMessage}`);
 		}
 	};
@@ -166,6 +242,7 @@ const CreateCausePage = () => {
 							value={formData.targetAmount}
 							onChange={handleChange}
 							required
+							// @ts-ignore - InputProps is deprecated but still works
 							InputProps={{
 								startAdornment: <span>$</span>,
 							}}
@@ -180,6 +257,43 @@ const CreateCausePage = () => {
 							required
 							helperText="Enter the URL of the cause image"
 						/>
+
+						<FormControl fullWidth>
+							<InputLabel id="acceptance-type-label">Acceptance Type</InputLabel>
+							<Select
+								labelId="acceptance-type-label"
+								id="acceptance-type"
+								value={formData.acceptanceType}
+								label="Acceptance Type"
+								onChange={handleAcceptanceTypeChange}
+							>
+								<MenuItem value="money">Money Only</MenuItem>
+								<MenuItem value="items">Items Only</MenuItem>
+								<MenuItem value="both">Both Money and Items</MenuItem>
+							</Select>
+						</FormControl>
+
+						{formData.acceptanceType !== 'money' && (
+							<FormControl fullWidth>
+								<InputLabel id="donation-items-label">Donation Items</InputLabel>
+								<Select
+									labelId="donation-items-label"
+									id="donation-items"
+									multiple
+									value={formData.donationItems}
+									onChange={handleDonationItemsChange}
+									input={<OutlinedInput label="Donation Items" />}
+									renderValue={(selected) => selected.join(', ')}
+								>
+									{DONATION_ITEMS.map((item) => (
+										<MenuItem key={item} value={item}>
+											<Checkbox checked={formData.donationItems.indexOf(item) > -1} />
+											<ListItemText primary={item} />
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						)}
 
 						<Box>
 							<Typography variant="subtitle1" gutterBottom>

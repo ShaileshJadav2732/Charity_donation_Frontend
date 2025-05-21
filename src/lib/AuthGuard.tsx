@@ -1,9 +1,9 @@
 'use client';
 
-import { app } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { setCredentials, clearCredentials } from '@/store/slices/authSlice';
 // import { setUser } from '@/redux/reducer/authReducer';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -18,7 +18,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
    // const [user, setUser] = useState<User | null>(null);
 
    useEffect(() => {
-      const auth = getAuth(app);
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
          if (firebaseUser) {
             try {

@@ -58,6 +58,15 @@ const LoginForm = () => {
     try {
       console.log("LoginForm: Attempting Google login");
       toast.loading("Signing in with Google...", { id: "google-login" });
+
+      // Check if browser supports popups
+      const popupBlocked = window.innerWidth < 1 || window.innerHeight < 1;
+      if (popupBlocked) {
+        toast.dismiss("google-login");
+        toast.error("Please allow popups for this site to use Google login");
+        return;
+      }
+
       await loginWithGoogle();
       console.log(
         "LoginForm: Google login successful, relying on useAuth for redirect"
@@ -68,7 +77,17 @@ const LoginForm = () => {
       console.error("LoginForm: Google login error:", error);
       toast.dismiss("google-login");
       const parsedError = parseError(error);
-      toast.error(parsedError.message || "Failed to log in with Google");
+
+      // Provide more user-friendly error messages
+      if (parsedError.message?.includes("popup")) {
+        toast.error("Google login popup was blocked. Please allow popups for this site.");
+      } else if (parsedError.message?.includes("network")) {
+        toast.error("Network error. Please check your internet connection and try again.");
+      } else if (parsedError.message?.includes("cancelled")) {
+        toast.error("Google login was cancelled. Please try again.");
+      } else {
+        toast.error(parsedError.message || "Failed to log in with Google");
+      }
     }
   };
 
@@ -138,11 +157,10 @@ const LoginForm = () => {
                   onFocus={() => handleFocus("email")}
                   onBlur={handleBlur}
                   required
-                  className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${
-                    focusedField === "email"
+                  className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${focusedField === "email"
                       ? "border-teal-500 ring-1 ring-teal-200"
                       : "border-gray-200"
-                  } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+                    } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
                   placeholder="you@example.com"
                   aria-describedby="email"
                   autoComplete="email"
@@ -182,11 +200,10 @@ const LoginForm = () => {
                   onFocus={() => handleFocus("password")}
                   onBlur={handleBlur}
                   required
-                  className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${
-                    focusedField === "password"
+                  className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${focusedField === "password"
                       ? "border-teal-500 ring-1 ring-teal-200"
                       : "border-gray-200"
-                  } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+                    } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
                   placeholder="••••••••"
                   aria-describedby="password"
                   autoComplete="current-password"

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { auth } from "@/lib/firebase";
-import { useRegisterMutation } from "@/redux/api/authApi";
+import { useRegisterMutation } from "@/store/api/authApi";
 import { setCredentials } from "@/store/slices/authSlice";
 import NoSSR from "@/components/common/NoSSR";
 import { FirebaseUserInfo, ApiError, parseError } from "@/types";
