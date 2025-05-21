@@ -304,7 +304,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 					totalTargetAmount: parseFloat(formData.totalTargetAmount),
 					imageUrl: formData.imageUrl,
 					causes: formData.causes,
-					acceptedDonationTypes: formData.acceptedDonationTypes
+					acceptedDonationTypes: formData.acceptedDonationTypes,
 				},
 			};
 
@@ -446,9 +446,10 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 							sx={{
 								height: { xs: 200, md: 300 },
 								position: "relative",
-								background: `url(${campaign?.imageUrl ||
+								background: `url(${
+									campaign?.imageUrl ||
 									"https://placehold.co/1200x400?text=Campaign"
-									})`,
+								})`,
 								backgroundSize: "cover",
 								backgroundPosition: "center",
 							}}
@@ -470,10 +471,10 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 										(campaign?.status || "").toLowerCase() === "active"
 											? "success"
 											: (campaign?.status || "").toLowerCase() === "draft"
-												? "default"
-												: (campaign?.status || "").toLowerCase() === "paused"
-													? "warning"
-													: "info"
+											? "default"
+											: (campaign?.status || "").toLowerCase() === "paused"
+											? "warning"
+											: "info"
 									}
 									sx={{ fontWeight: "bold" }}
 								/>
@@ -516,15 +517,21 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 										</Typography>
 										<Box display="flex" flexWrap="wrap" gap={1} mb={2}>
 											{campaign?.causes &&
-												campaign.causes.map((cause: { id: string; title: string; description: string }) => (
-													<Chip
-														key={cause.id}
-														label={cause.title}
-														size="small"
-														color="primary"
-														variant="outlined"
-													/>
-												))}
+												campaign.causes.map(
+													(cause: {
+														id: string;
+														title: string;
+														description: string;
+													}) => (
+														<Chip
+															key={cause.id}
+															label={cause.title}
+															size="small"
+															color="primary"
+															variant="outlined"
+														/>
+													)
+												)}
 										</Box>
 									</>
 								) : (
@@ -820,15 +827,15 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 															size="small"
 															color={
 																(campaign?.status || "").toLowerCase() ===
-																	"active"
+																"active"
 																	? "success"
 																	: (campaign?.status || "").toLowerCase() ===
-																		"draft"
-																		? "default"
-																		: (campaign?.status || "").toLowerCase() ===
-																			"paused"
-																			? "warning"
-																			: "info"
+																	  "draft"
+																	? "default"
+																	: (campaign?.status || "").toLowerCase() ===
+																	  "paused"
+																	? "warning"
+																	: "info"
 															}
 														/>
 													}
@@ -879,63 +886,80 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 
 								{campaign?.causes && campaign.causes.length > 0 ? (
 									<Grid container spacing={3}>
-										{campaign.causes.map((cause: { id: string; title: string; description: string }) => (
-											<Grid component="div" item xs={12} md={6} key={cause.id}>
-												<Card
-													sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}
+										{campaign.causes.map(
+											(cause: {
+												id: string;
+												title: string;
+												description: string;
+											}) => (
+												<Grid
+													component="div"
+													item
+													xs={12}
+													md={6}
+													key={cause._id}
 												>
-													<CardContent>
-														<Typography variant="h6" gutterBottom>
-															{cause.title}
-														</Typography>
-
-														{cause.description && (
-															<Typography
-																variant="body2"
-																color="text.secondary"
-																paragraph
-															>
-																{cause.description}
+													<Card
+														sx={{
+															border: "1px solid #e0e0e0",
+															borderRadius: 2,
+														}}
+													>
+														<CardContent>
+															<Typography variant="h6" gutterBottom>
+																{cause.title}
 															</Typography>
-														)}
 
-														<Divider sx={{ my: 2 }} />
-
-														<Grid container spacing={1}>
-															<Grid component="div" item xs={6}>
+															{cause.description && (
 																<Typography
 																	variant="body2"
 																	color="text.secondary"
+																	paragraph
 																>
-																	Target
+																	{cause.description}
 																</Typography>
-																<Typography variant="body1" fontWeight="bold">
-																	${(cause.targetAmount || 0).toLocaleString()}
-																</Typography>
-															</Grid>
+															)}
 
-															<Grid component="div" item xs={6}>
-																<Typography
-																	variant="body2"
-																	color="text.secondary"
-																	align="right"
-																>
-																	Raised
-																</Typography>
-																<Typography
-																	variant="body1"
-																	fontWeight="bold"
-																	color="primary"
-																	align="right"
-																>
-																	${(cause.raisedAmount || 0).toLocaleString()}
-																</Typography>
+															<Divider sx={{ my: 2 }} />
+
+															<Grid container spacing={1}>
+																<Grid component="div" item xs={6}>
+																	<Typography
+																		variant="body2"
+																		color="text.secondary"
+																	>
+																		Target
+																	</Typography>
+																	<Typography variant="body1" fontWeight="bold">
+																		$
+																		{(cause.targetAmount || 0).toLocaleString()}
+																	</Typography>
+																</Grid>
+
+																<Grid component="div" item xs={6}>
+																	<Typography
+																		variant="body2"
+																		color="text.secondary"
+																		align="right"
+																	>
+																		Raised
+																	</Typography>
+																	<Typography
+																		variant="body1"
+																		fontWeight="bold"
+																		color="primary"
+																		align="right"
+																	>
+																		$
+																		{(cause.raisedAmount || 0).toLocaleString()}
+																	</Typography>
+																</Grid>
 															</Grid>
-														</Grid>
-													</CardContent>
-												</Card>
-											</Grid>
-										))}
+														</CardContent>
+													</Card>
+												</Grid>
+											)
+										)}
 									</Grid>
 								) : (
 									<Alert severity="info">

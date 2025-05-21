@@ -196,7 +196,7 @@ export const UpdateCauseForm = () => {
 								>
 									<Button
 										variant="outlined"
-										onClick={() => router.push(`/causes/${causeId}`)}
+										onClick={() => router.push(`/dashboard/causes`)}
 										disabled={isUpdating}
 									>
 										Cancel

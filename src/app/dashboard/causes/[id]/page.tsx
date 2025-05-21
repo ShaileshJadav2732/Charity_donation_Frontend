@@ -394,7 +394,7 @@ export default function CauseDetailPage({
 												sx={{ mr: 1, color: "text.secondary", fontSize: 20 }}
 											/>
 											<Typography variant="body2" color="text.secondary">
-												Organization ID: {data.data.cause.organizationId}
+												Organization ID: {data.cause.organizationId}
 											</Typography>
 										</Box>
 

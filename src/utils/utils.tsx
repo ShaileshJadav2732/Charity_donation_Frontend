@@ -1,0 +1,56 @@
+import React from "react";
+import { Chip } from "@mui/material";
+
+// Define the campaign status enum locally since it's not exported from @/types/campaigns
+export enum CampaignStatus {
+	ACTIVE = "ACTIVE",
+	DRAFT = "DRAFT",
+	PAUSED = "PAUSED",
+	COMPLETED = "COMPLETED",
+	CANCELLED = "CANCELLED",
+}
+
+export const StatusChip = ({ status }: { status: string }) => {
+	const getStatusColor = (status: string) => {
+		switch (status.toUpperCase()) {
+			case CampaignStatus.ACTIVE:
+				return "success";
+			case CampaignStatus.DRAFT:
+				return "default";
+			case CampaignStatus.PAUSED:
+				return "warning";
+			case CampaignStatus.COMPLETED:
+				return "info";
+			case CampaignStatus.CANCELLED:
+				return "error";
+			default:
+				return "default";
+		}
+	};
+
+	return (
+		<Chip
+			label={status}
+			color={getStatusColor(status)}
+			size="small"
+			sx={{ textTransform: "capitalize" }}
+		/>
+	);
+};
+
+export const getDaysLeft = (endDate: string): number => {
+	const end = new Date(endDate);
+	const today = new Date();
+	const diffTime = end.getTime() - today.getTime();
+	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+	return diffDays > 0 ? diffDays : 0;
+};
+
+export const getProgressPercentage = (
+	raised: number,
+	target: number
+): number => {
+	if (target === 0) return 0;
+	const percentage = (raised / target) * 100;
+	return Math.min(percentage, 100);
+};
