@@ -10,7 +10,9 @@ import {
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-	baseUrl: "/api",
+	baseUrl: process.env.NEXT_PUBLIC_API_URL || "/api",
+	// Add credentials to ensure cookies are sent with requests
+	credentials: 'include',
 	prepareHeaders: (headers, { getState }) => {
 		// Get the token from the auth state
 		const token = (getState() as RootState).auth.token;
@@ -45,7 +47,7 @@ export const causeApi = createApi({
 				url: `/causes/${id}`,
 				method: "GET",
 			}),
-			providesTags: (result, error, id) => [{ type: "Cause", id }],
+			providesTags: (_result, _error, id) => [{ type: "Cause", id }],
 		}),
 
 		// Get causes for active campaigns only
@@ -91,7 +93,7 @@ export const causeApi = createApi({
 				method: "PUT",
 				body,
 			}),
-			invalidatesTags: (result, error, { id }) => [{ type: "Cause", id }],
+			invalidatesTags: (_result, _error, { id }) => [{ type: "Cause", id }],
 		}),
 
 		// Delete a cause
@@ -113,7 +115,7 @@ export const causeApi = createApi({
 				method: "GET",
 				params,
 			}),
-			providesTags: (result, error, { campaignId }) => [
+			providesTags: (_result, _error, { campaignId }) => [
 				{ type: "Cause", id: campaignId },
 				{ type: "Campaign", id: campaignId },
 			],
@@ -129,7 +131,7 @@ export const causeApi = createApi({
 				method: "POST",
 				body: { type, amount },
 			}),
-			invalidatesTags: (result, error, { causeId }) => [
+			invalidatesTags: (_result, _error, { causeId }) => [
 				{ type: "Cause", id: causeId },
 			],
 		}),

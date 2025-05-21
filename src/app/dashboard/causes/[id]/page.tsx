@@ -5,8 +5,9 @@ import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
 import { RootState } from "@/store/store";
 import { DonationType } from "@/types/donation";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 import {
 	ArrowBack as ArrowBackIcon,
@@ -62,7 +63,7 @@ enum ExtendedDonationType {
 	VOLUNTEER = "VOLUNTEER",
 }
 
-const donationTypeIcons = {
+const donationTypeIcons: Record<string, React.ComponentType<any>> = {
 	[DonationType.MONEY]: MoneyIcon,
 	[DonationType.BLOOD]: BloodIcon,
 	[DonationType.FOOD]: FoodIcon,
@@ -72,17 +73,18 @@ const donationTypeIcons = {
 	[DonationType.HOUSEHOLD]: HouseholdIcon,
 	[ExtendedDonationType.IN_KIND]: MoneyIcon,
 	[ExtendedDonationType.VOLUNTEER]: PeopleIcon,
+	// Add a fallback for any other types
+	"CLOTHES": MoneyIcon,
+	"OTHER": MoneyIcon,
 };
 
 export default function CauseDetailPage({
 	params,
 }: {
-	params: Promise<{ id: string }>;
+	params: { id: string };
 }) {
-	const { id } = React.use(params);
+	const { id } = params;
 	const router = useRouter();
-	// WARNING: React.use() is not a standard React API and might be causing issues
-	// This should be replaced with a proper approach for unwrapping params
 
 	const [activeTab, setActiveTab] = useState("about");
 	const { user } = useSelector((state: RootState) => state.auth);
@@ -94,9 +96,10 @@ export default function CauseDetailPage({
 		error: orgError,
 	} = useGetOrganizationByCauseIdQuery(id, { skip: !id });
 
-	console.log("Cause data:", data);
-	console.log("Organization data:", organizationData);
+	console.log("Cause data:", JSON.stringify(data, null, 2));
+	console.log("Organization data:", JSON.stringify(organizationData, null, 2));
 	console.log("Organization error:", orgError);
+	console.log("Cause error:", error);
 
 	const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
 		setActiveTab(newValue);
@@ -119,6 +122,16 @@ export default function CauseDetailPage({
 	// Get organization details
 	const organization = organizationData?.organization;
 
+	// Debug the data structures
+	useEffect(() => {
+		if (data) {
+			console.log("Cause data structure:", data);
+		}
+		if (organizationData) {
+			console.log("Organization data structure:", organizationData);
+		}
+	}, [data, organizationData]);
+
 	if (isLoading) {
 		return (
 			<Box display="flex" justifyContent="center" p={8}>
@@ -128,11 +141,39 @@ export default function CauseDetailPage({
 	}
 
 	if (error || !data) {
+		// Get more detailed error information
+		let errorMessage = "Unable to load cause details. Please try again later.";
+		let isAuthError = false;
+
+		if (error) {
+			// Check if it's a FetchBaseQueryError
+			if ('status' in error) {
+				const fetchError = error as FetchBaseQueryError;
+				if (fetchError.status === 404) {
+					errorMessage = "This cause doesn't exist or has been removed.";
+				} else if (fetchError.status === 403) {
+					errorMessage = "You don't have permission to view this cause.";
+				} else if (fetchError.status === 401) {
+					errorMessage = "Please log in to view this cause.";
+					isAuthError = true;
+				} else {
+					errorMessage = "There was an error loading this cause. Please try again later.";
+				}
+			}
+		}
+
+		console.error("Error loading cause:", error);
+
 		return (
 			<Box p={4}>
-				<Alert severity="error">
-					This cause doesn&apos;t exist or has been removed.
+				<Alert severity="error" sx={{ mb: 2 }}>
+					{errorMessage}
 				</Alert>
+				{!isAuthError && (
+					<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+						If you believe this is an error, please try refreshing the page or contact support.
+					</Typography>
+				)}
 				<Button
 					startIcon={<ArrowBackIcon />}
 					onClick={handleBack}
@@ -147,9 +188,9 @@ export default function CauseDetailPage({
 	const progress =
 		data?.cause.raisedAmount && data.cause.targetAmount
 			? Math.min(
-					100,
-					Math.round((data?.cause.raisedAmount / data.cause.targetAmount) * 100)
-			  )
+				100,
+				Math.round((data?.cause.raisedAmount / data.cause.targetAmount) * 100)
+			)
 			: 0;
 
 	// We'll assume these values if they're not in the API response
@@ -276,13 +317,13 @@ export default function CauseDetailPage({
 								<Typography variant="h5" fontWeight="bold">
 									{data?.cause.createdAt
 										? new Date(data.cause.createdAt).toLocaleDateString(
-												undefined,
-												{
-													month: "short",
-													day: "numeric",
-													year: "numeric",
-												}
-										  )
+											undefined,
+											{
+												month: "short",
+												day: "numeric",
+												year: "numeric",
+											}
+										)
 										: "N/A"}
 								</Typography>
 								<Typography variant="caption" color="text.secondary">
@@ -466,19 +507,16 @@ export default function CauseDetailPage({
 															}}
 														/>
 														<Typography variant="body2" color="text.secondary">
-															{`${organization.address}${
-																organization.city
-																	? `, ${organization.city}`
-																	: ""
-															}${
-																organization.state
+															{`${organization.address}${organization.city
+																? `, ${organization.city}`
+																: ""
+																}${organization.state
 																	? `, ${organization.state}`
 																	: ""
-															}${
-																organization.country
+																}${organization.country
 																	? `, ${organization.country}`
 																	: ""
-															}`}
+																}`}
 														</Typography>
 													</Box>
 												)}
@@ -667,11 +705,10 @@ export default function CauseDetailPage({
 									</ListItemAvatar>
 									<ListItemText
 										primary="Funding Goal"
-										secondary={`$${
-											data?.cause.targetAmount
-												? data.cause?.targetAmount.toLocaleString()
-												: "0"
-										}`}
+										secondary={`$${data?.cause.targetAmount
+											? data.cause?.targetAmount.toLocaleString()
+											: "0"
+											}`}
 									/>
 								</ListItem>
 								<Divider variant="inset" component="li" />
@@ -739,7 +776,7 @@ export default function CauseDetailPage({
 														</ListItemAvatar>
 														<ListItemText
 															primary="Organization"
-															secondary={data?.data.cause.organizationName}
+															secondary={organization.name || data?.cause.organizationName || "Organization"}
 														/>
 													</ListItem>
 
@@ -790,19 +827,16 @@ export default function CauseDetailPage({
 																</ListItemAvatar>
 																<ListItemText
 																	primary="Address"
-																	secondary={`${organization.address}${
-																		organization.city
-																			? `, ${organization.city}`
-																			: ""
-																	}${
-																		organization.state
+																	secondary={`${organization.address}${organization.city
+																		? `, ${organization.city}`
+																		: ""
+																		}${organization.state
 																			? `, ${organization.state}`
 																			: ""
-																	}${
-																		organization.country
+																		}${organization.country
 																			? `, ${organization.country}`
 																			: ""
-																	}`}
+																		}`}
 																/>
 															</ListItem>
 														</>

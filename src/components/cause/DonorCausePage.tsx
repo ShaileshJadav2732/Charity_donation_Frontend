@@ -100,6 +100,7 @@ const CausesPage = () => {
 		skip: user?.role !== "donor",
 	});
 
+	console.log("activeCampaignCausesData", activeCampaignCausesData);
 	// Determine which data to use based on user role
 	const causesData =
 		user?.role === "organization"

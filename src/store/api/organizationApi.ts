@@ -1,6 +1,37 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../store";
 
+// Define interfaces for organization data
+export interface Organization {
+   _id: string;
+   name: string;
+   description: string;
+   email: string;
+   phoneNumber?: string;
+   website?: string;
+   address?: string;
+   city?: string;
+   state?: string;
+   country?: string;
+   logo?: string;
+   verified: boolean;
+   createdAt: string;
+   updatedAt: string;
+}
+
+export interface OrganizationResponse {
+   success: boolean;
+   organization: Organization;
+}
+
+export interface OrganizationsResponse {
+   success: boolean;
+   organizations: Organization[];
+   total: number;
+   page: number;
+   limit: number;
+}
+
 // Define interfaces for query arguments
 interface GetOrganizationsParams {
    page?: number;
@@ -12,7 +43,7 @@ interface GetOrganizationsParams {
 export const organizationApi = createApi({
    reducerPath: "organizationApi",
    baseQuery: fetchBaseQuery({
-      baseUrl: "http://localhost:8080/api",
+      baseUrl: process.env.NEXT_PUBLIC_API_URL || "/api",
       prepareHeaders: (headers, { getState }) => {
          const token = (getState() as RootState).auth.token;
          console.log("Preparing headers with token:", token); // Debug token in headers
@@ -24,7 +55,7 @@ export const organizationApi = createApi({
    }),
    tagTypes: ["Organization"],
    endpoints: (builder) => ({
-      getOrganizations: builder.query<any, GetOrganizationsParams | void>({
+      getOrganizations: builder.query<OrganizationsResponse, GetOrganizationsParams | void>({
          query: (params = {}) => {
             const { page = 1, limit = 10, search = "" } = params as GetOrganizationsParams;
             return {
@@ -34,23 +65,23 @@ export const organizationApi = createApi({
          },
          providesTags: ["Organization"],
       }),
-      getOrganizationById: builder.query<any, string>({
+      getOrganizationById: builder.query<OrganizationResponse, string>({
          query: (id) => ({
             url: `/organizations/${id}`,
             method: "GET",
          }),
-         providesTags: (result, error, id) => [{ type: "Organization", id }],
+         providesTags: (_result, _error, id) => [{ type: "Organization", id }],
       }),
-      getOrganizationByCauseId: builder.query<any, string>({
+      getOrganizationByCauseId: builder.query<OrganizationResponse, string>({
          query: (causeId) => ({
             url: `/organizations/cause/${causeId}`,
             method: "GET",
          }),
-         providesTags: (result, error, causeId) => [
+         providesTags: (_result, _error, causeId) => [
             { type: "Organization", id: `cause-${causeId}` },
          ],
       }),
-      getCurrentOrganization: builder.query<any, void>({
+      getCurrentOrganization: builder.query<OrganizationResponse, void>({
          query: () => {
             console.log("Making request to /organizations/me"); // Debug request
             return {
@@ -60,7 +91,7 @@ export const organizationApi = createApi({
             };
          },
          providesTags: ["Organization"],
-         transformResponse: (response: any) => {
+         transformResponse: (response: OrganizationResponse) => {
             console.log("Raw API response:", response); // Debug raw response
             return response;
          },
@@ -78,4 +109,4 @@ export const {
    useGetOrganizationByIdQuery,
    useGetOrganizationByCauseIdQuery,
    useGetCurrentOrganizationQuery
-} = organizationApi; 
+} = organizationApi;
