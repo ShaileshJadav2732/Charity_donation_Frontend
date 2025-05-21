@@ -135,6 +135,22 @@ export const campaignApi = createApi({
 			}),
 			providesTags: ["Campaign"],
 		}),
+
+		// Add a cause to a campaign
+		addCauseToCampaign: builder.mutation<
+			CampaignResponse,
+			{ campaignId: string; causeId: string }
+		>({
+			query: ({ campaignId, causeId }) => ({
+				url: `/campaigns/${campaignId}/causes`,
+				method: "POST",
+				body: { causeId },
+			}),
+			invalidatesTags: (result, error, { campaignId }) => [
+				{ type: "Campaign", id: campaignId },
+				"Cause",
+			],
+		}),
 	}),
 });
 
@@ -153,4 +169,5 @@ export const {
 	useDeleteCampaignMutation,
 	useUpdateCampaignStatusMutation,
 	useGetDonorCampaignsQuery,
+	useAddCauseToCampaignMutation,
 } = campaignApi;

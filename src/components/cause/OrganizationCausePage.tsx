@@ -149,6 +149,19 @@ const CausesPage = () => {
 					</Stack>
 				</Paper>
 
+				{/* Campaign Reminder */}
+				{!isLoading && !error && filteredCauses?.length > 0 && (
+					<Alert severity="info" sx={{ mb: 3 }}>
+						<Typography variant="subtitle2" fontWeight="medium">
+							Important: Causes must be added to active campaigns to be visible to donors
+						</Typography>
+						<Typography variant="body2">
+							After creating a cause, make sure to add it to an active campaign from the cause detail page.
+							Donors can only see causes that are part of active campaigns.
+						</Typography>
+					</Alert>
+				)}
+
 				{/* Causes List */}
 				{isLoading ? (
 					<Box display="flex" justifyContent="center" p={4}>

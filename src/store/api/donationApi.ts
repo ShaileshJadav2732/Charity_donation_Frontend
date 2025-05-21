@@ -50,6 +50,34 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "GET",
 			}),
 		}),
+		getItemDonationAnalytics: builder.query<ApiResponse<any>, void>({
+			query: () => ({
+				url: "/donations/items/analytics",
+				method: "GET",
+			}),
+			transformResponse: (response: ApiResponse<any>) => {
+				console.log("Item donation analytics response:", response);
+				return response;
+			},
+			transformErrorResponse: (error) => {
+				console.error("Error fetching item donation analytics:", error);
+				return error;
+			}
+		}),
+		getItemDonationTypeAnalytics: builder.query<ApiResponse<any>, string>({
+			query: (type) => ({
+				url: `/donations/items/${type}/analytics`,
+				method: "GET",
+			}),
+			transformResponse: (response: ApiResponse<any>) => {
+				console.log(`Item donation analytics for type ${response.data?.type}:`, response);
+				return response;
+			},
+			transformErrorResponse: (error, meta) => {
+				console.error(`Error fetching item donation analytics for type ${meta?.arg}:`, error);
+				return error;
+			}
+		}),
 
 		findOrganizationPendingDonations: builder.query<
 			DonationResponse,
@@ -67,12 +95,12 @@ export const donationApi = apiSlice.injectEndpoints({
 			providesTags: (result) =>
 				result
 					? [
-							...result.data.map(({ _id }) => ({
-								type: "Donations" as const,
-								id: _id,
-							})),
-							{ type: "Donations", id: "LIST" },
-					  ]
+						...result.data.map(({ _id }) => ({
+							type: "Donations" as const,
+							id: _id,
+						})),
+						{ type: "Donations", id: "LIST" },
+					]
 					: [{ type: "Donations", id: "LIST" }],
 		}),
 
@@ -98,6 +126,8 @@ export const {
 	useGetOrganizationDonationsQuery,
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
+	useGetItemDonationAnalyticsQuery,
+	useGetItemDonationTypeAnalyticsQuery,
 	useFindOrganizationPendingDonationsQuery,
 	useUpdateDonationStatusMutation,
 } = donationApi;

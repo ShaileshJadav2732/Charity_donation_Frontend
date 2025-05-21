@@ -7,12 +7,13 @@ import {
 	FaDownload,
 	FaHandHoldingHeart,
 	FaHeart,
+	FaBoxOpen,
 } from "react-icons/fa";
 import {
 	useGetDonorStatsQuery,
 	useGetDonorDonationsQuery,
 } from "@/store/api/donationApi";
-import { Donation, DonationStats, DonationResponse } from "@/types/donation";
+import { Donation, DonationStats, DonationResponse, DonationType } from "@/types/donation";
 import Link from "next/link";
 
 export default function DonationsPage() {
@@ -84,10 +85,10 @@ export default function DonationsPage() {
 				<div className="flex flex-col items-end gap-2">
 					<span
 						className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${donation.status === "CONFIRMED"
-								? "bg-green-100 text-green-800"
-								: donation.status === "PENDING"
-									? "bg-yellow-100 text-yellow-800"
-									: "bg-red-100 text-red-800"
+							? "bg-green-100 text-green-800"
+							: donation.status === "PENDING"
+								? "bg-yellow-100 text-yellow-800"
+								: "bg-red-100 text-red-800"
 							}`}
 					>
 						{donation.status.charAt(0).toUpperCase() +
@@ -150,7 +151,7 @@ export default function DonationsPage() {
 									Total Donated
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									₹{stats.totalDonated.toLocaleString()}
+									₹{stats.monetary?.totalDonated?.toLocaleString() || '0'}
 								</p>
 							</div>
 							<div className="bg-teal-100 p-3 rounded-full">
@@ -166,7 +167,7 @@ export default function DonationsPage() {
 									Total Impact
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									{stats.totalCauses} cause{stats.totalCauses !== 1 && "s"}
+									{stats.totalCauses || 0} cause{(stats.totalCauses || 0) !== 1 && "s"}
 								</p>
 							</div>
 							<div className="bg-purple-100 p-3 rounded-full">
@@ -182,7 +183,7 @@ export default function DonationsPage() {
 									Average Donation
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									₹{Math.round(stats.averageDonation).toLocaleString()}
+									₹{Math.round(stats.monetary?.averageDonation || 0).toLocaleString()}
 								</p>
 							</div>
 							<div className="bg-blue-100 p-3 rounded-full">
@@ -192,14 +193,68 @@ export default function DonationsPage() {
 					</div>
 				</div>
 
+				{/* Item Donations Overview */}
+				{stats.items && stats.items.totalDonations > 0 && (
+					<div className="mt-8">
+						<div className="flex justify-between items-center mb-4">
+							<h2 className="text-xl font-bold text-gray-900">Item Donations</h2>
+							<Link
+								href="/dashboard/donations/items"
+								className="text-teal-600 hover:text-teal-700 text-sm font-medium"
+							>
+								View Detailed Analytics →
+							</Link>
+						</div>
+						<div className="bg-white rounded-xl shadow-md p-6">
+							<div className="mb-4">
+								<p className="text-sm font-medium text-gray-600">
+									Total Item Donations
+								</p>
+								<p className="text-xl font-bold text-gray-900">
+									{stats.items.totalDonations} item{stats.items.totalDonations !== 1 && "s"}
+								</p>
+							</div>
+
+							{stats.items.byType && stats.items.byType.length > 0 && (
+								<div className="mt-4">
+									<p className="text-sm font-medium text-gray-600 mb-2">
+										Donations by Type
+									</p>
+									<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+										{stats.items.byType.map((item, index) => (
+											<Link
+												href={`/dashboard/donations/items/${item.type}`}
+												key={index}
+												className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+											>
+												<p className="text-sm font-medium text-gray-800">
+													{item.type}
+												</p>
+												<div className="flex justify-between mt-1">
+													<p className="text-sm text-gray-600">
+														{item.count} donation{item.count !== 1 && "s"}
+													</p>
+													<p className="text-sm text-gray-600">
+														{item.totalQuantity} item{item.totalQuantity !== 1 && "s"}
+													</p>
+												</div>
+											</Link>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
+					</div>
+				)}
+
 				{/* Filter Tabs */}
 				<div className="border-b border-gray-200">
-					<nav className="flex space-x-8">
+					<nav className="flex flex-wrap space-x-4 md:space-x-8">
 						<button
 							onClick={() => setActiveTab("all")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "all"
-									? "border-teal-600 text-teal-600"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+								? "border-teal-600 text-teal-600"
+								: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 								}`}
 						>
 							All Donations
@@ -207,8 +262,8 @@ export default function DonationsPage() {
 						<button
 							onClick={() => setActiveTab("approved")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "approved"
-									? "border-teal-600 text-teal-600"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+								? "border-teal-600 text-teal-600"
+								: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 								}`}
 						>
 							Approved
@@ -216,12 +271,20 @@ export default function DonationsPage() {
 						<button
 							onClick={() => setActiveTab("pending")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "pending"
-									? "border-teal-600 text-teal-600"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+								? "border-teal-600 text-teal-600"
+								: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 								}`}
 						>
 							Pending
 						</button>
+						{stats.items && stats.items.totalDonations > 0 && (
+							<Link
+								href="/dashboard/donations/items"
+								className="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-teal-600 hover:border-teal-600 flex items-center"
+							>
+								<FaBoxOpen className="mr-2" /> Item Analytics
+							</Link>
+						)}
 					</nav>
 				</div>
 

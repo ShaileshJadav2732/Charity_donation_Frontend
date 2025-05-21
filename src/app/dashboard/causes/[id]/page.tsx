@@ -9,6 +9,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { LocalMall as ClothesIcon } from "@mui/icons-material";
+import AddCauseToCampaignButton from "@/components/cause/AddCauseToCampaignButton";
 
 import {
 	ArrowBack as ArrowBackIcon,
@@ -439,10 +440,20 @@ export default function CauseDetailPage({
 
 					{/* User Role Alert */}
 					{user?.role !== "donor" && (
-						<Alert severity="info" sx={{ mb: 4 }}>
-							You are logged in as an organization. Donation features are only
-							available to donors.
-						</Alert>
+						<>
+							<Alert severity="info" sx={{ mb: 2 }}>
+								You are logged in as an organization. Donation features are only
+								available to donors.
+							</Alert>
+
+							{/* Add to Campaign Button for Organizations */}
+							<Box sx={{ mb: 4 }}>
+								<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+									Make this cause visible to donors by adding it to an active campaign:
+								</Typography>
+								<AddCauseToCampaignButton causeId={id} />
+							</Box>
+						</>
 					)}
 
 					{/* Acceptance Type Alert */}
