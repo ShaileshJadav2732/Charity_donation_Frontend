@@ -160,12 +160,13 @@ export interface organizationDonation {
 	scheduledDate: string; // ISO date string (e.g., "2025-05-20T00:00:00.000Z")
 	scheduledTime?: string;
 	description?: string;
-	status: "PENDING" | "APPROVED" | "COMPLETED" | "CANCELLED";
+	status: "PENDING" | "APPROVED" | "RECEIVED" | "CONFIRMED" | "CANCELLED";
 	isPickup: boolean;
 	pickupAddress?: PickupAddress;
 	contactPhone?: string;
 	contactEmail?: string;
 	amount?: number;
+	receiptImage?: string;
 	createdAt: string; // ISO date string (e.g., "2025-05-20T00:00:00.000Z")
 }
 

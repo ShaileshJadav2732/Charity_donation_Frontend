@@ -1,6 +1,7 @@
 "use client";
 import {
 	useGetOrganizationDonationsQuery,
+	useMarkDonationAsReceivedMutation,
 	useUpdateDonationStatusMutation,
 } from "@/store/api/donationApi";
 import {
@@ -15,7 +16,8 @@ import {
 	DialogContent,
 	DialogTitle,
 } from "@mui/material";
-import React, { useState } from "react";
+import Image from "next/image";
+import React, { useRef, useState } from "react";
 import {
 	FiCheckCircle,
 	FiChevronLeft,
@@ -23,6 +25,7 @@ import {
 	FiEye,
 	FiRefreshCw,
 	FiSearch,
+	FiCamera,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 
@@ -54,6 +57,14 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 	const [updateDonationStatus, { isLoading: isUpdating }] =
 		useUpdateDonationStatusMutation();
 
+	const [markAsReceived, { isLoading: isMarkingReceived }] =
+		useMarkDonationAsReceivedMutation();
+
+	const [showPhotoUploadModal, setShowPhotoUploadModal] = useState(false);
+	const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+	const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
 	const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		setStatus(e.target.value);
 		setPage(1);
@@ -83,6 +94,145 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 					? error.message
 					: "Unknown error";
 			toast.error("Error approving donation: " + errorMessage);
+		}
+	};
+
+	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files && e.target.files[0]) {
+			const file = e.target.files[0];
+
+			// Validate file type
+			if (!file.type.startsWith("image/")) {
+				toast.error("Please select an image file (JPEG, PNG, etc.)");
+				return;
+			}
+
+			// Validate file size (max 5MB)
+			if (file.size > 5 * 1024 * 1024) {
+				toast.error("File size exceeds 5MB limit");
+				return;
+			}
+
+			console.log("Selected file:", file.name, file.type, file.size);
+			setSelectedPhoto(file);
+
+			// Create a preview URL for the selected photo
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				setPhotoPreviewUrl(reader.result as string);
+			};
+			reader.readAsDataURL(file);
+		}
+	};
+
+	const handleOpenPhotoUpload = (donationId: string) => {
+		setSelectedDonation(
+			data?.data.find(
+				(d) => d._id === donationId
+			) as unknown as organizationDonation
+		);
+		setSelectedPhoto(null);
+		setPhotoPreviewUrl(null);
+		setShowPhotoUploadModal(true);
+	};
+
+	const handleMarkAsReceived = async () => {
+		if (!selectedDonation || !selectedPhoto) {
+			toast.error("Please select a photo to upload");
+			return;
+		}
+
+		// Show loading toast
+		const loadingToast = toast.loading(
+			"Uploading photo and updating donation status..."
+		);
+
+		try {
+			console.log("Uploading photo for donation:", selectedDonation._id);
+			console.log(
+				"Photo details:",
+				selectedPhoto.name,
+				selectedPhoto.type,
+				selectedPhoto.size
+			);
+
+			await markAsReceived({
+				donationId: selectedDonation._id,
+				photo: selectedPhoto,
+			}).unwrap();
+
+			// Dismiss loading toast and show success
+			toast.dismiss(loadingToast);
+			toast.success("Donation marked as received successfully");
+			setShowPhotoUploadModal(false);
+			setSelectedPhoto(null);
+			setPhotoPreviewUrl(null);
+			refetch();
+		} catch (error: unknown) {
+			console.error("Error marking donation as received:", error);
+
+			// Dismiss loading toast
+			toast.dismiss(loadingToast);
+
+			// Extract error message with more detailed logging
+			let errorMessage = "Unknown error occurred";
+
+			console.log("Error type:", typeof error);
+			console.log("Error stringified:", JSON.stringify(error, null, 2));
+
+			if (error && typeof error === "object") {
+				// Log all properties of the error object
+				console.log("Error properties:", Object.keys(error));
+
+				// Check for RTK Query error structure
+				if ("status" in error) {
+					console.log("Error status:", (error as any).status);
+				}
+
+				if ("error" in error) {
+					console.log("Error.error:", (error as any).error);
+				}
+
+				if ("data" in error) {
+					console.log("Error.data:", (error as any).data);
+				}
+
+				if ("message" in error) {
+					console.log("Error.message:", (error as any).message);
+				}
+
+				// Try to extract message from various error formats
+				if (
+					"data" in error &&
+					error.data &&
+					typeof error.data === "object" &&
+					"message" in error.data
+				) {
+					errorMessage = error.data.message;
+				} else if (
+					"message" in error &&
+					typeof (error as any).message === "string"
+				) {
+					errorMessage = (error as any).message;
+				} else if (
+					"error" in error &&
+					typeof (error as any).error === "string"
+				) {
+					errorMessage = (error as any).error;
+				} else if (
+					"status" in error &&
+					typeof (error as any).status === "number"
+				) {
+					errorMessage = `Server error (${(error as any).status})`;
+				}
+			} else if (error instanceof Error) {
+				errorMessage = error.message;
+			}
+
+			// Show error toast with more details
+			toast.error(
+				`Error marking donation as received: ${errorMessage}. Check console for details.`
+			);
 		}
 	};
 
@@ -123,7 +273,8 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 						>
 							<option value="PENDING">Pending</option>
 							<option value="APPROVED">Approved</option>
-							<option value="COMPLETED">Completed</option>
+							<option value="RECEIVED">Received</option>
+							<option value="CONFIRMED">Confirmed</option>
 							<option value="CANCELLED">Cancelled</option>
 							<option value="">All Status</option>
 						</select>
@@ -211,8 +362,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							? "You don't have any pending donations."
 							: status === "APPROVED"
 							? "You don't have any approved donations."
-							: status === "COMPLETED"
+							: status === "RECEIVED"
 							? "You don't have any completed donations."
+							: status === "CONFIRMED"
+							? "You don't have any confirmed donations."
 							: status === "CANCELLED"
 							? "You don't have any cancelled donations."
 							: "You haven't received any donations yet."}
@@ -321,13 +474,17 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<span
-													className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full 
+													className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full
                             ${
 															donation.status === "PENDING"
 																? "bg-yellow-100 text-yellow-800"
 																: donation.status === "APPROVED"
 																? "bg-blue-100 text-blue-800"
-																: donation.status === "COMPLETED"
+																: donation.status === "RECEIVED"
+																? "bg-green-100 text-green-800"
+																: donation.status === "CONFIRMED"
+																? "bg-purple-100 text-purple-800"
+																: donation.status === "CANCELLED"
 																? "bg-green-100 text-green-800"
 																: "bg-red-100 text-red-800"
 														}`}
@@ -371,6 +528,23 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 															<FiCheckCircle
 																className={`h-5 w-5 ${
 																	isUpdating ? "animate-spin" : ""
+																}`}
+															/>
+														</button>
+													)}
+													{(donation.status === "PENDING" ||
+														donation.status === "APPROVED") && (
+														<button
+															className="text-orange-600 hover:text-orange-900 transition-colors"
+															title="Mark as Received with Photo"
+															onClick={() =>
+																handleOpenPhotoUpload(donation._id)
+															}
+															disabled={isMarkingReceived}
+														>
+															<FiCamera
+																className={`h-5 w-5 ${
+																	isMarkingReceived ? "animate-spin" : ""
 																}`}
 															/>
 														</button>
@@ -452,7 +626,11 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 												? "bg-yellow-100 text-yellow-800"
 												: selectedDonation.status === "APPROVED"
 												? "bg-blue-100 text-blue-800"
-												: selectedDonation.status === "COMPLETED"
+												: selectedDonation.status === "RECEIVED"
+												? "bg-green-100 text-green-800"
+												: selectedDonation.status === "CONFIRMED"
+												? "bg-purple-100 text-purple-800"
+												: selectedDonation.status === "CANCELLED"
 												? "bg-green-100 text-green-800"
 												: "bg-red-100 text-red-800"
 										}`}
@@ -504,6 +682,119 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-4 py-2 transition-colors"
 						>
 							Close
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
+			{/* Photo Upload Modal */}
+			{showPhotoUploadModal && selectedDonation && (
+				<Dialog
+					open={showPhotoUploadModal}
+					onClose={() => {
+						setShowPhotoUploadModal(false);
+						setSelectedPhoto(null);
+						setPhotoPreviewUrl(null);
+					}}
+					maxWidth="sm"
+					fullWidth
+					sx={{
+						"& .MuiDialog-paper": {
+							borderRadius: "12px",
+							boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+						},
+					}}
+				>
+					<DialogTitle className="text-2xl font-bold text-gray-900 border-b border-gray-200">
+						Mark Donation as Received
+					</DialogTitle>
+					<DialogContent className="p-6 bg-white">
+						<div className="space-y-4">
+							<p className="text-sm text-gray-700 mb-4">
+								Upload a photo of the received donation to confirm receipt and
+								notify the donor.
+							</p>
+
+							<div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+								{photoPreviewUrl ? (
+									<div className="mb-4 relative h-64 w-full max-w-md mx-auto">
+										<Image
+											src={photoPreviewUrl}
+											alt="Donation preview"
+											className="rounded-lg shadow-sm object-contain"
+											fill
+											sizes="(max-width: 768px) 100vw, 400px"
+										/>
+									</div>
+								) : (
+									<div className="text-center mb-4">
+										<FiCamera className="mx-auto h-12 w-12 text-gray-400" />
+										<p className="mt-1 text-sm text-gray-500">
+											No photo selected
+										</p>
+									</div>
+								)}
+
+								<input
+									type="file"
+									accept="image/*"
+									onChange={handlePhotoChange}
+									ref={fileInputRef}
+									className="hidden"
+									id="photo-upload"
+								/>
+
+								<label
+									htmlFor="photo-upload"
+									className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-4 py-2 transition-colors"
+								>
+									{photoPreviewUrl ? "Change Photo" : "Select Photo"}
+								</label>
+							</div>
+
+							<div className="mt-4">
+								<p className="text-sm text-gray-700">
+									<strong className="font-medium text-gray-900">Donor:</strong>{" "}
+									{selectedDonation.donor?.name || "Anonymous"}
+								</p>
+								<p className="text-sm text-gray-700">
+									<strong className="font-medium text-gray-900">
+										Donation Type:
+									</strong>{" "}
+									{selectedDonation.type === "MONEY"
+										? `Money ($${
+												selectedDonation.amount?.toFixed(2) || "0.00"
+										  })`
+										: `${selectedDonation.type} (${selectedDonation.quantity} ${
+												selectedDonation.unit || ""
+										  })`}
+								</p>
+							</div>
+						</div>
+					</DialogContent>
+					<DialogActions className="p-6 border-t border-gray-200">
+						<Button
+							onClick={() => {
+								setShowPhotoUploadModal(false);
+								setSelectedPhoto(null);
+								setPhotoPreviewUrl(null);
+							}}
+							variant="outlined"
+							className="border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg px-4 py-2 transition-colors"
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleMarkAsReceived}
+							variant="contained"
+							disabled={!selectedPhoto || isMarkingReceived}
+							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${
+								!selectedPhoto || isMarkingReceived
+									? "opacity-50 cursor-not-allowed"
+									: ""
+							}`}
+						>
+							{isMarkingReceived ? "Processing..." : "Mark as Received"}
 						</Button>
 					</DialogActions>
 				</Dialog>

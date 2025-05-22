@@ -121,6 +121,56 @@ export const donationApi = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Donations"], // Invalidate cache to refresh donation list
 		}),
+
+		// Mark donation as received with photo upload
+		markDonationAsReceived: builder.mutation<
+			UpdateDonationStatusResponse,
+			{ donationId: string; photo: File }
+		>({
+			query: ({ donationId, photo }) => {
+				// Create a new FormData instance
+				const formData = new FormData();
+
+				// Append the photo with the correct field name
+				formData.set("photo", photo);
+
+				console.log("Sending photo:", photo.name, photo.type, photo.size);
+
+				return {
+					url: `/donations/${donationId}/received`,
+					method: "PATCH",
+					// Don't set Content-Type header, let the browser set it with the boundary
+					headers: {
+						// Remove Content-Type to let browser set it with boundary
+					},
+					body: formData,
+					formData: true,
+				};
+			},
+			// Add transformErrorResponse to better handle errors
+			transformErrorResponse: (response: { status: number; data: any }) => {
+				console.log("Error response from API:", response);
+				// Return a more structured error object
+				return {
+					status: response.status,
+					message: response.data?.message || "Unknown error occurred",
+					data: response.data || {},
+				};
+			},
+			invalidatesTags: ["Donations"],
+		}),
+
+		// Confirm donation receipt by donor
+		confirmDonationReceipt: builder.mutation<
+			UpdateDonationStatusResponse,
+			{ donationId: string }
+		>({
+			query: ({ donationId }) => ({
+				url: `/donations/${donationId}/confirm`,
+				method: "PATCH",
+			}),
+			invalidatesTags: ["Donations"],
+		}),
 	}),
 	overrideExisting: true,
 });
@@ -136,4 +186,6 @@ export const {
 	useGetItemDonationTypeAnalyticsQuery,
 	useFindOrganizationPendingDonationsQuery,
 	useUpdateDonationStatusMutation,
+	useMarkDonationAsReceivedMutation,
+	useConfirmDonationReceiptMutation,
 } = donationApi;

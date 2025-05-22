@@ -13,8 +13,14 @@ import {
 	useGetDonorStatsQuery,
 	useGetDonorDonationsQuery,
 } from "@/store/api/donationApi";
-import { Donation, DonationStats, DonationResponse, DonationType } from "@/types/donation";
+import {
+	Donation,
+	DonationStats,
+	DonationResponse,
+	DonationType,
+} from "@/types/donation";
 import Link from "next/link";
+import DonationConfirmation from "@/components/donorDashboard/DonationConfirmation";
 
 export default function DonationsPage() {
 	const [activeTab, setActiveTab] = useState<"all" | "approved" | "pending">(
@@ -32,13 +38,14 @@ export default function DonationsPage() {
 		data: donationsData,
 		isLoading: isDonationsLoading,
 		isError: isDonationsError,
+		refetch,
 	} = useGetDonorDonationsQuery({
 		status:
 			activeTab === "all"
 				? undefined
 				: activeTab === "approved"
-					? "APPROVED"
-					: "PENDING",
+				? "APPROVED"
+				: "PENDING",
 		page,
 		limit,
 	});
@@ -65,6 +72,11 @@ export default function DonationsPage() {
 	const donations = donationsData.data as Donation[];
 	const pagination = donationsData.pagination;
 
+	const handleDonationConfirmed = () => {
+		// Refetch donations after confirmation
+		refetch();
+	};
+
 	const DonationCard = ({ donation }: { donation: Donation }) => (
 		<div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
 			<div className="flex justify-between items-start mb-4">
@@ -84,22 +96,35 @@ export default function DonationsPage() {
 				</div>
 				<div className="flex flex-col items-end gap-2">
 					<span
-						className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${donation.status === "CONFIRMED"
-							? "bg-green-100 text-green-800"
-							: donation.status === "PENDING"
+						className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+							donation.status === "CONFIRMED"
+								? "bg-green-100 text-green-800"
+								: donation.status === "PENDING"
 								? "bg-yellow-100 text-yellow-800"
+								: donation.status === "RECEIVED"
+								? "bg-blue-100 text-blue-800"
+								: donation.status === "APPROVED"
+								? "bg-purple-100 text-purple-800"
 								: "bg-red-100 text-red-800"
-							}`}
+						}`}
 					>
 						{donation.status.charAt(0).toUpperCase() +
 							donation.status.slice(1).toLowerCase()}
 					</span>
-					<Link
-						href={`/dashboard/donations/status/${donation._id}`}
-						className="text-sm text-primary hover:text-primary-dark"
-					>
-						Update Status
-					</Link>
+
+					{donation.status === "RECEIVED" && donation.receiptImage ? (
+						<DonationConfirmation
+							donation={donation}
+							onConfirmed={handleDonationConfirmed}
+						/>
+					) : (
+						<Link
+							href={`/dashboard/donations/status/${donation._id}`}
+							className="text-sm text-primary hover:text-primary-dark"
+						>
+							Update Status
+						</Link>
+					)}
 				</div>
 			</div>
 
@@ -120,14 +145,36 @@ export default function DonationsPage() {
 				</div>
 			</div>
 
+			{donation.status === "RECEIVED" && donation.receiptImage && (
+				<div className="flex items-center justify-between pt-4 border-t">
+					<p className="text-sm text-gray-600">
+						Please confirm this donation receipt
+					</p>
+					<a
+						href={`${
+							process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+						}${donation.receiptImage}`}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center text-sm text-teal-600 hover:text-teal-700"
+					>
+						View Receipt Photo
+					</a>
+				</div>
+			)}
+
 			{donation.status === "CONFIRMED" && donation.receiptImage && (
 				<div className="flex items-center justify-end pt-4 border-t">
 					<a
-						href={donation.receiptImage}
+						href={`${
+							process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+						}${donation.receiptImage}`}
+						target="_blank"
+						rel="noopener noreferrer"
 						className="inline-flex items-center text-sm text-teal-600 hover:text-teal-700"
 					>
 						<FaDownload className="h-4 w-4 mr-2" />
-						Download Receipt
+						View Receipt
 					</a>
 				</div>
 			)}
@@ -151,7 +198,7 @@ export default function DonationsPage() {
 									Total Donated
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									₹{stats.monetary?.totalDonated?.toLocaleString() || '0'}
+									₹{stats.monetary?.totalDonated?.toLocaleString() || "0"}
 								</p>
 							</div>
 							<div className="bg-teal-100 p-3 rounded-full">
@@ -167,7 +214,8 @@ export default function DonationsPage() {
 									Total Impact
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									{stats.totalCauses || 0} cause{(stats.totalCauses || 0) !== 1 && "s"}
+									{stats.totalCauses || 0} cause
+									{(stats.totalCauses || 0) !== 1 && "s"}
 								</p>
 							</div>
 							<div className="bg-purple-100 p-3 rounded-full">
@@ -183,7 +231,10 @@ export default function DonationsPage() {
 									Average Donation
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									₹{Math.round(stats.monetary?.averageDonation || 0).toLocaleString()}
+									₹
+									{Math.round(
+										stats.monetary?.averageDonation || 0
+									).toLocaleString()}
 								</p>
 							</div>
 							<div className="bg-blue-100 p-3 rounded-full">
@@ -197,7 +248,9 @@ export default function DonationsPage() {
 				{stats.items && stats.items.totalDonations > 0 && (
 					<div className="mt-8">
 						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-xl font-bold text-gray-900">Item Donations</h2>
+							<h2 className="text-xl font-bold text-gray-900">
+								Item Donations
+							</h2>
 							<Link
 								href="/dashboard/donations/items"
 								className="text-teal-600 hover:text-teal-700 text-sm font-medium"
@@ -211,7 +264,8 @@ export default function DonationsPage() {
 									Total Item Donations
 								</p>
 								<p className="text-xl font-bold text-gray-900">
-									{stats.items.totalDonations} item{stats.items.totalDonations !== 1 && "s"}
+									{stats.items.totalDonations} item
+									{stats.items.totalDonations !== 1 && "s"}
 								</p>
 							</div>
 
@@ -235,7 +289,8 @@ export default function DonationsPage() {
 														{item.count} donation{item.count !== 1 && "s"}
 													</p>
 													<p className="text-sm text-gray-600">
-														{item.totalQuantity} item{item.totalQuantity !== 1 && "s"}
+														{item.totalQuantity} item
+														{item.totalQuantity !== 1 && "s"}
 													</p>
 												</div>
 											</Link>
@@ -252,28 +307,31 @@ export default function DonationsPage() {
 					<nav className="flex flex-wrap space-x-4 md:space-x-8">
 						<button
 							onClick={() => setActiveTab("all")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "all"
-								? "border-teal-600 text-teal-600"
-								: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-								}`}
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "all"
+									? "border-teal-600 text-teal-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
 						>
 							All Donations
 						</button>
 						<button
 							onClick={() => setActiveTab("approved")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "approved"
-								? "border-teal-600 text-teal-600"
-								: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-								}`}
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "approved"
+									? "border-teal-600 text-teal-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
 						>
 							Approved
 						</button>
 						<button
 							onClick={() => setActiveTab("pending")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "pending"
-								? "border-teal-600 text-teal-600"
-								: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-								}`}
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "pending"
+									? "border-teal-600 text-teal-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
 						>
 							Pending
 						</button>
