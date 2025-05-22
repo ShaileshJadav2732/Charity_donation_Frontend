@@ -160,7 +160,7 @@ export default function EditProfileForm({
 										<div className="space-y-2">
 											<label
 												htmlFor="firstName"
-												className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+												className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 											>
 												<FiUser className="w-4 h-4" />
 												<span>First Name</span>
@@ -178,7 +178,7 @@ export default function EditProfileForm({
 										<div className="space-y-2">
 											<label
 												htmlFor="lastName"
-												className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+												className="text-sm font-medium text-gray-700 items-center space-x-2"
 											>
 												<FiUser className="w-4 h-4" />
 												<span>Last Name</span>
@@ -197,7 +197,7 @@ export default function EditProfileForm({
 									<div className="space-y-2">
 										<label
 											htmlFor="bio"
-											className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+											className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 										>
 											<FiEdit2 className="w-4 h-4" />
 											<span>Bio</span>
@@ -218,7 +218,7 @@ export default function EditProfileForm({
 									<div className="space-y-2">
 										<label
 											htmlFor="name"
-											className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+											className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 										>
 											<FiUser className="w-4 h-4" />
 											<span>Organization Name</span>
@@ -236,7 +236,7 @@ export default function EditProfileForm({
 									<div className="space-y-2">
 										<label
 											htmlFor="description"
-											className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+											className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 										>
 											<FiEdit2 className="w-4 h-4" />
 											<span>Description</span>
@@ -258,7 +258,7 @@ export default function EditProfileForm({
 							<div className="space-y-2">
 								<label
 									htmlFor="phoneNumber"
-									className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+									className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 								>
 									<FiPhone className="w-4 h-4" />
 									<span>Phone Number</span>
@@ -277,7 +277,7 @@ export default function EditProfileForm({
 							<div className="space-y-2">
 								<label
 									htmlFor="address"
-									className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+									className=" text-sm font-medium text-gray-700 flex items-center space-x-2"
 								>
 									<FiMapPin className="w-4 h-4" />
 									<span>Address</span>
@@ -297,7 +297,7 @@ export default function EditProfileForm({
 								<div className="space-y-2">
 									<label
 										htmlFor="city"
-										className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+										className=" text-sm font-medium text-gray-700 flex items-center space-x-2"
 									>
 										<FiMapPin className="w-4 h-4" />
 										<span>City</span>
@@ -315,7 +315,7 @@ export default function EditProfileForm({
 								<div className="space-y-2">
 									<label
 										htmlFor="state"
-										className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+										className=" text-sm font-medium text-gray-700 flex items-center space-x-2"
 									>
 										<FiMapPin className="w-4 h-4" />
 										<span>State</span>
@@ -333,7 +333,7 @@ export default function EditProfileForm({
 								<div className="space-y-2">
 									<label
 										htmlFor="country"
-										className="block text-sm font-medium text-gray-700 flex items-center space-x-2"
+										className=" text-sm font-medium text-gray-700 items-center space-x-2"
 									>
 										<FiGlobe className="w-4 h-4" />
 										<span>Country</span>
