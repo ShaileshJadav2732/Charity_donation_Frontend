@@ -86,41 +86,6 @@ export const feedbackApi = createApi({
 			providesTags: ["Feedback"],
 		}),
 
-		// Get a feedback by ID
-		getFeedbackById: builder.query<FeedbackResponse, string>({
-			query: (id) => ({
-				url: `/feedbacks/${id}`,
-				method: "GET",
-			}),
-			providesTags: (result, error, id) => [{ type: "Feedback", id }],
-		}),
-
-		// Get feedbacks for an organization
-		getOrganizationFeedbacks: builder.query<
-			FeedbacksResponse,
-			FeedbackQueryParams & { organizationId: string }
-		>({
-			query: ({ organizationId, ...params }) => ({
-				url: `/organizations/${organizationId}/feedbacks`,
-				method: "GET",
-				params,
-			}),
-			providesTags: ["Feedback"],
-		}),
-
-		// Get feedbacks for a campaign
-		getCampaignFeedbacks: builder.query<
-			FeedbacksResponse,
-			FeedbackQueryParams & { campaignId: string }
-		>({
-			query: ({ campaignId, ...params }) => ({
-				url: `/campaigns/${campaignId}/feedbacks`,
-				method: "GET",
-				params,
-			}),
-			providesTags: ["Feedback"],
-		}),
-
 		// Create a new feedback
 		createFeedback: builder.mutation<FeedbackResponse, CreateFeedbackBody>({
 			query: (body) => ({
@@ -130,38 +95,8 @@ export const feedbackApi = createApi({
 			}),
 			invalidatesTags: ["Feedback"],
 		}),
-
-		// Update a feedback
-		updateFeedback: builder.mutation<
-			FeedbackResponse,
-			{ id: string; body: UpdateFeedbackBody }
-		>({
-			query: ({ id, body }) => ({
-				url: `/feedbacks/${id}`,
-				method: "PATCH",
-				body,
-			}),
-			invalidatesTags: (result, error, { id }) => [{ type: "Feedback", id }],
-		}),
-
-		// Delete a feedback
-		deleteFeedback: builder.mutation<void, string>({
-			query: (id) => ({
-				url: `/feedbacks/${id}`,
-				method: "DELETE",
-			}),
-			invalidatesTags: ["Feedback"],
-		}),
 	}),
 });
 
 // Export hooks
-export const {
-	useGetFeedbacksQuery,
-	useGetFeedbackByIdQuery,
-	useGetOrganizationFeedbacksQuery,
-	useGetCampaignFeedbacksQuery,
-	useCreateFeedbackMutation,
-	useUpdateFeedbackMutation,
-	useDeleteFeedbackMutation,
-} = feedbackApi;
+export const { useGetFeedbacksQuery, useCreateFeedbackMutation } = feedbackApi;

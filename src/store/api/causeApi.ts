@@ -10,18 +10,13 @@ import {
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-	baseUrl: process.env.NEXT_PUBLIC_API_URL || "/api",
-	// Add credentials to ensure cookies are sent with requests
-	credentials: 'include',
+	baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+	credentials: "include",
 	prepareHeaders: (headers, { getState }) => {
-		// Get the token from the auth state
 		const token = (getState() as RootState).auth.token;
-
-		// If we have a token, set the authorization header
 		if (token) {
 			headers.set("authorization", `Bearer ${token}`);
 		}
-
 		return headers;
 	},
 });
@@ -106,35 +101,6 @@ export const causeApi = createApi({
 		}),
 
 		// Get causes for a specific campaign
-		getCampaignCauses: builder.query<
-			CausesResponse,
-			CauseQueryParams & { campaignId: string }
-		>({
-			query: ({ campaignId, ...params }) => ({
-				url: `/campaigns/${campaignId}/causes`,
-				method: "GET",
-				params,
-			}),
-			providesTags: (_result, _error, { campaignId }) => [
-				{ type: "Cause", id: campaignId },
-				{ type: "Campaign", id: campaignId },
-			],
-		}),
-
-		// Make a donation to a cause
-		makeDonation: builder.mutation<
-			CauseResponse,
-			{ causeId: string; type: string; amount?: number }
-		>({
-			query: ({ causeId, type, amount }) => ({
-				url: `/causes/${causeId}/donate`,
-				method: "POST",
-				body: { type, amount },
-			}),
-			invalidatesTags: (_result, _error, { causeId }) => [
-				{ type: "Cause", id: causeId },
-			],
-		}),
 	}),
 });
 
@@ -146,6 +112,4 @@ export const {
 	useCreateCauseMutation,
 	useUpdateCauseMutation,
 	useDeleteCauseMutation,
-	useGetCampaignCausesQuery,
-	useMakeDonationMutation,
 } = causeApi;

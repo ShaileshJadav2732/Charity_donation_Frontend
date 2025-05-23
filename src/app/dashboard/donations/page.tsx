@@ -1,26 +1,20 @@
 "use client";
 
+import {
+	useGetDonorDonationsQuery,
+	useGetDonorStatsQuery,
+} from "@/store/api/donationApi";
+import { Donation, DonationStats } from "@/types/donation";
+import Link from "next/link";
 import { useState } from "react";
 import {
+	FaBoxOpen,
 	FaCalendarAlt,
 	FaChartLine,
-	FaDownload,
 	FaHandHoldingHeart,
 	FaHeart,
-	FaBoxOpen,
 } from "react-icons/fa";
-import {
-	useGetDonorStatsQuery,
-	useGetDonorDonationsQuery,
-} from "@/store/api/donationApi";
-import {
-	Donation,
-	DonationStats,
-	DonationResponse,
-	DonationType,
-} from "@/types/donation";
-import Link from "next/link";
-import DonationConfirmation from "@/components/donorDashboard/DonationConfirmation";
+import { StatusReceiptDisplay } from "@/components/ui/ReceiptDownload";
 
 export default function DonationsPage() {
 	const [activeTab, setActiveTab] = useState<"all" | "approved" | "pending">(
@@ -38,7 +32,6 @@ export default function DonationsPage() {
 		data: donationsData,
 		isLoading: isDonationsLoading,
 		isError: isDonationsError,
-		refetch,
 	} = useGetDonorDonationsQuery({
 		status:
 			activeTab === "all"
@@ -71,11 +64,6 @@ export default function DonationsPage() {
 	const stats = statsData.data as DonationStats;
 	const donations = donationsData.data as Donation[];
 	const pagination = donationsData.pagination;
-
-	const handleDonationConfirmed = () => {
-		// Refetch donations after confirmation
-		refetch();
-	};
 
 	const DonationCard = ({ donation }: { donation: Donation }) => (
 		<div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -112,19 +100,12 @@ export default function DonationsPage() {
 							donation.status.slice(1).toLowerCase()}
 					</span>
 
-					{donation.status === "RECEIVED" && donation.receiptImage ? (
-						<DonationConfirmation
-							donation={donation}
-							onConfirmed={handleDonationConfirmed}
-						/>
-					) : (
-						<Link
-							href={`/dashboard/donations/status/${donation._id}`}
-							className="text-sm text-primary hover:text-primary-dark"
-						>
-							Update Status
-						</Link>
-					)}
+					<Link
+						href={`/dashboard/donations/status/${donation._id}`}
+						className="text-sm text-primary hover:text-primary-dark"
+					>
+						View Details
+					</Link>
 				</div>
 			</div>
 
@@ -145,39 +126,7 @@ export default function DonationsPage() {
 				</div>
 			</div>
 
-			{donation.status === "RECEIVED" && donation.receiptImage && (
-				<div className="flex items-center justify-between pt-4 border-t">
-					<p className="text-sm text-gray-600">
-						Please confirm this donation receipt
-					</p>
-					<a
-						href={`${
-							process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-						}${donation.receiptImage}`}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center text-sm text-teal-600 hover:text-teal-700"
-					>
-						View Receipt Photo
-					</a>
-				</div>
-			)}
-
-			{donation.status === "CONFIRMED" && donation.receiptImage && (
-				<div className="flex items-center justify-end pt-4 border-t">
-					<a
-						href={`${
-							process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-						}${donation.receiptImage}`}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center text-sm text-teal-600 hover:text-teal-700"
-					>
-						<FaDownload className="h-4 w-4 mr-2" />
-						View Receipt
-					</a>
-				</div>
-			)}
+			<StatusReceiptDisplay donation={donation} />
 		</div>
 	);
 

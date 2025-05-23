@@ -113,17 +113,6 @@ const authSlice = createSlice({
 				}
 			}
 		);
-
-		// Handle get current user success
-		builder.addMatcher(
-			authApi.endpoints.getCurrentUser.matchFulfilled,
-			(state, { payload }) => {
-				state.user = payload.user;
-				state.isAuthenticated = true;
-				state.isLoading = false;
-				state.error = null;
-			}
-		);
 	},
 });
 

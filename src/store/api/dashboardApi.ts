@@ -97,40 +97,9 @@ export const dashboardApi = createApi({
 				response.data.organizationStats!,
 			providesTags: ["Dashboard"],
 		}),
-
-		// Get recent donations
-		getRecentDonations: builder.query<Donation[], void>({
-			query: () => ({
-				url: "/dashboard/recent-donations",
-				method: "GET",
-			}),
-			transformResponse: (response: DashboardResponse) =>
-				response.data.recentDonations,
-			providesTags: ["Dashboard"],
-		}),
-
-		// Get donation analytics
-		getDonationAnalytics: builder.query<
-			{
-				monthlyDonations: { month: string; amount: number }[];
-				categoryDistribution: { category: string; amount: number }[];
-			},
-			void
-		>({
-			query: () => ({
-				url: "/dashboard/analytics",
-				method: "GET",
-			}),
-			transformResponse: (response: AnalyticsResponse) => response.data,
-			providesTags: ["Dashboard"],
-		}),
 	}),
 });
 
 // Export hooks
-export const {
-	useGetDonorStatsQuery,
-	useGetOrganizationStatsQuery,
-	useGetRecentDonationsQuery,
-	useGetDonationAnalyticsQuery,
-} = dashboardApi;
+export const { useGetDonorStatsQuery, useGetOrganizationStatsQuery } =
+	dashboardApi;

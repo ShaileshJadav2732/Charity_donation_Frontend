@@ -7,6 +7,7 @@ import { FiUser, FiPhone, FiMapPin, FiInfo } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useCompleteDonorProfileMutation } from "@/store/api/profileApi";
 import { parseError } from "@/types";
+import ProfileImageUpload from "./ProfileImageUpload";
 
 export default function DonorProfileForm() {
 	const router = useRouter();
@@ -20,6 +21,7 @@ export default function DonorProfileForm() {
 		city: "",
 		state: "",
 		country: "",
+		profileImage: "",
 		bio: "",
 	});
 	const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -41,6 +43,10 @@ export default function DonorProfileForm() {
 		const { name, value } = e.target;
 		setFormData((prev) => ({ ...prev, [name]: value }));
 		setErrors((prev) => ({ ...prev, [name]: "" }));
+	};
+
+	const handleImageUpdate = (imageUrl: string) => {
+		setFormData((prev) => ({ ...prev, profileImage: imageUrl }));
 	};
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -77,6 +83,14 @@ export default function DonorProfileForm() {
 			animate={{ opacity: 1 }}
 			transition={{ duration: 0.3 }}
 		>
+			{/* Profile Image Upload */}
+			<div className="flex justify-center">
+				<ProfileImageUpload
+					currentImage={formData.profileImage}
+					onImageUpdate={handleImageUpdate}
+				/>
+			</div>
+
 			{/* First Name */}
 			<div>
 				<label
@@ -96,8 +110,9 @@ export default function DonorProfileForm() {
 						value={formData.firstName}
 						onChange={handleChange}
 						required
-						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${errors.firstName ? "border-red-300" : "border-gray-200"
-							} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${
+							errors.firstName ? "border-red-300" : "border-gray-200"
+						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
 						placeholder="John"
 						autoComplete="given-name"
 					/>
@@ -126,8 +141,9 @@ export default function DonorProfileForm() {
 						value={formData.lastName}
 						onChange={handleChange}
 						required
-						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${errors.lastName ? "border-red-300" : "border-gray-200"
-							} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${
+							errors.lastName ? "border-red-300" : "border-gray-200"
+						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
 						placeholder="Doe"
 						autoComplete="family-name"
 					/>
@@ -155,8 +171,9 @@ export default function DonorProfileForm() {
 						type="tel"
 						value={formData.phoneNumber}
 						onChange={handleChange}
-						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${errors.phoneNumber ? "border-red-300" : "border-gray-200"
-							} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+						className={`appearance-none block w-full pl-10 pr-3 py-3 rounded-lg border ${
+							errors.phoneNumber ? "border-red-300" : "border-gray-200"
+						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
 						placeholder="+1 (123) 456-7890"
 						autoComplete="tel"
 					/>

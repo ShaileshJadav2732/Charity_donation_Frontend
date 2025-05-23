@@ -80,7 +80,6 @@ export default function DashboardLayout({
 
 	const menuItems = [
 		{ icon: FaHome, text: "Home", path: "/dashboard/home" },
-		{ icon: FaUser, text: "Profile", path: "/dashboard/profile" },
 		...(user?.role === "donor"
 			? [
 					{
@@ -133,12 +132,12 @@ export default function DashboardLayout({
 			<div className="min-h-screen bg-gradient-to-br from-teal-100 via-teal-50 to-teal-200">
 				{/* Top Navigation Bar */}
 				<div
-					className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-80 transition-all duration-300 ${
+					className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
 						scrolled ? "shadow-lg" : ""
 					}`}
 				>
-					{/* GreenGive logo/text on mobile */}
-					<div className="lg:hidden flex items-center">
+					{/* GreenGive logo/text - always visible */}
+					<div className="flex items-center">
 						<span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-green-600 bg-clip-text text-transparent">
 							GreenGive
 						</span>
@@ -147,6 +146,19 @@ export default function DashboardLayout({
 					<div className="flex-1" />
 
 					<div className="flex items-center space-x-4">
+						{/* Profile Button */}
+						<Link
+							href="/dashboard/profile"
+							className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
+							title="Profile"
+						>
+							<FaUser className="h-6 w-6 text-teal-600" />
+							<span className="hidden md:block text-sm font-medium text-gray-700">
+								Profile
+							</span>
+						</Link>
+
+						{/* Notification Button */}
 						<button
 							onClick={toggleNotifications}
 							className="relative p-2 rounded-full hover:bg-gray-100"
@@ -196,9 +208,7 @@ export default function DashboardLayout({
 					<div className="h-full flex flex-col">
 						{/* Sidebar header */}
 						<div className="px-6 py-8 border-b border-gray-200">
-							<h2 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-green-600 bg-clip-text text-transparent">
-								GreenGive
-							</h2>
+							<h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
 							<p className="mt-2 text-sm text-gray-600">
 								{user?.role === "donor"
 									? "Donor Dashboard"

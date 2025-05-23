@@ -179,7 +179,12 @@ export default function ProfileDashboard() {
 						<div className="absolute -bottom-16 left-8">
 							<div className="h-32 w-32 rounded-full border-4 border-white overflow-hidden bg-white">
 								<Image
-									src={profile.avatar || "/placeholder-avatar.png"}
+									src={
+										(isDonor && donorProfile?.profileImage) ||
+										orgProfile?.logo ||
+										profile.avatar ||
+										"/shailesh.jpg"
+									}
 									alt="Profile"
 									className="h-full w-full object-cover"
 									width={128}

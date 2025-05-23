@@ -34,14 +34,11 @@ export const apiSlice = createApi({
 		"Organizations",
 		"AdminStats",
 		"Donations",
+		"Campaign",
+		"Cause",
+		"Profile",
 	],
 	endpoints: () => ({}),
 });
-
-// Log the API URL for debugging
-console.log(
-	"API URL:",
-	process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
-);
 
 export default apiSlice;

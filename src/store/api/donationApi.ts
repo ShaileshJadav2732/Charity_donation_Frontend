@@ -1,7 +1,7 @@
 import {
 	ApiResponse,
+	Donation,
 	DonationFormData,
-	DonationQueryParams,
 	DonationResponse,
 	DonorDonationsResponse,
 	UpdateDonationStatusRequest,
@@ -18,16 +18,14 @@ export const donationApi = apiSlice.injectEndpoints({
 				body: data,
 			}),
 		}),
-		getDonations: builder.query<DonationFormData[], void>({
-			query: () => "/donations",
-		}),
-		getDonationById: builder.query<DonationFormData, string>({
+		getDonationById: builder.query<Donation, string>({
 			query: (id) => `/donations/${id}`,
 		}),
+
 		// Get donations for a specific organization
 		getOrganizationDonations: builder.query<
 			DonationResponse,
-			{ organizationId: string; params?: Record<string, any> }
+			{ organizationId: string; params?: Record<string, unknown> }
 		>({
 			query: ({ organizationId, params }) => ({
 				url: `/donations/organization/${organizationId}`,
@@ -50,64 +48,17 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "GET",
 			}),
 		}),
-		getItemDonationAnalytics: builder.query<ApiResponse<any>, void>({
+		getItemDonationAnalytics: builder.query<ApiResponse<unknown>, void>({
 			query: () => ({
 				url: "/donations/items/analytics",
 				method: "GET",
 			}),
-			transformResponse: (response: ApiResponse<any>) => {
-				console.log("Item donation analytics response:", response);
-				return response;
-			},
-			transformErrorResponse: (error) => {
-				console.error("Error fetching item donation analytics:", error);
-				return error;
-			},
 		}),
-		getItemDonationTypeAnalytics: builder.query<ApiResponse<any>, string>({
+		getItemDonationTypeAnalytics: builder.query<ApiResponse<unknown>, string>({
 			query: (type) => ({
 				url: `/donations/items/${type}/analytics`,
 				method: "GET",
 			}),
-			transformResponse: (response: ApiResponse<any>) => {
-				console.log(
-					`Item donation analytics for type ${response.data?.type}:`,
-					response
-				);
-				return response;
-			},
-			transformErrorResponse: (error, meta) => {
-				console.error(
-					`Error fetching item donation analytics for type ${meta?.arg}:`,
-					error
-				);
-				return error;
-			},
-		}),
-
-		findOrganizationPendingDonations: builder.query<
-			DonationResponse,
-			DonationQueryParams
-		>({
-			query: ({
-				organizationId,
-				status = "PENDING",
-				page = 1,
-				limit = 10,
-			}) => ({
-				url: `/donations/organization/${organizationId}`,
-				params: { status, page, limit },
-			}),
-			providesTags: (result) =>
-				result
-					? [
-							...result.data.map(({ _id }) => ({
-								type: "Donations" as const,
-								id: _id,
-							})),
-							{ type: "Donations", id: "LIST" },
-					  ]
-					: [{ type: "Donations", id: "LIST" }],
 		}),
 
 		updateDonationStatus: builder.mutation<
@@ -119,7 +70,7 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "PATCH",
 				body: { status },
 			}),
-			invalidatesTags: ["Donations"], // Invalidate cache to refresh donation list
+			invalidatesTags: ["Donations"],
 		}),
 
 		// Mark donation as received with photo upload
@@ -127,35 +78,46 @@ export const donationApi = apiSlice.injectEndpoints({
 			UpdateDonationStatusResponse,
 			{ donationId: string; photo: File }
 		>({
-			query: ({ donationId, photo }) => {
-				// Create a new FormData instance
-				const formData = new FormData();
+			queryFn: async ({ donationId, photo }, { getState }) => {
+				try {
+					// Create a new FormData instance
+					const formData = new FormData();
+					formData.append("photo", photo);
 
-				// Append the photo with the correct field name
-				formData.set("photo", photo);
+					console.log("Sending photo:", photo.name, photo.type, photo.size);
 
-				console.log("Sending photo:", photo.name, photo.type, photo.size);
+					// Get the token from state
+					const state = getState() as { auth: { token: string | null } };
+					const token = state.auth.token;
 
-				return {
-					url: `/donations/${donationId}/received`,
-					method: "PATCH",
-					// Don't set Content-Type header, let the browser set it with the boundary
-					headers: {
-						// Remove Content-Type to let browser set it with boundary
-					},
-					body: formData,
-					formData: true,
-				};
-			},
-			// Add transformErrorResponse to better handle errors
-			transformErrorResponse: (response: { status: number; data: any }) => {
-				console.log("Error response from API:", response);
-				// Return a more structured error object
-				return {
-					status: response.status,
-					message: response.data?.message || "Unknown error occurred",
-					data: response.data || {},
-				};
+					// Create headers manually
+					const headers: HeadersInit = {};
+					if (token) {
+						headers["Authorization"] = `Bearer ${token}`;
+					}
+					// Don't set Content-Type - let the browser set it for FormData
+
+					const response = await fetch(
+						`${
+							process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+						}/donations/${donationId}/received`,
+						{
+							method: "PATCH",
+							headers,
+							body: formData,
+						}
+					);
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						return { error: errorData };
+					}
+
+					const data = await response.json();
+					return { data };
+				} catch {
+					return { error: { message: "Network error occurred" } };
+				}
 			},
 			invalidatesTags: ["Donations"],
 		}),
@@ -171,21 +133,44 @@ export const donationApi = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Donations"],
 		}),
+
+		// Mark donation as confirmed with receipt upload (for organizations)
+		markDonationAsConfirmed: builder.mutation<
+			{
+				success: boolean;
+				message: string;
+				receiptUrl: string;
+				emailStatus: string;
+				notificationStatus: string;
+			},
+			{ donationId: string; receiptFile: File }
+		>({
+			query: ({ donationId, receiptFile }) => {
+				const formData = new FormData();
+				formData.append("receipt", receiptFile);
+
+				return {
+					url: `/donations/${donationId}/confirmed`,
+					method: "PATCH",
+					body: formData,
+				};
+			},
+			invalidatesTags: ["Donations"],
+		}),
 	}),
 	overrideExisting: true,
 });
 
 export const {
 	useCreateDonationMutation,
-	useGetDonationsQuery,
 	useGetDonationByIdQuery,
 	useGetOrganizationDonationsQuery,
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
 	useGetItemDonationAnalyticsQuery,
 	useGetItemDonationTypeAnalyticsQuery,
-	useFindOrganizationPendingDonationsQuery,
 	useUpdateDonationStatusMutation,
 	useMarkDonationAsReceivedMutation,
 	useConfirmDonationReceiptMutation,
+	useMarkDonationAsConfirmedMutation,
 } = donationApi;

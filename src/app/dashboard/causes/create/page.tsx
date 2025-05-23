@@ -23,8 +23,8 @@ import { useCreateCauseMutation } from "@/store/api/causeApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { DonationType } from "@/types/donation";
-import { useGetOrganizationCampaignsQuery } from "@/store/api/campaignApi";
-import { useAddCauseToCampaignMutation } from "@/store/api/campaignApi";
+import { toast } from "react-hot-toast";
+// Removed campaign-related imports as causes are now created independently
 
 interface FormData {
 	title: string;
@@ -32,9 +32,8 @@ interface FormData {
 	targetAmount: string;
 	imageUrl: string;
 	tags: string[];
-	acceptanceType: 'money' | 'items' | 'both';
+	acceptanceType: "money" | "items" | "both";
 	donationItems: string[];
-	campaignId: string;
 }
 
 const SUGGESTED_TAGS = [
@@ -54,36 +53,36 @@ const SUGGESTED_TAGS = [
 
 // Map donation items to their corresponding types for better consistency
 const DONATION_ITEMS_MAP: Record<string, DonationType> = {
-	"Clothes": DonationType.CLOTHES,
+	Clothes: DonationType.CLOTHES,
 	"Winter Clothing": DonationType.CLOTHES,
 	"Summer Clothing": DonationType.CLOTHES,
 	"Children's Clothing": DonationType.CLOTHES,
-	"Books": DonationType.BOOKS,
-	"Textbooks": DonationType.BOOKS,
+	Books: DonationType.BOOKS,
+	Textbooks: DonationType.BOOKS,
 	"Children's Books": DonationType.BOOKS,
 	"Educational Materials": DonationType.BOOKS,
-	"Toys": DonationType.TOYS,
+	Toys: DonationType.TOYS,
 	"Children's Toys": DonationType.TOYS,
 	"Board Games": DonationType.TOYS,
-	"Food": DonationType.FOOD,
+	Food: DonationType.FOOD,
 	"Non-perishable Food": DonationType.FOOD,
 	"Canned Goods": DonationType.FOOD,
 	"Baby Food": DonationType.FOOD,
-	"Furniture": DonationType.FURNITURE,
-	"Beds": DonationType.FURNITURE,
-	"Tables": DonationType.FURNITURE,
-	"Chairs": DonationType.FURNITURE,
+	Furniture: DonationType.FURNITURE,
+	Beds: DonationType.FURNITURE,
+	Tables: DonationType.FURNITURE,
+	Chairs: DonationType.FURNITURE,
 	"Household Items": DonationType.HOUSEHOLD,
 	"Kitchen Supplies": DonationType.HOUSEHOLD,
 	"Cleaning Supplies": DonationType.HOUSEHOLD,
-	"Bedding": DonationType.HOUSEHOLD,
+	Bedding: DonationType.HOUSEHOLD,
 	"Medical Supplies": DonationType.OTHER,
 	"Hygiene Products": DonationType.OTHER,
 	"Baby Items": DonationType.OTHER,
 	"Sports Equipment": DonationType.OTHER,
 	"School Supplies": DonationType.OTHER,
-	"Electronics": DonationType.OTHER,
-	"Other": DonationType.OTHER,
+	Electronics: DonationType.OTHER,
+	Other: DonationType.OTHER,
 };
 
 // List of donation items for the UI
@@ -94,12 +93,7 @@ const CreateCausePage = () => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [createCause, { isLoading, error }] = useCreateCauseMutation();
 
-	// Fetch active campaigns for the organization
-	const { data: campaignsData, isLoading: isLoadingCampaigns } = useGetOrganizationCampaignsQuery(
-		{ organizationId: user?.id || '', status: 'active' }
-	);
-
-	const [addCauseToCampaign] = useAddCauseToCampaignMutation();
+	// Removed campaign-related hooks as causes are now created independently
 
 	const [formData, setFormData] = useState<FormData>({
 		title: "",
@@ -109,7 +103,6 @@ const CreateCausePage = () => {
 		tags: [],
 		acceptanceType: "money",
 		donationItems: [],
-		campaignId: "",
 	});
 
 	const handleChange = (
@@ -137,12 +130,12 @@ const CreateCausePage = () => {
 	};
 
 	const handleAcceptanceTypeChange = (event: SelectChangeEvent<string>) => {
-		const value = event.target.value as 'money' | 'items' | 'both';
+		const value = event.target.value as "money" | "items" | "both";
 		setFormData((prev) => ({
 			...prev,
 			acceptanceType: value,
 			// Reset donation items if changing to money-only
-			donationItems: value === 'money' ? [] : prev.donationItems,
+			donationItems: value === "money" ? [] : prev.donationItems,
 		}));
 	};
 
@@ -172,63 +165,60 @@ const CreateCausePage = () => {
 				tags: formData.tags,
 				organizationId: user.id,
 				acceptanceType: formData.acceptanceType,
-				donationItems: formData.acceptanceType !== 'money' ? formData.donationItems : [],
+				donationItems:
+					formData.acceptanceType !== "money" ? formData.donationItems : [],
 				// Convert accepted donation types based on acceptanceType
-				acceptedDonationTypes: formData.acceptanceType === 'money'
-					? [DonationType.MONEY]
-					: formData.acceptanceType === 'items'
-						? [...new Set(formData.donationItems.map(item => DONATION_ITEMS_MAP[item] || DonationType.OTHER))]
-						: [DonationType.MONEY, ...new Set(formData.donationItems.map(item => DONATION_ITEMS_MAP[item] || DonationType.OTHER))],
+				acceptedDonationTypes:
+					formData.acceptanceType === "money"
+						? [DonationType.MONEY]
+						: formData.acceptanceType === "items"
+						? [
+								...new Set(
+									formData.donationItems.map(
+										(item) => DONATION_ITEMS_MAP[item] || DonationType.OTHER
+									)
+								),
+						  ]
+						: [
+								DonationType.MONEY,
+								...new Set(
+									formData.donationItems.map(
+										(item) => DONATION_ITEMS_MAP[item] || DonationType.OTHER
+									)
+								),
+						  ],
 			};
-
-			// Validate campaign selection
-			if (!formData.campaignId) {
-				alert("Please select a campaign to add this cause to. Causes must be part of an active campaign to be visible to donors.");
-				return;
-			}
 
 			console.log("Creating cause with payload:", payload);
 
-			// First create the cause
+			// Create the cause
 			const response = await createCause(payload).unwrap();
 			console.log("Cause created successfully:", response);
 
-			// Then add it to the selected campaign
-			try {
-				const causeId = response.cause.id;
-				const campaignId = formData.campaignId;
+			// Show success message
+			toast.success(
+				"Cause created successfully! You can add it to campaigns later from the causes page or campaign management."
+			);
 
-				console.log(`Adding cause ${causeId} to campaign ${campaignId}`);
-				await addCauseToCampaign({ campaignId, causeId }).unwrap();
-				console.log("Cause added to campaign successfully");
-
-				// Show success message
-				alert("Cause created and added to campaign successfully! It will now be visible to donors.");
-
-				// Navigate back to causes page
-				router.push("/dashboard/causes");
-			} catch (campaignError) {
-				console.error("Failed to add cause to campaign:", campaignError);
-				alert("Cause was created but could not be added to the campaign. Please add it manually from the campaign page.");
-				router.push("/dashboard/causes");
-			}
+			// Navigate back to causes page
+			router.push("/dashboard/causes");
 		} catch (apiError: unknown) {
 			console.error("API Error:", apiError);
 			// Try to extract detailed error message
 			const errorMessage =
 				typeof apiError === "object" &&
-					apiError !== null &&
-					"data" in apiError &&
-					typeof apiError.data === "object" &&
-					apiError.data !== null &&
-					"message" in apiError.data
+				apiError !== null &&
+				"data" in apiError &&
+				typeof apiError.data === "object" &&
+				apiError.data !== null &&
+				"message" in apiError.data
 					? apiError.data.message
 					: typeof apiError === "object" &&
-						apiError !== null &&
-						"error" in apiError
-						? (apiError as { error: string }).error
-						: "Failed to create cause. Please try again.";
-			alert(`Error: ${errorMessage}`);
+					  apiError !== null &&
+					  "error" in apiError
+					? (apiError as { error: string }).error
+					: "Failed to create cause. Please try again.";
+			toast.error(`Error: ${errorMessage}`);
 		}
 	};
 
@@ -247,6 +237,10 @@ const CreateCausePage = () => {
 			<Paper elevation={3} sx={{ p: 4, maxWidth: 800, mx: "auto" }}>
 				<Typography variant="h4" gutterBottom>
 					Create New Cause
+				</Typography>
+				<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+					Create a new cause for your organization. After creation, you can add
+					it to campaigns to make it visible to donors.
 				</Typography>
 
 				<form onSubmit={handleSubmit}>
@@ -296,7 +290,9 @@ const CreateCausePage = () => {
 						/>
 
 						<FormControl fullWidth>
-							<InputLabel id="acceptance-type-label">Acceptance Type</InputLabel>
+							<InputLabel id="acceptance-type-label">
+								Acceptance Type
+							</InputLabel>
 							<Select
 								labelId="acceptance-type-label"
 								id="acceptance-type"
@@ -308,48 +304,23 @@ const CreateCausePage = () => {
 								<MenuItem value="items">Items Only</MenuItem>
 								<MenuItem value="both">Both Money and Items</MenuItem>
 							</Select>
-							<Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-								Select what type of donations your cause will accept. This will determine what options donors see when making a donation.
-							</Typography>
-						</FormControl>
-
-						<FormControl fullWidth>
-							<InputLabel id="campaign-label">Add to Campaign (Required for Donor Visibility)</InputLabel>
-							<Select
-								labelId="campaign-label"
-								id="campaign"
-								value={formData.campaignId}
-								label="Add to Campaign (Required for Donor Visibility)"
-								onChange={(e) => handleChange(e as any)}
-								name="campaignId"
-								required
+							<Typography
+								variant="caption"
+								color="text.secondary"
+								sx={{ mt: 1 }}
 							>
-								<MenuItem value="">
-									<em>Select a campaign</em>
-								</MenuItem>
-								{isLoadingCampaigns ? (
-									<MenuItem disabled>Loading campaigns...</MenuItem>
-								) : campaignsData?.campaigns && campaignsData.campaigns.length > 0 ? (
-									campaignsData.campaigns
-										.filter(campaign => campaign.status === 'active')
-										.map((campaign) => (
-											<MenuItem key={campaign.id} value={campaign.id}>
-												{campaign.title}
-											</MenuItem>
-										))
-								) : (
-									<MenuItem disabled>No active campaigns available</MenuItem>
-								)}
-							</Select>
-							<Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-								<strong>Important:</strong> Causes must be added to an active campaign to be visible to donors.
-								If you don't have any active campaigns, please create one first.
+								Select what type of donations your cause will accept. This will
+								determine what options donors see when making a donation.
 							</Typography>
 						</FormControl>
 
-						{formData.acceptanceType !== 'money' && (
+						{/* Campaign selection removed - causes can now be created independently */}
+
+						{formData.acceptanceType !== "money" && (
 							<FormControl fullWidth>
-								<InputLabel id="donation-items-label">Donation Items</InputLabel>
+								<InputLabel id="donation-items-label">
+									Donation Items
+								</InputLabel>
 								<Select
 									labelId="donation-items-label"
 									id="donation-items"
@@ -357,23 +328,33 @@ const CreateCausePage = () => {
 									value={formData.donationItems}
 									onChange={handleDonationItemsChange}
 									input={<OutlinedInput label="Donation Items" />}
-									renderValue={(selected) => selected.join(', ')}
+									renderValue={(selected) => selected.join(", ")}
 								>
 									{DONATION_ITEMS.map((item) => (
 										<MenuItem key={item} value={item}>
-											<Checkbox checked={formData.donationItems.indexOf(item) > -1} />
+											<Checkbox
+												checked={formData.donationItems.indexOf(item) > -1}
+											/>
 											<ListItemText
 												primary={item}
-												secondary={DONATION_ITEMS_MAP[item] === DonationType.OTHER ?
-													"Categorized as: Other" :
-													`Categorized as: ${DONATION_ITEMS_MAP[item]}`}
+												secondary={
+													DONATION_ITEMS_MAP[item] === DonationType.OTHER
+														? "Categorized as: Other"
+														: `Categorized as: ${DONATION_ITEMS_MAP[item]}`
+												}
 											/>
 										</MenuItem>
 									))}
 								</Select>
-								<Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-									Select the specific items your cause needs. These will be shown to donors when they make item donations.
-									Items are automatically categorized into donation types for analytics purposes.
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									sx={{ mt: 1 }}
+								>
+									Select the specific items your cause needs. These will be
+									shown to donors when they make item donations. Items are
+									automatically categorized into donation types for analytics
+									purposes.
 								</Typography>
 							</FormControl>
 						)}

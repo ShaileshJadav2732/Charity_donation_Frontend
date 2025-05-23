@@ -2,6 +2,7 @@
 import {
 	useGetOrganizationDonationsQuery,
 	useMarkDonationAsReceivedMutation,
+	useMarkDonationAsConfirmedMutation,
 	useUpdateDonationStatusMutation,
 } from "@/store/api/donationApi";
 import {
@@ -15,6 +16,7 @@ import {
 	DialogActions,
 	DialogContent,
 	DialogTitle,
+	CircularProgress,
 } from "@mui/material";
 import Image from "next/image";
 import React, { useRef, useState } from "react";
@@ -27,7 +29,7 @@ import {
 	FiSearch,
 	FiCamera,
 } from "react-icons/fi";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 
 interface OrganizationDonationsProps {
 	organizationId: string;
@@ -44,6 +46,11 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 	const [selectedDonation, setSelectedDonation] =
 		useState<organizationDonation | null>(null);
 
+	// Loading states for individual actions
+	const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
+		{}
+	);
+
 	const { data, isLoading, isFetching, isError, refetch } =
 		useGetOrganizationDonationsQuery({
 			organizationId,
@@ -54,16 +61,37 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			},
 		});
 
-	const [updateDonationStatus, { isLoading: isUpdating }] =
-		useUpdateDonationStatusMutation();
-
-	const [markAsReceived, { isLoading: isMarkingReceived }] =
-		useMarkDonationAsReceivedMutation();
+	const [updateDonationStatus] = useUpdateDonationStatusMutation();
+	const [markAsReceived] = useMarkDonationAsReceivedMutation();
+	const [markAsConfirmed] = useMarkDonationAsConfirmedMutation();
 
 	const [showPhotoUploadModal, setShowPhotoUploadModal] = useState(false);
 	const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 	const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+	const [isMarkingReceived, setIsMarkingReceived] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	// Receipt upload states
+	const [showReceiptUploadModal, setShowReceiptUploadModal] = useState(false);
+	const [selectedReceipt, setSelectedReceipt] = useState<File | null>(null);
+	const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(
+		null
+	);
+	const [isMarkingConfirmed, setIsMarkingConfirmed] = useState(false);
+	const receiptInputRef = useRef<HTMLInputElement>(null);
+
+	// Helper function to set loading state for specific donation
+	const setDonationLoading = (donationId: string, loading: boolean) => {
+		setLoadingStates((prev) => ({
+			...prev,
+			[donationId]: loading,
+		}));
+	};
+
+	// Helper function to check if donation is loading
+	const isDonationLoading = (donationId: string) => {
+		return loadingStates[donationId] || false;
+	};
 
 	const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		setStatus(e.target.value);
@@ -75,25 +103,38 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 	};
 
 	const handleApproveDonation = async (donationId: string) => {
+		setDonationLoading(donationId, true);
 		try {
 			const response = await updateDonationStatus({
 				donationId,
 				status: DonationStatus.APPROVED,
 			}).unwrap();
-			toast.success(response.message);
+			toast.success(response.message || "Donation approved successfully");
+
+			// Force refetch to update the UI
+			await refetch();
 		} catch (error: unknown) {
-			const errorMessage =
-				error &&
-				typeof error === "object" &&
-				"data" in error &&
-				error.data &&
-				typeof error.data === "object" &&
-				"message" in error.data
-					? error.data.message
-					: error instanceof Error
-					? error.message
-					: "Unknown error";
-			toast.error("Error approving donation: " + errorMessage);
+			console.error("Error approving donation:", error);
+
+			let errorMessage = "Unknown error occurred";
+			if (error && typeof error === "object") {
+				if (
+					"data" in error &&
+					error.data &&
+					typeof error.data === "object" &&
+					"message" in error.data
+				) {
+					errorMessage = String(error.data.message);
+				} else if ("message" in error && typeof error.message === "string") {
+					errorMessage = error.message;
+				}
+			} else if (error instanceof Error) {
+				errorMessage = error.message;
+			}
+
+			toast.error(`Error approving donation: ${errorMessage}`);
+		} finally {
+			setDonationLoading(donationId, false);
 		}
 	};
 
@@ -126,10 +167,9 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 	};
 
 	const handleOpenPhotoUpload = (donationId: string) => {
+		const foundDonation = data?.data.find((d) => d._id === donationId);
 		setSelectedDonation(
-			data?.data.find(
-				(d) => d._id === donationId
-			) as unknown as organizationDonation
+			(foundDonation as unknown as organizationDonation) || null
 		);
 		setSelectedPhoto(null);
 		setPhotoPreviewUrl(null);
@@ -142,6 +182,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			return;
 		}
 
+		setIsMarkingReceived(true);
 		// Show loading toast
 		const loadingToast = toast.loading(
 			"Uploading photo and updating donation status..."
@@ -156,10 +197,12 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 				selectedPhoto.size
 			);
 
-			await markAsReceived({
+			const result = await markAsReceived({
 				donationId: selectedDonation._id,
 				photo: selectedPhoto,
-			}).unwrap();
+			});
+
+			console.log("Upload successful:", result);
 
 			// Dismiss loading toast and show success
 			toast.dismiss(loadingToast);
@@ -167,72 +210,134 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			setShowPhotoUploadModal(false);
 			setSelectedPhoto(null);
 			setPhotoPreviewUrl(null);
-			refetch();
+
+			// Force refetch to update the UI
+			await refetch();
 		} catch (error: unknown) {
 			console.error("Error marking donation as received:", error);
 
 			// Dismiss loading toast
 			toast.dismiss(loadingToast);
 
-			// Extract error message with more detailed logging
+			// Extract error message using a simpler approach
 			let errorMessage = "Unknown error occurred";
 
-			console.log("Error type:", typeof error);
-			console.log("Error stringified:", JSON.stringify(error, null, 2));
-
 			if (error && typeof error === "object") {
-				// Log all properties of the error object
-				console.log("Error properties:", Object.keys(error));
-
-				// Check for RTK Query error structure
-				if ("status" in error) {
-					console.log("Error status:", (error as any).status);
-				}
-
-				if ("error" in error) {
-					console.log("Error.error:", (error as any).error);
-				}
-
-				if ("data" in error) {
-					console.log("Error.data:", (error as any).data);
-				}
-
-				if ("message" in error) {
-					console.log("Error.message:", (error as any).message);
-				}
-
-				// Try to extract message from various error formats
 				if (
 					"data" in error &&
 					error.data &&
 					typeof error.data === "object" &&
 					"message" in error.data
 				) {
-					errorMessage = error.data.message;
-				} else if (
-					"message" in error &&
-					typeof (error as any).message === "string"
-				) {
-					errorMessage = (error as any).message;
-				} else if (
-					"error" in error &&
-					typeof (error as any).error === "string"
-				) {
-					errorMessage = (error as any).error;
-				} else if (
-					"status" in error &&
-					typeof (error as any).status === "number"
-				) {
-					errorMessage = `Server error (${(error as any).status})`;
+					errorMessage = String(error.data.message);
+				} else if ("message" in error && typeof error.message === "string") {
+					errorMessage = error.message;
 				}
 			} else if (error instanceof Error) {
 				errorMessage = error.message;
 			}
 
-			// Show error toast with more details
+			// Show error toast
+			toast.error(`Error marking donation as received: ${errorMessage}`);
+		} finally {
+			setIsMarkingReceived(false);
+		}
+	};
+
+	// Helper function to get status colors
+	const getStatusColor = (status: string): string => {
+		switch (status) {
+			case "PENDING":
+				return "bg-yellow-100 text-yellow-800";
+			case "APPROVED":
+				return "bg-blue-100 text-blue-800";
+			case "RECEIVED":
+				return "bg-green-100 text-green-800";
+			case "CONFIRMED":
+				return "bg-purple-100 text-purple-800";
+			case "CANCELLED":
+				return "bg-red-100 text-red-800"; // Fixed: was showing green
+			default:
+				return "bg-gray-100 text-gray-800";
+		}
+	};
+
+	// Receipt upload functions
+	const handleOpenReceiptUpload = (donationId: string) => {
+		const foundDonation = data?.data.find((d) => d._id === donationId);
+		setSelectedDonation(
+			(foundDonation as unknown as organizationDonation) || null
+		);
+		setSelectedReceipt(null);
+		setReceiptPreviewUrl(null);
+		setShowReceiptUploadModal(true);
+	};
+
+	const handleReceiptFileChange = (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			// Validate file type
+			if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+				toast.error("Please select an image or PDF file");
+				return;
+			}
+
+			// Validate file size (5MB max)
+			if (file.size > 5 * 1024 * 1024) {
+				toast.error("File size must be less than 5MB");
+				return;
+			}
+
+			setSelectedReceipt(file);
+
+			// Create preview for images only
+			if (file.type.startsWith("image/")) {
+				const reader = new FileReader();
+				reader.onload = (e) => {
+					setReceiptPreviewUrl(e.target?.result as string);
+				};
+				reader.readAsDataURL(file);
+			} else {
+				setReceiptPreviewUrl(null); // No preview for PDFs
+			}
+		}
+	};
+
+	const handleMarkAsConfirmed = async () => {
+		if (!selectedDonation || !selectedReceipt) {
+			toast.error("Please select a receipt file to upload");
+			return;
+		}
+
+		setIsMarkingConfirmed(true);
+		const loadingToast = toast.loading(
+			"Uploading receipt and marking donation as confirmed..."
+		);
+
+		try {
+			await markAsConfirmed({
+				donationId: selectedDonation._id,
+				receiptFile: selectedReceipt,
+			}).unwrap();
+
+			toast.dismiss(loadingToast);
+			toast.success("✅ Donation marked as confirmed with receipt!");
+
+			// Close modal and reset state
+			setShowReceiptUploadModal(false);
+			setSelectedReceipt(null);
+			setReceiptPreviewUrl(null);
+			setSelectedDonation(null);
+		} catch (error: unknown) {
+			toast.dismiss(loadingToast);
+			console.error("Error marking donation as confirmed:", error);
 			toast.error(
-				`Error marking donation as received: ${errorMessage}. Check console for details.`
+				(error as any)?.data?.message || "Failed to mark donation as confirmed"
 			);
+		} finally {
+			setIsMarkingConfirmed(false);
 		}
 	};
 
@@ -474,20 +579,9 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<span
-													className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full
-                            ${
-															donation.status === "PENDING"
-																? "bg-yellow-100 text-yellow-800"
-																: donation.status === "APPROVED"
-																? "bg-blue-100 text-blue-800"
-																: donation.status === "RECEIVED"
-																? "bg-green-100 text-green-800"
-																: donation.status === "CONFIRMED"
-																? "bg-purple-100 text-purple-800"
-																: donation.status === "CANCELLED"
-																? "bg-green-100 text-green-800"
-																: "bg-red-100 text-red-800"
-														}`}
+													className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full ${getStatusColor(
+														donation.status
+													)}`}
 												>
 													{donation.status}
 												</span>
@@ -523,30 +617,40 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 															onClick={() =>
 																handleApproveDonation(donation._id)
 															}
-															disabled={isUpdating}
+															disabled={isDonationLoading(donation._id)}
 														>
-															<FiCheckCircle
-																className={`h-5 w-5 ${
-																	isUpdating ? "animate-spin" : ""
-																}`}
-															/>
+															{isDonationLoading(donation._id) ? (
+																<CircularProgress
+																	size={20}
+																	className="text-green-600"
+																/>
+															) : (
+																<FiCheckCircle className="h-5 w-5" />
+															)}
 														</button>
 													)}
-													{(donation.status === "PENDING" ||
-														donation.status === "APPROVED") && (
+													{donation.status === "APPROVED" && (
 														<button
 															className="text-orange-600 hover:text-orange-900 transition-colors"
 															title="Mark as Received with Photo"
 															onClick={() =>
 																handleOpenPhotoUpload(donation._id)
 															}
-															disabled={isMarkingReceived}
+															disabled={isDonationLoading(donation._id)}
 														>
-															<FiCamera
-																className={`h-5 w-5 ${
-																	isMarkingReceived ? "animate-spin" : ""
-																}`}
-															/>
+															<FiCamera className="h-5 w-5" />
+														</button>
+													)}
+													{donation.status === "RECEIVED" && (
+														<button
+															className="text-purple-600 hover:text-purple-900 transition-colors"
+															title="Mark as Confirmed with Receipt"
+															onClick={() =>
+																handleOpenReceiptUpload(donation._id)
+															}
+															disabled={isDonationLoading(donation._id)}
+														>
+															📄
 														</button>
 													)}
 												</div>
@@ -714,6 +818,13 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								Upload a photo of the received donation to confirm receipt and
 								notify the donor.
 							</p>
+							<div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+								<p className="text-sm text-blue-800">
+									📄 <strong>Auto-Generated Receipt:</strong> A PDF receipt will
+									be automatically generated and made available to the donor
+									when you mark this donation as received.
+								</p>
+							</div>
 
 							<div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
 								{photoPreviewUrl ? (
@@ -795,6 +906,136 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							}`}
 						>
 							{isMarkingReceived ? "Processing..." : "Mark as Received"}
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
+			{/* Receipt Upload Modal */}
+			{showReceiptUploadModal && selectedDonation && (
+				<Dialog
+					open={showReceiptUploadModal}
+					onClose={() => {
+						setShowReceiptUploadModal(false);
+						setSelectedReceipt(null);
+						setReceiptPreviewUrl(null);
+					}}
+					maxWidth="sm"
+					fullWidth
+					sx={{
+						"& .MuiDialog-paper": {
+							borderRadius: "12px",
+							boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+						},
+					}}
+				>
+					<DialogTitle className="text-2xl font-bold text-gray-900 border-b border-gray-200">
+						Mark Donation as Confirmed
+					</DialogTitle>
+					<DialogContent className="p-6 bg-white">
+						<div className="space-y-4">
+							<p className="text-sm text-gray-700 mb-4">
+								Upload a receipt for this donation to mark it as confirmed and
+								notify the donor.
+							</p>
+
+							<div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+								{receiptPreviewUrl ? (
+									<div className="mb-4 relative h-64 w-full max-w-md mx-auto">
+										<Image
+											src={receiptPreviewUrl}
+											alt="Receipt preview"
+											className="rounded-lg shadow-sm object-contain"
+											fill
+											sizes="(max-width: 768px) 100vw, 400px"
+										/>
+									</div>
+								) : selectedReceipt &&
+								  selectedReceipt.type === "application/pdf" ? (
+									<div className="text-center mb-4">
+										<div className="mx-auto h-12 w-12 text-red-500 mb-2">
+											📄
+										</div>
+										<p className="text-sm text-gray-700 font-medium">
+											{selectedReceipt.name}
+										</p>
+										<p className="text-xs text-gray-500">
+											PDF files cannot be previewed
+										</p>
+									</div>
+								) : (
+									<div className="text-center mb-4">
+										<div className="mx-auto h-12 w-12 text-gray-400 mb-2">
+											📄
+										</div>
+										<p className="mt-1 text-sm text-gray-500">
+											No receipt selected
+										</p>
+									</div>
+								)}
+
+								<input
+									type="file"
+									ref={receiptInputRef}
+									onChange={handleReceiptFileChange}
+									accept="image/*,.pdf"
+									className="hidden"
+								/>
+								<Button
+									onClick={() => receiptInputRef.current?.click()}
+									variant="outlined"
+									className="border-blue-300 text-blue-700 hover:bg-blue-50 font-medium rounded-lg px-4 py-2 transition-colors"
+								>
+									{selectedReceipt ? "Change Receipt" : "Select Receipt"}
+								</Button>
+								<p className="text-xs text-gray-500 mt-2 text-center">
+									Supports images and PDF files (max 5MB)
+								</p>
+							</div>
+
+							<div className="mt-4">
+								<p className="text-sm text-gray-700">
+									<strong className="font-medium text-gray-900">Donor:</strong>{" "}
+									{selectedDonation.donor?.name || "Anonymous"}
+								</p>
+								<p className="text-sm text-gray-700">
+									<strong className="font-medium text-gray-900">
+										Donation Type:
+									</strong>{" "}
+									{selectedDonation.type === "MONEY"
+										? `Money ($${
+												selectedDonation.amount?.toFixed(2) || "0.00"
+										  })`
+										: `${selectedDonation.type} (${selectedDonation.quantity} ${
+												selectedDonation.unit || ""
+										  })`}
+								</p>
+							</div>
+						</div>
+					</DialogContent>
+					<DialogActions className="p-6 border-t border-gray-200">
+						<Button
+							onClick={() => {
+								setShowReceiptUploadModal(false);
+								setSelectedReceipt(null);
+								setReceiptPreviewUrl(null);
+							}}
+							variant="outlined"
+							className="border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg px-4 py-2 transition-colors"
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleMarkAsConfirmed}
+							variant="contained"
+							disabled={!selectedReceipt || isMarkingConfirmed}
+							className={`bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${
+								!selectedReceipt || isMarkingConfirmed
+									? "opacity-50 cursor-not-allowed"
+									: ""
+							}`}
+						>
+							{isMarkingConfirmed ? "Processing..." : "Mark as Confirmed"}
 						</Button>
 					</DialogActions>
 				</Dialog>

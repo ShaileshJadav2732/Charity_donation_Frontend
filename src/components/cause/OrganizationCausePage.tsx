@@ -36,6 +36,7 @@ import {
 	useDeleteCauseMutation,
 } from "@/store/api/causeApi";
 import { Cause } from "@/types/campaigns";
+import { toast } from "react-hot-toast";
 
 const CausesPage = () => {
 	const router = useRouter();
@@ -70,9 +71,11 @@ const CausesPage = () => {
 			try {
 				setIsDeleting(true);
 				await deleteCause(id).unwrap();
+				toast.success("Cause deleted successfully!");
 				refetch();
 			} catch (err) {
 				console.error("Failed to delete cause:", err);
+				toast.error("Failed to delete cause. Please try again.");
 			} finally {
 				setIsDeleting(false);
 			}
@@ -153,11 +156,13 @@ const CausesPage = () => {
 				{!isLoading && !error && filteredCauses?.length > 0 && (
 					<Alert severity="info" sx={{ mb: 3 }}>
 						<Typography variant="subtitle2" fontWeight="medium">
-							Important: Causes must be added to active campaigns to be visible to donors
+							Important: Causes must be added to active campaigns to be visible
+							to donors
 						</Typography>
 						<Typography variant="body2">
-							After creating a cause, make sure to add it to an active campaign from the cause detail page.
-							Donors can only see causes that are part of active campaigns.
+							After creating a cause, make sure to add it to an active campaign
+							from the cause detail page. Donors can only see causes that are
+							part of active campaigns.
 						</Typography>
 					</Alert>
 				)}

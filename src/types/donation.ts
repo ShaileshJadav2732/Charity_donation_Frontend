@@ -62,27 +62,6 @@ export interface DonationFormData {
 	};
 }
 
-export interface DonationResponse {
-	donation: Donation;
-}
-
-export interface DonationQueryParams {
-	page?: number;
-	limit?: number;
-	causeId?: string;
-	status?: string;
-}
-
-export interface DonorDonationsResponse {
-	success: boolean;
-	data: Donation[];
-	pagination: {
-		total: number;
-		page: number;
-		pages: number;
-	};
-}
-
 export interface DonationStats {
 	totalDonated: number;
 	totalCauses: number;
@@ -93,11 +72,7 @@ export interface Pagination {
 	total: number;
 	page: number;
 	pages: number;
-}
-
-export interface DonationResponse {
-	donations: Donation[];
-	pagination: Pagination;
+	limit?: number;
 }
 
 export interface ApiResponse<T> {
@@ -113,11 +88,18 @@ export interface DonationResponse {
 	pagination: Pagination;
 }
 
+export interface DonorDonationsResponse {
+	success: boolean;
+	data: Donation[];
+	pagination: Pagination;
+}
+
 export interface DonationQueryParams {
-	organizationId: string;
-	status?: string;
+	organizationId?: string;
 	page?: number;
 	limit?: number;
+	causeId?: string;
+	status?: string;
 }
 
 export interface UpdateDonationStatusRequest {
@@ -153,28 +135,43 @@ export interface PickupAddress {
 export interface organizationDonation {
 	_id: string;
 	donor?: Donor;
-	quantity: number;
-	unit: string;
+	organization?: {
+		_id: string;
+		name: string;
+		email: string;
+		phone: string;
+	};
+	campaign?: {
+		_id: string;
+		title: string;
+	};
+	quantity?: number;
+	unit?: string;
+	amount?: number;
 	type?: string;
 	cause?: Cause;
-	scheduledDate: string; // ISO date string (e.g., "2025-05-20T00:00:00.000Z")
-	scheduledTime?: string;
 	description?: string;
+	scheduledDate?: string; // ISO date string (e.g., "2025-05-20T00:00:00.000Z")
+	scheduledTime?: string;
 	status: "PENDING" | "APPROVED" | "RECEIVED" | "CONFIRMED" | "CANCELLED";
 	isPickup: boolean;
 	pickupAddress?: PickupAddress;
+	dropoffAddress?: PickupAddress;
 	contactPhone?: string;
 	contactEmail?: string;
-	amount?: number;
 	receiptImage?: string;
+	receiptImageMetadata?: {
+		originalName?: string;
+		mimeType?: string;
+		fileSize?: number;
+		uploadedAt?: string;
+		uploadedBy?: string;
+	};
+	pdfReceiptUrl?: string;
+	confirmationDate?: string;
+	notes?: string;
 	createdAt: string; // ISO date string (e.g., "2025-05-20T00:00:00.000Z")
-}
-
-export interface Pagination {
-	page: number;
-	pages: number;
-	total: number;
-	limit: number;
+	updatedAt?: string;
 }
 
 export interface DonationsResponse {
@@ -200,12 +197,34 @@ export interface Donation {
 		email: string;
 		phone: string;
 	};
+	campaign?: {
+		_id: string;
+		title: string;
+	};
 	amount?: number;
 	type: string;
 	status: string;
 	quantity?: number;
-	createdAt: string;
-	description: string;
-	receiptImage?: string;
 	unit?: string;
+	description: string;
+	scheduledDate?: string;
+	scheduledTime?: string;
+	isPickup?: boolean;
+	contactPhone?: string;
+	contactEmail?: string;
+	pickupAddress?: Address;
+	dropoffAddress?: Address;
+	receiptImage?: string;
+	receiptImageMetadata?: {
+		originalName?: string;
+		mimeType?: string;
+		fileSize?: number;
+		uploadedAt?: string;
+		uploadedBy?: string;
+	};
+	pdfReceiptUrl?: string;
+	confirmationDate?: string;
+	notes?: string;
+	createdAt: string;
+	updatedAt?: string;
 }

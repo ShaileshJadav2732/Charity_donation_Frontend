@@ -74,6 +74,7 @@ export interface DonorProfileFormData {
 	city?: string;
 	state?: string;
 	country?: string;
+	profileImage?: string;
 	bio?: string;
 }
 

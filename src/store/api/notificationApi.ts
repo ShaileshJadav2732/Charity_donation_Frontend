@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '@/store/store';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { RootState } from "@/store/store";
 
 interface Notification {
 	id: string;
@@ -32,32 +32,35 @@ export enum NotificationType {
 }
 
 export const notificationApi = createApi({
-	reducerPath: 'notificationApi',
+	reducerPath: "notificationApi",
 	baseQuery: fetchBaseQuery({
-		baseUrl: 'http://localhost:8080/api', // Adjust to your backend URL
+		baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
 		prepareHeaders: (headers, { getState }) => {
 			const token = (getState() as RootState).auth.token;
 			if (token) {
-				headers.set('Authorization', `Bearer ${token}`);
+				headers.set("Authorization", `Bearer ${token}`);
 			}
 			return headers;
 		},
 	}),
-	tagTypes: ['Notifications'],
+	tagTypes: ["Notifications"],
 	endpoints: (builder) => ({
-		getNotifications: builder.query<GetNotificationsResponse, { userId: string; limit?: number; unreadOnly?: boolean }>({
+		getNotifications: builder.query<
+			GetNotificationsResponse,
+			{ userId: string; limit?: number; unreadOnly?: boolean }
+		>({
 			query: ({ userId, limit = 50, unreadOnly = false }) =>
 				`/notifications/${userId}?limit=${limit}&unreadOnly=${unreadOnly}`,
 			providesTags: (result, error, { userId }) =>
 				result
 					? [
-						{ type: 'Notifications', id: userId },
-						...result.notifications.map((notification) => ({
-							type: 'Notifications' as const,
-							id: notification.id,
-						})),
-					]
-					: [{ type: 'Notifications', id: userId }],
+							{ type: "Notifications", id: userId },
+							...result.notifications.map((notification) => ({
+								type: "Notifications" as const,
+								id: notification.id,
+							})),
+					  ]
+					: [{ type: "Notifications", id: userId }],
 			transformResponse: (response: GetNotificationsResponse) => ({
 				success: response.success,
 				notifications: response.notifications.map((n) => ({
@@ -66,22 +69,25 @@ export const notificationApi = createApi({
 				})),
 			}),
 		}),
-		markNotificationAsRead: builder.mutation<NotificationActionResponse, string>({
+		markNotificationAsRead: builder.mutation<
+			NotificationActionResponse,
+			string
+		>({
 			query: (notificationId) => ({
 				url: `/notifications/${notificationId}/read`,
-				method: 'PATCH',
+				method: "PATCH",
 			}),
 			invalidatesTags: (result, error, notificationId) => [
-				{ type: 'Notifications', id: notificationId },
+				{ type: "Notifications", id: notificationId },
 			],
 		}),
 		dismissNotification: builder.mutation<NotificationActionResponse, string>({
 			query: (notificationId) => ({
 				url: `/notifications/${notificationId}`,
-				method: 'DELETE',
+				method: "DELETE",
 			}),
 			invalidatesTags: (result, error, notificationId) => [
-				{ type: 'Notifications', id: notificationId },
+				{ type: "Notifications", id: notificationId },
 			],
 		}),
 	}),

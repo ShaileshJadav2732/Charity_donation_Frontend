@@ -71,9 +71,16 @@ export interface CampaignsResponse {
 	currentPage: number;
 }
 
-// export interface CampaignResponse {
-// 	campaign: Campaign;
-// }
+export interface CampaignResponse {
+	campaign: Campaign;
+}
+
+export interface CampaignQueryParams {
+	page?: number;
+	limit?: number;
+	search?: string;
+	status?: string;
+}
 
 export interface CreateCampaignBody {
 	title: string;

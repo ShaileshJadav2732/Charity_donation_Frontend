@@ -9,7 +9,7 @@ import { causeApi } from "./api/causeApi";
 import { dashboardApi } from "./api/dashboardApi";
 import { feedbackApi } from "./api/feedbackApi";
 import { organizationApi } from "./api/organizationApi";
-import { analyticsApi } from "./api/analyticsApi";
+
 import { notificationApi } from "./api/notificationApi";
 // Configure Redux store
 export const store = configureStore({
@@ -21,7 +21,7 @@ export const store = configureStore({
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
 		[feedbackApi.reducerPath]: feedbackApi.reducer,
 		[organizationApi.reducerPath]: organizationApi.reducer,
-		[analyticsApi.reducerPath]: analyticsApi.reducer,
+
 		[notificationApi.reducerPath]: notificationApi.reducer,
 		auth: authReducer,
 	},
@@ -34,7 +34,7 @@ export const store = configureStore({
 			.concat(dashboardApi.middleware)
 			.concat(feedbackApi.middleware)
 			.concat(organizationApi.middleware)
-			.concat(analyticsApi.middleware)
+
 			.concat(notificationApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });

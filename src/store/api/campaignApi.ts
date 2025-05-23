@@ -2,9 +2,9 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
 	CampaignsResponse,
 	CampaignResponse,
+	CampaignQueryParams,
 	CreateCampaignBody,
 	UpdateCampaignBody,
-	CampaignQueryParams,
 } from "@/types/campaigns";
 import { RootState } from "../store";
 
@@ -54,7 +54,7 @@ export const campaignApi = createApi({
 				url: `/campaigns/${id}`,
 				method: "GET",
 			}),
-			providesTags: (result, error, id) => [{ type: "Campaign", id }],
+			providesTags: (_result, _error, id) => [{ type: "Campaign", id }],
 		}),
 
 		getOrganizationCampaigns: builder.query<
@@ -115,27 +115,6 @@ export const campaignApi = createApi({
 			invalidatesTags: ["Campaign"],
 		}),
 
-		updateCampaignStatus: builder.mutation<
-			CampaignResponse,
-			{ id: string; status: string }
-		>({
-			query: ({ id, status }) => ({
-				url: `/campaigns/${id}/status`,
-				method: "PATCH",
-				body: { status },
-			}),
-			invalidatesTags: (result, error, { id }) => [{ type: "Campaign", id }],
-		}),
-
-		getDonorCampaigns: builder.query<CampaignsResponse, CampaignQueryParams>({
-			query: (params) => ({
-				url: "/donor/campaigns",
-				method: "GET",
-				params,
-			}),
-			providesTags: ["Campaign"],
-		}),
-
 		// Add a cause to a campaign
 		addCauseToCampaign: builder.mutation<
 			CampaignResponse,
@@ -146,19 +125,13 @@ export const campaignApi = createApi({
 				method: "POST",
 				body: { causeId },
 			}),
-			invalidatesTags: (result, error, { campaignId }) => [
+			invalidatesTags: (_result, _error, { campaignId }) => [
 				{ type: "Campaign", id: campaignId },
 				"Cause",
 			],
 		}),
 	}),
 });
-
-// Log the API URL for debugging
-console.log(
-	"Campaign API URL:",
-	process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
-);
 
 export const {
 	useGetCampaignsQuery,
@@ -167,7 +140,5 @@ export const {
 	useCreateCampaignMutation,
 	useUpdateCampaignMutation,
 	useDeleteCampaignMutation,
-	useUpdateCampaignStatusMutation,
-	useGetDonorCampaignsQuery,
 	useAddCauseToCampaignMutation,
 } = campaignApi;

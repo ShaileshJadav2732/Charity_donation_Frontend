@@ -15,6 +15,7 @@ import {
 	FiGlobe,
 	FiEdit2,
 } from "react-icons/fi";
+import ProfileImageUpload from "./ProfileImageUpload";
 
 interface EditProfileFormProps {
 	profile: DonorProfile | OrganizationProfile;
@@ -37,6 +38,7 @@ export default function EditProfileForm({
 		city: profile.city || "",
 		state: profile.state || "",
 		country: profile.country || "",
+		profileImage: isDonor ? (profile as DonorProfile).profileImage || "" : "",
 		bio: isDonor ? (profile as DonorProfile).bio || "" : "",
 		description: !isDonor
 			? (profile as OrganizationProfile).description || ""
@@ -70,6 +72,10 @@ export default function EditProfileForm({
 	) => {
 		const { name, value } = e.target;
 		setFormData((prev) => ({ ...prev, [name]: value }));
+	};
+
+	const handleImageUpdate = (imageUrl: string) => {
+		setFormData((prev) => ({ ...prev, profileImage: imageUrl }));
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -154,6 +160,16 @@ export default function EditProfileForm({
 						</div>
 
 						<form onSubmit={handleSubmit} className="space-y-8">
+							{/* Profile Image Upload - Only for donors */}
+							{isDonor && (
+								<div className="flex justify-center">
+									<ProfileImageUpload
+										currentImage={formData.profileImage}
+										onImageUpdate={handleImageUpdate}
+									/>
+								</div>
+							)}
+
 							{isDonor ? (
 								<>
 									<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">

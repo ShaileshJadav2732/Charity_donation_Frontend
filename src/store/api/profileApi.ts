@@ -135,7 +135,7 @@ export const profileApi = createApi({
 			invalidatesTags: ["OrganizationProfile"],
 		}),
 
-		uploadProfileImage: builder.mutation<{ avatar: string }, FormData>({
+		uploadProfileImage: builder.mutation<{ profileImage: string }, FormData>({
 			query: (formData) => ({
 				url: "/profile/donor/avatar",
 				method: "POST",
