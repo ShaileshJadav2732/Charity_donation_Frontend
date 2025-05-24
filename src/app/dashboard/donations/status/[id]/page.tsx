@@ -10,7 +10,10 @@ import { DonationStatus } from "@/types/donation";
 import { toast } from "react-hot-toast";
 import { getReceiptImageUrl } from "@/utils/url";
 import { FaDownload, FaImage } from "react-icons/fa";
+<<<<<<< Updated upstream
 import { ReceiptStatusIndicator } from "@/components/ui/ReceiptNotification";
+=======
+>>>>>>> Stashed changes
 
 const StatusUpdatePage = () => {
 	const params = useParams();
@@ -81,11 +84,26 @@ const StatusUpdatePage = () => {
 								<h3 className="font-semibold text-gray-700">Current Status</h3>
 								<div className="flex items-center space-x-2">
 									<p className="text-gray-600">{donation.status}</p>
+<<<<<<< Updated upstream
 									<ReceiptStatusIndicator
 										hasPhoto={!!donation.receiptImage}
 										hasPdfReceipt={!!donation.pdfReceiptUrl}
 										status={donation.status}
 									/>
+=======
+									<div className="flex items-center space-x-1">
+										{donation.receiptImage && (
+											<span className="inline-flex items-center px-2 py-1 rounded-full bg-teal-100 text-teal-800 text-xs">
+												📷 Photo
+											</span>
+										)}
+										{donation.pdfReceiptUrl && (
+											<span className="inline-flex items-center px-2 py-1 rounded-full bg-purple-100 text-purple-800 text-xs">
+												📄 PDF
+											</span>
+										)}
+									</div>
+>>>>>>> Stashed changes
 								</div>
 							</div>
 							<div>

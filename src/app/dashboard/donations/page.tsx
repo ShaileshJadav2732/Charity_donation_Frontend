@@ -8,7 +8,10 @@ import { Donation, DonationStats } from "@/types/donation";
 import Link from "next/link";
 import { useState } from "react";
 import {
+<<<<<<< Updated upstream
 	FaBoxOpen,
+=======
+>>>>>>> Stashed changes
 	FaCalendarAlt,
 	FaChartLine,
 	FaHandHoldingHeart,
@@ -200,12 +203,15 @@ export default function DonationsPage() {
 							<h2 className="text-xl font-bold text-gray-900">
 								Item Donations
 							</h2>
+<<<<<<< Updated upstream
 							<Link
 								href="/dashboard/donations/items"
 								className="text-teal-600 hover:text-teal-700 text-sm font-medium"
 							>
 								View Detailed Analytics →
 							</Link>
+=======
+>>>>>>> Stashed changes
 						</div>
 						<div className="bg-white rounded-xl shadow-md p-6">
 							<div className="mb-4">
@@ -225,11 +231,15 @@ export default function DonationsPage() {
 									</p>
 									<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 										{stats.items.byType.map((item, index) => (
+<<<<<<< Updated upstream
 											<Link
 												href={`/dashboard/donations/items/${item.type}`}
 												key={index}
 												className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors"
 											>
+=======
+											<div key={index} className="bg-gray-50 p-3 rounded-lg">
+>>>>>>> Stashed changes
 												<p className="text-sm font-medium text-gray-800">
 													{item.type}
 												</p>
@@ -242,7 +252,11 @@ export default function DonationsPage() {
 														{item.totalQuantity !== 1 && "s"}
 													</p>
 												</div>
+<<<<<<< Updated upstream
 											</Link>
+=======
+											</div>
+>>>>>>> Stashed changes
 										))}
 									</div>
 								</div>

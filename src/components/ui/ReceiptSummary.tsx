@@ -1,6 +1,16 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { FaFilePdf, FaImage, FaDownload, FaCheckCircle, FaClock } from "react-icons/fa";
+=======
+import {
+	FaFilePdf,
+	FaImage,
+	FaDownload,
+	FaCheckCircle,
+	FaClock,
+} from "react-icons/fa";
+>>>>>>> Stashed changes
 import { getReceiptImageUrl } from "@/utils/url";
 
 interface ReceiptSummaryProps {
@@ -15,7 +25,14 @@ interface ReceiptSummaryProps {
 	className?: string;
 }
 
+<<<<<<< Updated upstream
 export default function ReceiptSummary({ donation, className = "" }: ReceiptSummaryProps) {
+=======
+export default function ReceiptSummary({
+	donation,
+	className = "",
+}: ReceiptSummaryProps) {
+>>>>>>> Stashed changes
 	const getStatusInfo = () => {
 		switch (donation.status) {
 			case "PENDING":
@@ -25,7 +42,12 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 					bgColor: "bg-yellow-50",
 					borderColor: "border-yellow-200",
 					title: "Donation Pending",
+<<<<<<< Updated upstream
 					description: "Your donation is awaiting approval from the organization.",
+=======
+					description:
+						"Your donation is awaiting approval from the organization.",
+>>>>>>> Stashed changes
 				};
 			case "APPROVED":
 				return {
@@ -34,7 +56,12 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 					bgColor: "bg-blue-50",
 					borderColor: "border-blue-200",
 					title: "Donation Approved",
+<<<<<<< Updated upstream
 					description: "Your donation has been approved and is awaiting receipt.",
+=======
+					description:
+						"Your donation has been approved and is awaiting receipt.",
+>>>>>>> Stashed changes
 				};
 			case "RECEIVED":
 				return {
@@ -43,7 +70,12 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 					bgColor: "bg-green-50",
 					borderColor: "border-green-200",
 					title: "Donation Received",
+<<<<<<< Updated upstream
 					description: "Your donation has been received. Photo and PDF receipt are available.",
+=======
+					description:
+						"Your donation has been received. Please confirm to receive your PDF receipt.",
+>>>>>>> Stashed changes
 				};
 			case "CONFIRMED":
 				return {
@@ -52,7 +84,12 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 					bgColor: "bg-purple-50",
 					borderColor: "border-purple-200",
 					title: "Donation Confirmed",
+<<<<<<< Updated upstream
 					description: "Your donation has been confirmed and completed. All receipts are available.",
+=======
+					description:
+						"Your donation has been confirmed and completed. All receipts are available.",
+>>>>>>> Stashed changes
 				};
 			default:
 				return {
@@ -70,18 +107,36 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 	const StatusIcon = statusInfo.icon;
 
 	const hasReceipts = donation.receiptImage || donation.pdfReceiptUrl;
+<<<<<<< Updated upstream
 	const showReceipts = (donation.status === "RECEIVED" || donation.status === "CONFIRMED") && hasReceipts;
+=======
+	const showReceipts =
+		(donation.status === "RECEIVED" || donation.status === "CONFIRMED") &&
+		hasReceipts;
+>>>>>>> Stashed changes
 
 	return (
 		<div className={`bg-white rounded-lg border shadow-sm ${className}`}>
 			{/* Status Header */}
+<<<<<<< Updated upstream
 			<div className={`p-4 rounded-t-lg ${statusInfo.bgColor} ${statusInfo.borderColor} border-b`}>
+=======
+			<div
+				className={`p-4 rounded-t-lg ${statusInfo.bgColor} ${statusInfo.borderColor} border-b`}
+			>
+>>>>>>> Stashed changes
 				<div className="flex items-center space-x-3">
 					<div className={`p-2 rounded-full bg-white`}>
 						<StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
 					</div>
 					<div>
+<<<<<<< Updated upstream
 						<h3 className={`font-semibold ${statusInfo.color}`}>{statusInfo.title}</h3>
+=======
+						<h3 className={`font-semibold ${statusInfo.color}`}>
+							{statusInfo.title}
+						</h3>
+>>>>>>> Stashed changes
 						<p className="text-sm text-gray-600">{statusInfo.description}</p>
 					</div>
 				</div>
@@ -145,10 +200,19 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 					</div>
 
 					{/* Auto-generation Notice */}
+<<<<<<< Updated upstream
 					{donation.status === "RECEIVED" && donation.pdfReceiptUrl && (
 						<div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
 							<p className="text-sm text-blue-800">
 								<strong>📄 Auto-Generated:</strong> The PDF receipt was automatically created when your donation was marked as received. This serves as your official donation receipt.
+=======
+					{donation.status === "CONFIRMED" && donation.pdfReceiptUrl && (
+						<div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+							<p className="text-sm text-blue-800">
+								<strong>📄 Auto-Generated:</strong> The PDF receipt was
+								automatically created when your donation was confirmed. This
+								serves as your official donation receipt.
+>>>>>>> Stashed changes
 							</p>
 						</div>
 					)}
@@ -156,6 +220,7 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 			)}
 
 			{/* No Receipts Message */}
+<<<<<<< Updated upstream
 			{!showReceipts && (donation.status === "RECEIVED" || donation.status === "CONFIRMED") && (
 				<div className="p-4">
 					<div className="text-center py-6">
@@ -168,15 +233,37 @@ export default function ReceiptSummary({ donation, className = "" }: ReceiptSumm
 					</div>
 				</div>
 			)}
+=======
+			{!showReceipts &&
+				(donation.status === "RECEIVED" || donation.status === "CONFIRMED") && (
+					<div className="p-4">
+						<div className="text-center py-6">
+							<div className="mx-auto h-12 w-12 text-gray-400 mb-3">📄</div>
+							<p className="text-sm text-gray-600">
+								No receipts are available for this donation yet.
+							</p>
+						</div>
+					</div>
+				)}
+>>>>>>> Stashed changes
 
 			{/* Timeline */}
 			<div className="px-4 pb-4">
 				<div className="border-t pt-3">
 					<p className="text-xs text-gray-500">
+<<<<<<< Updated upstream
 						Donation created: {new Date(donation.createdAt).toLocaleDateString()}
 						{donation.confirmationDate && (
 							<span className="ml-2">
 								• Confirmed: {new Date(donation.confirmationDate).toLocaleDateString()}
+=======
+						Donation created:{" "}
+						{new Date(donation.createdAt).toLocaleDateString()}
+						{donation.confirmationDate && (
+							<span className="ml-2">
+								• Confirmed:{" "}
+								{new Date(donation.confirmationDate).toLocaleDateString()}
+>>>>>>> Stashed changes
 							</span>
 						)}
 					</p>
@@ -200,7 +287,13 @@ export function CompactReceiptSummary({
 }) {
 	const hasPhoto = !!donation.receiptImage;
 	const hasPdf = !!donation.pdfReceiptUrl;
+<<<<<<< Updated upstream
 	const showReceipts = (donation.status === "RECEIVED" || donation.status === "CONFIRMED") && (hasPhoto || hasPdf);
+=======
+	const showReceipts =
+		(donation.status === "RECEIVED" || donation.status === "CONFIRMED") &&
+		(hasPhoto || hasPdf);
+>>>>>>> Stashed changes
 
 	if (!showReceipts) return null;
 

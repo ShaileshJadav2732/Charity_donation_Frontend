@@ -44,7 +44,11 @@ import {
 	Close as CloseIcon,
 	Refresh as RefreshIcon,
 } from "@mui/icons-material";
+<<<<<<< Updated upstream
 import { SelectChangeEvent } from '@mui/material/Select';
+=======
+import { SelectChangeEvent } from "@mui/material/Select";
+>>>>>>> Stashed changes
 
 interface FormData {
 	title: string;
@@ -148,7 +152,11 @@ const CreateCampaignPage = () => {
 		}
 	}, [formData.selectedCauses, causesData]);
 
+<<<<<<< Updated upstream
 	const [error, setError] = useState<string | null>(null);
+=======
+	// const [error, setError] = useState<string | null>(null); // Unused
+>>>>>>> Stashed changes
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
@@ -346,9 +354,15 @@ const CreateCampaignPage = () => {
 			}
 		} catch (err) {
 			console.error("Failed to create campaign:", err);
+<<<<<<< Updated upstream
 			setError(
 				"Failed to create campaign. Please check the form and try again."
 			);
+=======
+			// setError(
+			// 	"Failed to create campaign. Please check the form and try again."
+			// );
+>>>>>>> Stashed changes
 		}
 	};
 

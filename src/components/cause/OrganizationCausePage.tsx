@@ -9,7 +9,10 @@ import {
 	CardContent,
 	CardActions,
 	Typography,
+<<<<<<< Updated upstream
 	Grid,
+=======
+>>>>>>> Stashed changes
 	Chip,
 	TextField,
 	Alert,
@@ -35,7 +38,11 @@ import {
 	useGetCausesQuery,
 	useDeleteCauseMutation,
 } from "@/store/api/causeApi";
+<<<<<<< Updated upstream
 import { Cause } from "@/types/campaigns";
+=======
+import { Cause } from "@/types/cause";
+>>>>>>> Stashed changes
 import { toast } from "react-hot-toast";
 
 const CausesPage = () => {
@@ -153,6 +160,7 @@ const CausesPage = () => {
 				</Paper>
 
 				{/* Campaign Reminder */}
+<<<<<<< Updated upstream
 				{!isLoading && !error && filteredCauses?.length > 0 && (
 					<Alert severity="info" sx={{ mb: 3 }}>
 						<Typography variant="subtitle2" fontWeight="medium">
@@ -166,6 +174,24 @@ const CausesPage = () => {
 						</Typography>
 					</Alert>
 				)}
+=======
+				{!isLoading &&
+					!error &&
+					filteredCauses &&
+					filteredCauses.length > 0 && (
+						<Alert severity="info" sx={{ mb: 3 }}>
+							<Typography variant="subtitle2" fontWeight="medium">
+								Important: Causes must be added to active campaigns to be
+								visible to donors
+							</Typography>
+							<Typography variant="body2">
+								After creating a cause, make sure to add it to an active
+								campaign from the cause detail page. Donors can only see causes
+								that are part of active campaigns.
+							</Typography>
+						</Alert>
+					)}
+>>>>>>> Stashed changes
 
 				{/* Causes List */}
 				{isLoading ? (
@@ -179,9 +205,25 @@ const CausesPage = () => {
 						No causes found. Create your first cause!
 					</Alert>
 				) : (
+<<<<<<< Updated upstream
 					<Grid container spacing={3}>
 						{filteredCauses?.map((cause: Cause) => (
 							<Grid item xs={12} sm={6} md={4} key={cause.id}>
+=======
+					<Box
+						sx={{
+							display: "grid",
+							gridTemplateColumns: {
+								xs: "1fr",
+								sm: "repeat(2, 1fr)",
+								md: "repeat(3, 1fr)",
+							},
+							gap: 3,
+						}}
+					>
+						{filteredCauses?.map((cause: Cause) => (
+							<Box key={cause.id}>
+>>>>>>> Stashed changes
 								<Card>
 									<CardContent>
 										<Box
@@ -257,9 +299,15 @@ const CausesPage = () => {
 										</IconButton>
 									</CardActions>
 								</Card>
+<<<<<<< Updated upstream
 							</Grid>
 						))}
 					</Grid>
+=======
+							</Box>
+						))}
+					</Box>
+>>>>>>> Stashed changes
 				)}
 			</Box>
 

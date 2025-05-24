@@ -19,9 +19,15 @@ import {
 	FaComments,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
+<<<<<<< Updated upstream
 import { useGetNotificationsQuery } from "@/store/api/notificationApi";
 import NotificationList from "@/components/notifications/NotificationList";
 import AuthGuard from "@/lib/AuthGuard";
+=======
+import RealTimeNotificationList from "@/components/notifications/RealTimeNotificationList";
+import AuthGuard from "@/lib/AuthGuard";
+import { useSocket } from "@/contexts/SocketContext";
+>>>>>>> Stashed changes
 
 export default function DashboardLayout({
 	children,
@@ -34,6 +40,7 @@ export default function DashboardLayout({
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [showNotifications, setShowNotifications] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
+<<<<<<< Updated upstream
 
 	// Use _id consistently for the user ID
 	const userId = user?.id || "";
@@ -59,6 +66,20 @@ export default function DashboardLayout({
 			}
 		};
 
+=======
+
+	// Use real-time notifications
+	const { unreadCount } = useSocket();
+
+	useEffect(() => {
+		const handleScroll = () => {
+			const isScrolled = window.scrollY > 10;
+			if (isScrolled !== scrolled) {
+				setScrolled(isScrolled);
+			}
+		};
+
+>>>>>>> Stashed changes
 		document.addEventListener("scroll", handleScroll, { passive: true });
 		return () => {
 			document.removeEventListener("scroll", handleScroll);
@@ -92,6 +113,14 @@ export default function DashboardLayout({
 						text: "My Donations",
 						path: "/dashboard/donations",
 					},
+<<<<<<< Updated upstream
+=======
+					{
+						icon: FaChartBar,
+						text: "Analytics",
+						path: "/dashboard/analytics/donations",
+					},
+>>>>>>> Stashed changes
 			  ]
 			: [
 					{
@@ -136,15 +165,37 @@ export default function DashboardLayout({
 						scrolled ? "shadow-lg" : ""
 					}`}
 				>
+<<<<<<< Updated upstream
 					{/* GreenGive logo/text - always visible */}
 					<div className="flex items-center">
+=======
+					{/* Left side: Hamburger menu (mobile only) + Logo */}
+					<div className="flex items-center space-x-4">
+						{/* Mobile Hamburger Menu Button */}
+						<button
+							onClick={toggleMobileMenu}
+							className="lg:hidden p-2 rounded-lg text-teal-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
+							aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+						>
+							{isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+						</button>
+
+						{/* GreenGive logo/text */}
+>>>>>>> Stashed changes
 						<span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-green-600 bg-clip-text text-transparent">
 							GreenGive
 						</span>
 					</div>
 
+<<<<<<< Updated upstream
 					<div className="flex-1" />
 
+=======
+					{/* Spacer */}
+					<div className="flex-1" />
+
+					{/* Right side: Profile + Notifications */}
+>>>>>>> Stashed changes
 					<div className="flex items-center space-x-4">
 						{/* Profile Button */}
 						<Link
@@ -172,6 +223,7 @@ export default function DashboardLayout({
 						</button>
 					</div>
 				</div>
+<<<<<<< Updated upstream
 
 				{/* Mobile menu button - now scrolls with page */}
 				<div
@@ -216,6 +268,35 @@ export default function DashboardLayout({
 							</p>
 						</div>
 
+=======
+
+				{/* Notifications Panel */}
+				{showNotifications && (
+					<div className="fixed top-16 right-4 z-50">
+						<RealTimeNotificationList
+							onClose={() => setShowNotifications(false)}
+						/>
+					</div>
+				)}
+
+				{/* Sidebar */}
+				<aside
+					className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${
+						isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+					} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16 overflow-y-auto`}
+				>
+					<div className="h-full flex flex-col">
+						{/* Sidebar header */}
+						<div className="px-6 py-8 border-b border-gray-200">
+							<h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+							<p className="mt-2 text-sm text-gray-600">
+								{user?.role === "donor"
+									? "Donor Dashboard"
+									: "Organization Dashboard"}
+							</p>
+						</div>
+
+>>>>>>> Stashed changes
 						{/* Sidebar navigation */}
 						<nav className="flex-1 px-4 py-6 space-y-2">
 							{menuItems.map((item) => (
@@ -252,6 +333,7 @@ export default function DashboardLayout({
 				<main className="lg:ml-72 pt-16 min-h-screen">
 					<div className="p-8">{children}</div>
 				</main>
+<<<<<<< Updated upstream
 
 				{/* Overlay for mobile menu */}
 				{isMobileMenuOpen && (
@@ -260,6 +342,8 @@ export default function DashboardLayout({
 						onClick={() => setIsMobileMenuOpen(false)}
 					/>
 				)}
+=======
+>>>>>>> Stashed changes
 			</div>
 		</AuthGuard>
 	);

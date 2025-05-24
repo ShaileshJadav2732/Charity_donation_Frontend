@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
 		],
 	},
 	reactStrictMode: true,
+<<<<<<< Updated upstream
+=======
+	async rewrites() {
+		return [
+			{
+				source: "/api/:path*",
+				destination: "http://localhost:8080/api/:path*",
+			},
+		];
+	},
+>>>>>>> Stashed changes
 };
 
 export default nextConfig;

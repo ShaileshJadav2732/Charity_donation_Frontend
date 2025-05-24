@@ -142,6 +142,7 @@ export const donationApi = apiSlice.injectEndpoints({
 				receiptUrl: string;
 				emailStatus: string;
 				notificationStatus: string;
+<<<<<<< Updated upstream
 			},
 			{ donationId: string; receiptFile: File }
 		>({
@@ -154,6 +155,72 @@ export const donationApi = apiSlice.injectEndpoints({
 					method: "PATCH",
 					body: formData,
 				};
+=======
+				pdfReceiptUrl?: string;
+			},
+			{ donationId: string; receiptFile: File }
+		>({
+			queryFn: async ({ donationId, receiptFile }, { getState }) => {
+				try {
+					// Create a new FormData instance
+					const formData = new FormData();
+					formData.append("receipt", receiptFile);
+
+					console.log(
+						"Sending receipt:",
+						receiptFile.name,
+						receiptFile.type,
+						receiptFile.size
+					);
+
+					// Get the token from state
+					const state = getState() as { auth: { token: string | null } };
+					const token = state.auth.token;
+
+					// Create headers manually
+					const headers: HeadersInit = {};
+					if (token) {
+						headers["Authorization"] = `Bearer ${token}`;
+					}
+					// Don't set Content-Type - let the browser set it for FormData
+
+					// Create an AbortController for timeout
+					const controller = new AbortController();
+					const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+					const response = await fetch(
+						`${
+							process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+						}/donations/${donationId}/confirmed`,
+						{
+							method: "PATCH",
+							headers,
+							body: formData,
+							signal: controller.signal,
+						}
+					);
+
+					clearTimeout(timeoutId);
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						console.error("API Error Response:", errorData);
+						return { error: errorData };
+					}
+
+					const data = await response.json();
+					console.log("API Success Response:", data);
+					return { data };
+				} catch (error) {
+					console.error("Network/Fetch Error:", error);
+					if (error instanceof Error && error.name === "AbortError") {
+						return {
+							error: { message: "Request timed out. Please try again." },
+						};
+					}
+					return { error: { message: "Network error occurred" } };
+				}
+>>>>>>> Stashed changes
 			},
 			invalidatesTags: ["Donations"],
 		}),

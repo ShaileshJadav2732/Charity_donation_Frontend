@@ -45,6 +45,7 @@ const DonationConfirmation: React.FC<DonationConfirmationProps> = ({
 
 			if (retryCount < 2) {
 				toast.error(
+<<<<<<< Updated upstream
 					`❌ Failed to confirm receipt: ${errorMessage}. Click to retry.`,
 					{
 						duration: 6000,
@@ -52,6 +53,11 @@ const DonationConfirmation: React.FC<DonationConfirmationProps> = ({
 							label: "Retry",
 							onClick: () => handleConfirmReceipt(),
 						},
+=======
+					`❌ Failed to confirm receipt: ${errorMessage}. Please try again.`,
+					{
+						duration: 6000,
+>>>>>>> Stashed changes
 					}
 				);
 			} else {

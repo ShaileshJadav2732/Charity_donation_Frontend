@@ -22,7 +22,10 @@ import {
 	ListItem,
 	ListItemAvatar,
 	ListItemText,
+<<<<<<< Updated upstream
 	IconButton,
+=======
+>>>>>>> Stashed changes
 	Dialog,
 	DialogTitle,
 	DialogContent,
@@ -32,13 +35,17 @@ import {
 	InputLabel,
 	Select,
 	MenuItem,
+<<<<<<< Updated upstream
 	Switch,
 	FormControlLabel,
+=======
+>>>>>>> Stashed changes
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import {
 	CalendarMonth as CalendarIcon,
 	Groups as DonorsIcon,
+<<<<<<< Updated upstream
 	VolunteerActivism as DonationIcon,
 	Edit as EditIcon,
 	Delete as DeleteIcon,
@@ -49,13 +56,27 @@ import {
 	Category as CategoryIcon,
 	Person as PersonIcon,
 	Save as SaveIcon,
+=======
+	Edit as EditIcon,
+	Delete as DeleteIcon,
+	ArrowBack as BackIcon,
+	Category as CategoryIcon,
+	Person as PersonIcon,
+	Cancel as CancelIcon,
+>>>>>>> Stashed changes
 } from "@mui/icons-material";
 import {
 	useGetCampaignByIdQuery,
 	useDeleteCampaignMutation,
+<<<<<<< Updated upstream
 	useUpdateCampaignMutation,
 } from "@/store/api/campaignApi";
 import { useGetCausesQuery } from "@/store/api/causeApi";
+=======
+	// useUpdateCampaignMutation, // Unused
+} from "@/store/api/campaignApi";
+// import { useGetCausesQuery } from "@/store/api/causeApi"; // Unused
+>>>>>>> Stashed changes
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { DatePicker } from "@mui/x-date-pickers";
@@ -63,8 +84,13 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DonationType } from "@/types/donation";
 import dayjs, { Dayjs } from "dayjs";
+<<<<<<< Updated upstream
 import { CampaignStatus } from "@/types/campaings";
 import { Suspense } from "react";
+=======
+// import { CampaignStatus } from "@/types/campaings"; // Unused
+// import { Suspense } from "react"; // Unused
+>>>>>>> Stashed changes
 
 interface TabPanelProps {
 	children?: React.ReactNode;
@@ -187,11 +213,16 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		data: campaignData,
 		isLoading,
 		error,
+<<<<<<< Updated upstream
 		refetch,
+=======
+		// refetch, // Unused
+>>>>>>> Stashed changes
 	} = useGetCampaignByIdQuery(id, {
 		skip: skipQuery,
 	});
 
+<<<<<<< Updated upstream
 	const {
 		data: organizationCausesData,
 		isLoading: isLoadingOrgCauses,
@@ -200,12 +231,27 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		{ organizationId: user?.id },
 		{ skip: user?.role !== "organization" }
 	);
+=======
+	// Commented out unused organization causes query
+	// const {
+	// 	data: organizationCausesData,
+	// 	isLoading: isLoadingOrgCauses,
+	// 	error: orgCausesError,
+	// } = useGetCausesQuery(
+	// 	{ organizationId: user?.id },
+	// 	{ skip: user?.role !== "organization" }
+	// );
+>>>>>>> Stashed changes
 	console.log("campaignData", campaignData);
 
 	const [deleteCampaign, { isLoading: isDeleting }] =
 		useDeleteCampaignMutation();
+<<<<<<< Updated upstream
 	const [updateCampaign, { isLoading: isUpdating }] =
 		useUpdateCampaignMutation();
+=======
+	// const [updateCampaign] = useUpdateCampaignMutation(); // Unused
+>>>>>>> Stashed changes
 
 	// Form state for editing
 	const [formData, setFormData] = useState<FormData>({
@@ -282,6 +328,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		setTabValue(newValue);
 	};
 
+<<<<<<< Updated upstream
 	const toggleEditMode = () => {
 		setIsEditMode(!isEditMode);
 	};
@@ -316,6 +363,43 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		}
 	};
 
+=======
+	// Commented out unused functions
+	// const toggleEditMode = () => {
+	// 	setIsEditMode(!isEditMode);
+	// };
+
+	// const handleSaveChanges = async () => {
+	// 	try {
+	// 		if (!formData.startDate || !formData.endDate) {
+	// 			console.error("Start date or end date is missing");
+	// 			return;
+	// 		}
+
+	// 		const payload = {
+	// 			id,
+	// 			body: {
+	// 				title: formData.title,
+	// 				description: formData.description,
+	// 				startDate: formData.startDate.toISOString(),
+	// 				endDate: formData.endDate.toISOString(),
+	// 				status: formData.status,
+	// 				totalTargetAmount: parseFloat(formData.totalTargetAmount),
+	// 				imageUrl: formData.imageUrl,
+	// 				causes: formData.causes,
+	// 				acceptedDonationTypes: formData.acceptedDonationTypes,
+	// 			},
+	// 		};
+
+	// 		await updateCampaign(payload).unwrap();
+	// 		setIsEditMode(false);
+	// 		refetch();
+	// 	} catch (err) {
+	// 		console.error("Failed to update campaign:", err);
+	// 	}
+	// };
+
+>>>>>>> Stashed changes
 	const handleEditCampaign = () => {
 		if (!id || id === "undefined") {
 			console.error("Invalid campaign ID");
@@ -323,11 +407,19 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		}
 		setIsEditMode(true);
 	};
+<<<<<<< Updated upstream
 
 	const handleDeleteDialogOpen = () => {
 		setDeleteDialogOpen(true);
 	};
 
+=======
+
+	const handleDeleteDialogOpen = () => {
+		setDeleteDialogOpen(true);
+	};
+
+>>>>>>> Stashed changes
 	const handleDeleteDialogClose = () => {
 		setDeleteDialogOpen(false);
 	};

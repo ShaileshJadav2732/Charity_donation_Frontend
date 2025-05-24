@@ -6,54 +6,71 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FcGoogle } from "react-icons/fc";
-import { FiArrowRight, FiLock, FiMail, FiEye, FiEyeOff } from "react-icons/fi";
+import {
+	Box,
+	Typography,
+	Divider,
+	IconButton,
+	InputAdornment,
+	// Alert, // Unused
+} from "@mui/material";
+import {
+	Email as EmailIcon,
+	Lock as LockIcon,
+	Visibility,
+	VisibilityOff,
+	ArrowForward as ArrowForwardIcon,
+} from "@mui/icons-material";
+import FormContainer from "@/components/ui/FormContainer";
+import FormInput from "@/components/ui/FormInput";
+import FormButton from "@/components/ui/FormButton";
+import { motion } from "framer-motion";
 
 const LoginForm = () => {
-  const { loginWithEmail, loginWithGoogle, isLoading, authInitialized } =
-    useAuth();
+	const { loginWithEmail, loginWithGoogle, isLoading, authInitialized } =
+		useAuth();
 
-  const [formData, setFormData] = useState<LoginFormData>({
-    email: "",
-    password: "",
-  });
+	const [formData, setFormData] = useState<LoginFormData>({
+		email: "",
+		password: "",
+	});
 
-  const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
+	const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const { name, value } = e.target;
+		setFormData((prev) => ({ ...prev, [name]: value }));
+		// Clear error when user starts typing
+		if (errors[name]) {
+			setErrors((prev) => ({ ...prev, [name]: "" }));
+		}
+	};
 
-  const handleFocus = (fieldName: string) => {
-    setFocusedField(fieldName);
-  };
+	const togglePasswordVisibility = () => {
+		setShowPassword((prev) => !prev);
+	};
 
-  const handleBlur = () => {
-    setFocusedField(null);
-  };
+	const validateForm = () => {
+		const newErrors: { [key: string]: string } = {};
 
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
-  };
+		if (!formData.email.trim()) {
+			newErrors.email = "Email is required";
+		} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+			newErrors.email = "Please enter a valid email address";
+		}
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+		if (!formData.password.trim()) {
+			newErrors.password = "Password is required";
+		} else if (formData.password.length < 6) {
+			newErrors.password = "Password must be at least 6 characters";
+		}
 
-    try {
-      console.log("LoginForm: Attempting login with email", formData.email);
-      await loginWithEmail(formData);
-      console.log(
-        "LoginForm: Login successful, relying on useAuth for redirect"
-      );
-      toast.success("Logged in successfully!");
-    } catch (error: unknown) {
-      console.error("LoginForm: Login error:", error);
-      const parsedError = parseError(error);
-      toast.error(parsedError.message || "Failed to log in");
-    }
-  };
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
 
+<<<<<<< Updated upstream
   const handleGoogleLogin = async () => {
     try {
       console.log("LoginForm: Attempting Google login");
@@ -90,47 +107,30 @@ const LoginForm = () => {
       }
     }
   };
+=======
+	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+>>>>>>> Stashed changes
 
-  if (!authInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100">
-        <div className="text-teal-600">Loading...</div>
-      </div>
-    );
-  }
+		if (!validateForm()) {
+			return;
+		}
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <svg
-            className="h-12 w-12 text-teal-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-            />
-          </svg>
-        </div>
-        <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
-          {/* Header */}
-          <div className="px-6 py-8 text-center">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Welcome to GreenGive
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Sign in to continue your journey of giving
-            </p>
-          </div>
+		try {
+			console.log("LoginForm: Attempting login with email", formData.email);
+			await loginWithEmail(formData);
+			console.log(
+				"LoginForm: Login successful, relying on useAuth for redirect"
+			);
+			toast.success("Welcome back!");
+		} catch (error: unknown) {
+			console.error("LoginForm: Login error:", error);
+			const parsedError = parseError(error);
+			toast.error(parsedError.message || "Failed to log in");
+		}
+	};
 
+<<<<<<< Updated upstream
           {/* Form */}
           <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
             {/* Email Field */}
@@ -228,107 +228,260 @@ const LoginForm = () => {
                 </button>
               </div>
             </div>
+=======
+	const handleGoogleLogin = async () => {
+		try {
+			console.log("LoginForm: Attempting Google login");
+			toast.loading("Signing in with Google...", { id: "google-login" });
 
-            {/* Remember Me */}
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                aria-describedby="remember-me"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-sm text-gray-600"
-              >
-                Remember me
-              </label>
-            </div>
+			// Check if browser supports popups
+			const popupBlocked = window.innerWidth < 1 || window.innerHeight < 1;
+			if (popupBlocked) {
+				toast.dismiss("google-login");
+				toast.error("Please allow popups for this site to use Google login");
+				return;
+			}
+>>>>>>> Stashed changes
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:bg-teal-400 disabled:cursor-not-allowed"
-              aria-label="Log in"
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Logging in...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <FiArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
-                </>
-              )}
-            </button>
-          </form>
+			await loginWithGoogle();
+			console.log(
+				"LoginForm: Google login successful, relying on useAuth for redirect"
+			);
+			toast.dismiss("google-login");
+			toast.success("Logged in with Google!");
+		} catch (error: unknown) {
+			console.error("LoginForm: Google login error:", error);
+			toast.dismiss("google-login");
+			const parsedError = parseError(error);
 
-          {/* Divider */}
-          <div className="px-6 py-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-          </div>
+			// Provide more user-friendly error messages
+			if (parsedError.message?.includes("popup")) {
+				toast.error(
+					"Google login popup was blocked. Please allow popups for this site."
+				);
+			} else if (parsedError.message?.includes("network")) {
+				toast.error(
+					"Network error. Please check your internet connection and try again."
+				);
+			} else if (parsedError.message?.includes("cancelled")) {
+				toast.error("Google login was cancelled. Please try again.");
+			} else {
+				toast.error(parsedError.message || "Failed to log in with Google");
+			}
+		}
+	};
 
-          {/* Google Login Button */}
-          <div className="px-6 pb-6 space-y-4">
-            <button
-              onClick={handleGoogleLogin}
-              disabled={isLoading}
-              className="w-full flex justify-center items-center px-4 py-2.5 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              aria-label="Continue with Google"
-            >
-              <FcGoogle className="h-5 w-5 mr-2" aria-hidden="true" />
-              Sign in with Google
-            </button>
+	if (!authInitialized) {
+		return (
+			<Box
+				sx={{
+					minHeight: "100vh",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					background: "linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)",
+				}}
+			>
+				<Typography color="primary.main">Loading...</Typography>
+			</Box>
+		);
+	}
 
-            {/* Signup Link */}
-            <div className="text-center text-sm">
-              <p className="text-gray-600">
-                New to GreenGive?{" "}
-                <Link
-                  href="/signup"
-                  className="font-medium text-teal-600 hover:text-teal-500 transition-colors duration-200"
-                >
-                  Create an account
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+	return (
+		<Box
+			sx={{
+				minHeight: "100vh",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				background: "linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)",
+				py: 4,
+			}}
+		>
+			<FormContainer
+				title="Welcome Back"
+				subtitle="Sign in to continue your journey of giving"
+				maxWidth={480}
+				headerContent={
+					<Box sx={{ textAlign: "center", mb: 2 }}>
+						<motion.div
+							initial={{ scale: 0 }}
+							animate={{ scale: 1 }}
+							transition={{ duration: 0.5, type: "spring" }}
+						>
+							<Box
+								sx={{
+									width: 64,
+									height: 64,
+									borderRadius: "50%",
+									background:
+										"linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									mx: "auto",
+									mb: 2,
+									boxShadow: "0 8px 32px rgba(20, 184, 166, 0.3)",
+								}}
+							>
+								<EmailIcon sx={{ color: "white", fontSize: 32 }} />
+							</Box>
+						</motion.div>
+					</Box>
+				}
+			>
+				<Box
+					component="form"
+					onSubmit={handleSubmit}
+					sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+				>
+					{/* Email Field */}
+					<FormInput
+						name="email"
+						type="email"
+						label="Email Address"
+						value={formData.email}
+						onChange={handleChange}
+						error={Boolean(errors.email)}
+						helperText={errors.email}
+						icon={<EmailIcon />}
+						placeholder="you@example.com"
+						autoComplete="email"
+						required
+						fullWidth
+					/>
+
+					{/* Password Field */}
+					<Box>
+						<Box
+							sx={{
+								display: "flex",
+								justifyContent: "space-between",
+								alignItems: "center",
+								mb: 1,
+							}}
+						>
+							<Typography variant="body2" sx={{ fontWeight: 500 }}>
+								Password
+							</Typography>
+							<Link href="/forgot-password" style={{ textDecoration: "none" }}>
+								<Typography
+									variant="body2"
+									sx={{
+										color: "primary.main",
+										"&:hover": { color: "primary.dark" },
+										transition: "color 0.2s",
+									}}
+								>
+									Forgot password?
+								</Typography>
+							</Link>
+						</Box>
+						<FormInput
+							name="password"
+							type={showPassword ? "text" : "password"}
+							label="Password"
+							value={formData.password}
+							onChange={handleChange}
+							error={Boolean(errors.password)}
+							helperText={errors.password}
+							icon={<LockIcon />}
+							placeholder="••••••••"
+							autoComplete="current-password"
+							required
+							fullWidth
+							InputProps={{
+								endAdornment: (
+									<InputAdornment position="end">
+										<IconButton
+											onClick={togglePasswordVisibility}
+											edge="end"
+											aria-label={
+												showPassword ? "Hide password" : "Show password"
+											}
+										>
+											{showPassword ? <VisibilityOff /> : <Visibility />}
+										</IconButton>
+									</InputAdornment>
+								),
+							}}
+						/>
+					</Box>
+
+					{/* Remember Me */}
+					<div className="flex items-center">
+						<input
+							id="remember-me"
+							name="remember-me"
+							type="checkbox"
+							className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+							aria-describedby="remember-me"
+						/>
+						<label
+							htmlFor="remember-me"
+							className="ml-2 block text-sm text-gray-600"
+						>
+							Remember me
+						</label>
+					</div>
+
+					{/* Submit Button */}
+					<FormButton
+						type="submit"
+						variant="primary"
+						loading={isLoading}
+						loadingText="Signing in..."
+						fullWidth
+						icon={<ArrowForwardIcon />}
+					>
+						Sign In
+					</FormButton>
+				</Box>
+
+				{/* Divider */}
+				<Box sx={{ my: 3 }}>
+					<Divider>
+						<Typography variant="body2" color="text.secondary">
+							Or continue with
+						</Typography>
+					</Divider>
+				</Box>
+
+				{/* Google Login Button */}
+				<FormButton
+					variant="outlined"
+					onClick={handleGoogleLogin}
+					loading={isLoading}
+					loadingText="Connecting..."
+					fullWidth
+					icon={<FcGoogle style={{ fontSize: 20 }} />}
+				>
+					Sign in with Google
+				</FormButton>
+
+				{/* Signup Link */}
+				<Box sx={{ textAlign: "center", mt: 3 }}>
+					<Typography variant="body2" color="text.secondary">
+						New to GreenGive?{" "}
+						<Link href="/signup" style={{ textDecoration: "none" }}>
+							<Typography
+								component="span"
+								variant="body2"
+								sx={{
+									color: "primary.main",
+									fontWeight: 600,
+									"&:hover": { color: "primary.dark" },
+									transition: "color 0.2s",
+								}}
+							>
+								Create an account
+							</Typography>
+						</Link>
+					</Typography>
+				</Box>
+			</FormContainer>
+		</Box>
+	);
 };
 
 export default LoginForm;

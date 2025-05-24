@@ -1,5 +1,6 @@
 import React from "react";
 import { Chip } from "@mui/material";
+<<<<<<< Updated upstream
 
 // Define the campaign status enum locally since it's not exported from @/types/campaigns
 export enum CampaignStatus {
@@ -9,6 +10,9 @@ export enum CampaignStatus {
 	COMPLETED = "COMPLETED",
 	CANCELLED = "CANCELLED",
 }
+=======
+import { CampaignStatus } from "@/types/campaings";
+>>>>>>> Stashed changes
 
 export const StatusChip = ({ status }: { status: string }) => {
 	const getStatusColor = (status: string) => {

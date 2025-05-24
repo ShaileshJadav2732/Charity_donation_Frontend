@@ -317,11 +317,31 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		);
 
 		try {
+<<<<<<< Updated upstream
 			await markAsConfirmed({
+=======
+			console.log(
+				"Starting markAsConfirmed for donation:",
+				selectedDonation._id
+			);
+			console.log(
+				"Receipt file:",
+				selectedReceipt.name,
+				selectedReceipt.type,
+				selectedReceipt.size
+			);
+
+			const result = await markAsConfirmed({
+>>>>>>> Stashed changes
 				donationId: selectedDonation._id,
 				receiptFile: selectedReceipt,
 			}).unwrap();
 
+<<<<<<< Updated upstream
+=======
+			console.log("markAsConfirmed successful:", result);
+
+>>>>>>> Stashed changes
 			toast.dismiss(loadingToast);
 			toast.success("✅ Donation marked as confirmed with receipt!");
 
@@ -330,12 +350,38 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			setSelectedReceipt(null);
 			setReceiptPreviewUrl(null);
 			setSelectedDonation(null);
+<<<<<<< Updated upstream
 		} catch (error: unknown) {
 			toast.dismiss(loadingToast);
 			console.error("Error marking donation as confirmed:", error);
 			toast.error(
 				(error as any)?.data?.message || "Failed to mark donation as confirmed"
 			);
+=======
+
+			// Force refetch to update the UI
+			await refetch();
+		} catch (error: unknown) {
+			toast.dismiss(loadingToast);
+			console.error("Error marking donation as confirmed:", error);
+
+			// Extract error message more safely
+			let errorMessage = "Failed to mark donation as confirmed";
+			if (error && typeof error === "object") {
+				if (
+					"data" in error &&
+					error.data &&
+					typeof error.data === "object" &&
+					"message" in error.data
+				) {
+					errorMessage = String(error.data.message);
+				} else if ("message" in error) {
+					errorMessage = String(error.message);
+				}
+			}
+
+			toast.error(errorMessage);
+>>>>>>> Stashed changes
 		} finally {
 			setIsMarkingConfirmed(false);
 		}
@@ -820,9 +866,15 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							</p>
 							<div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
 								<p className="text-sm text-blue-800">
+<<<<<<< Updated upstream
 									📄 <strong>Auto-Generated Receipt:</strong> A PDF receipt will
 									be automatically generated and made available to the donor
 									when you mark this donation as received.
+=======
+									📸 <strong>Photo Upload:</strong> Upload a photo to confirm
+									receipt. The donor will be notified and can then confirm the
+									donation to receive their PDF receipt.
+>>>>>>> Stashed changes
 								</p>
 							</div>
 
