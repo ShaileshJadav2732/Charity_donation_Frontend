@@ -9,10 +9,6 @@ import {
 	CardContent,
 	CardActions,
 	Typography,
-<<<<<<< Updated upstream
-	Grid,
-=======
->>>>>>> Stashed changes
 	Chip,
 	TextField,
 	Alert,
@@ -25,12 +21,22 @@ import {
 	DialogContent,
 	DialogContentText,
 	DialogActions,
+	LinearProgress,
 } from "@mui/material";
 import {
 	Add as AddIcon,
 	Edit as EditIcon,
 	Delete as DeleteIcon,
 	Search as SearchIcon,
+	AttachMoney as MoneyIcon,
+	Checkroom as ClothesIcon,
+	Bloodtype as BloodIcon,
+	Restaurant as FoodIcon,
+	Toys as ToysIcon,
+	MenuBook as BooksIcon,
+	Chair as FurnitureIcon,
+	Home as HouseholdIcon,
+	Category as OtherIcon,
 } from "@mui/icons-material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -38,12 +44,21 @@ import {
 	useGetCausesQuery,
 	useDeleteCauseMutation,
 } from "@/store/api/causeApi";
-<<<<<<< Updated upstream
-import { Cause } from "@/types/campaigns";
-=======
 import { Cause } from "@/types/cause";
->>>>>>> Stashed changes
+import { DonationType } from "@/types/donation";
 import { toast } from "react-hot-toast";
+
+const DonationTypeIcons: Record<DonationType, React.ComponentType<any>> = {
+	[DonationType.MONEY]: MoneyIcon,
+	[DonationType.CLOTHES]: ClothesIcon,
+	[DonationType.BLOOD]: BloodIcon,
+	[DonationType.FOOD]: FoodIcon,
+	[DonationType.TOYS]: ToysIcon,
+	[DonationType.BOOKS]: BooksIcon,
+	[DonationType.FURNITURE]: FurnitureIcon,
+	[DonationType.HOUSEHOLD]: HouseholdIcon,
+	[DonationType.OTHER]: OtherIcon,
+};
 
 const CausesPage = () => {
 	const router = useRouter();
@@ -140,7 +155,9 @@ const CausesPage = () => {
 						<TextField
 							placeholder="Search causes..."
 							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setSearchTerm(e.target.value)
+							}
 							size="small"
 							InputProps={{
 								startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
@@ -160,21 +177,6 @@ const CausesPage = () => {
 				</Paper>
 
 				{/* Campaign Reminder */}
-<<<<<<< Updated upstream
-				{!isLoading && !error && filteredCauses?.length > 0 && (
-					<Alert severity="info" sx={{ mb: 3 }}>
-						<Typography variant="subtitle2" fontWeight="medium">
-							Important: Causes must be added to active campaigns to be visible
-							to donors
-						</Typography>
-						<Typography variant="body2">
-							After creating a cause, make sure to add it to an active campaign
-							from the cause detail page. Donors can only see causes that are
-							part of active campaigns.
-						</Typography>
-					</Alert>
-				)}
-=======
 				{!isLoading &&
 					!error &&
 					filteredCauses &&
@@ -191,7 +193,6 @@ const CausesPage = () => {
 							</Typography>
 						</Alert>
 					)}
->>>>>>> Stashed changes
 
 				{/* Causes List */}
 				{isLoading ? (
@@ -205,11 +206,6 @@ const CausesPage = () => {
 						No causes found. Create your first cause!
 					</Alert>
 				) : (
-<<<<<<< Updated upstream
-					<Grid container spacing={3}>
-						{filteredCauses?.map((cause: Cause) => (
-							<Grid item xs={12} sm={6} md={4} key={cause.id}>
-=======
 					<Box
 						sx={{
 							display: "grid",
@@ -221,93 +217,340 @@ const CausesPage = () => {
 							gap: 3,
 						}}
 					>
-						{filteredCauses?.map((cause: Cause) => (
-							<Box key={cause.id}>
->>>>>>> Stashed changes
-								<Card>
-									<CardContent>
-										<Box
-											display="flex"
-											justifyContent="space-between"
-											alignItems="flex-start"
-											mb={2}
-										>
-											<Typography variant="h6" gutterBottom>
-												{cause.title}
-											</Typography>
-										</Box>
-										<Typography
-											variant="body2"
-											color="text.secondary"
-											sx={{
-												overflow: "hidden",
-												textOverflow: "ellipsis",
-												display: "-webkit-box",
-												WebkitLineClamp: 3,
-												WebkitBoxOrient: "vertical",
-												mb: 2,
-											}}
-										>
-											{cause.description}
-										</Typography>
-										<Box display="flex" justifyContent="space-between" mb={1}>
-											<Typography variant="body2" color="text.secondary">
-												Target:
-											</Typography>
-											<Typography variant="body2" fontWeight="bold">
-												${cause.targetAmount.toLocaleString()}
-											</Typography>
-										</Box>
-										<Box display="flex" justifyContent="space-between">
-											<Typography variant="body2" color="text.secondary">
-												Raised:
-											</Typography>
+						{filteredCauses?.map((cause: Cause) => {
+							const progress = Math.min(
+								100,
+								Math.round((cause.raisedAmount / cause.targetAmount) * 100)
+							);
+
+							const acceptanceType = cause.acceptanceType || "money";
+							const primaryDonationType =
+								cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
+							const DonationIcon = DonationTypeIcons[primaryDonationType];
+
+							return (
+								<Box key={cause.id}>
+									<Card
+										sx={{
+											height: "100%",
+											display: "flex",
+											flexDirection: "column",
+											borderRadius: 2,
+											boxShadow: 3,
+											transition: "transform 0.3s ease, box-shadow 0.3s ease",
+											"&:hover": {
+												transform: "translateY(-2px)",
+												boxShadow: 6,
+											},
+										}}
+									>
+										<CardContent sx={{ flexGrow: 1 }}>
+											<Box
+												display="flex"
+												justifyContent="space-between"
+												alignItems="flex-start"
+												mb={2}
+											>
+												<Typography
+													variant="h6"
+													gutterBottom
+													sx={{ fontWeight: 600 }}
+												>
+													{cause.title}
+												</Typography>
+											</Box>
 											<Typography
 												variant="body2"
-												fontWeight="bold"
-												color="success.main"
+												color="text.secondary"
+												sx={{
+													overflow: "hidden",
+													textOverflow: "ellipsis",
+													display: "-webkit-box",
+													WebkitLineClamp: 3,
+													WebkitBoxOrient: "vertical",
+													mb: 2,
+													lineHeight: 1.4,
+												}}
 											>
-												${cause.raisedAmount.toLocaleString()}
+												{cause.description}
 											</Typography>
-										</Box>
-										{cause.tags && cause.tags.length > 0 && (
-											<Box display="flex" gap={0.5} mt={2} flexWrap="wrap">
-												{cause.tags.map((tag) => (
-													<Chip
-														key={tag}
-														label={tag}
-														size="small"
-														variant="outlined"
+
+											{/* Donation Type & Progress Section */}
+											<Box sx={{ mb: 2 }}>
+												<Box
+													display="flex"
+													justifyContent="space-between"
+													alignItems="center"
+													mb={1}
+												>
+													<Box display="flex" alignItems="center" gap={1}>
+														<DonationIcon
+															sx={{ fontSize: "1.2rem", color: "#2f8077" }}
+														/>
+														<Typography
+															variant="body2"
+															color="text.secondary"
+															sx={{ fontWeight: 500 }}
+														>
+															{acceptanceType === "money"
+																? "Funding Progress"
+																: acceptanceType === "items"
+																? "Item Collection"
+																: "Mixed Donations"}
+														</Typography>
+													</Box>
+													{acceptanceType !== "items" && (
+														<Typography
+															variant="body2"
+															color="primary.main"
+															sx={{ fontWeight: 600 }}
+														>
+															{progress}%
+														</Typography>
+													)}
+												</Box>
+
+												{acceptanceType !== "items" && (
+													<LinearProgress
+														variant="determinate"
+														value={progress}
+														sx={{
+															height: 8,
+															borderRadius: 4,
+															backgroundColor: "grey.200",
+															"& .MuiLinearProgress-bar": {
+																background:
+																	"linear-gradient(to right, #2f8077, #4ade80)",
+																borderRadius: 4,
+															},
+														}}
 													/>
-												))}
+												)}
 											</Box>
-										)}
-									</CardContent>
-									<CardActions sx={{ justifyContent: "flex-end" }}>
-										<IconButton
-											size="small"
-											onClick={() => handleEditCause(cause.id)}
-										>
-											<EditIcon />
-										</IconButton>
-										<IconButton
-											size="small"
-											onClick={() => handleDeleteCause(cause.id)}
-											disabled={isDeleting}
-										>
-											<DeleteIcon />
-										</IconButton>
-									</CardActions>
-								</Card>
-<<<<<<< Updated upstream
-							</Grid>
-						))}
-					</Grid>
-=======
-							</Box>
-						))}
+
+											{/* Target Information Section */}
+											<Box sx={{ mb: 2 }}>
+												{acceptanceType === "money" ? (
+													<>
+														<Box
+															display="flex"
+															justifyContent="space-between"
+															alignItems="center"
+															mb={0.5}
+														>
+															<Typography
+																variant="body2"
+																sx={{ fontWeight: 600, color: "success.main" }}
+															>
+																${cause.raisedAmount.toLocaleString()}
+															</Typography>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																of ${cause.targetAmount.toLocaleString()}
+															</Typography>
+														</Box>
+														<Typography
+															variant="caption"
+															color="text.secondary"
+														>
+															{cause.targetAmount - cause.raisedAmount > 0
+																? `$${(
+																		cause.targetAmount - cause.raisedAmount
+																  ).toLocaleString()} remaining`
+																: "Target achieved!"}
+														</Typography>
+													</>
+												) : acceptanceType === "items" ? (
+													<>
+														<Typography
+															variant="body2"
+															color="text.secondary"
+															sx={{ fontWeight: 500, mb: 1 }}
+														>
+															Needed Items:
+														</Typography>
+														{cause.donationItems &&
+														cause.donationItems.length > 0 ? (
+															<Box display="flex" gap={0.5} flexWrap="wrap">
+																{cause.donationItems
+																	.slice(0, 3)
+																	.map((item, index) => (
+																		<Chip
+																			key={index}
+																			label={item}
+																			size="small"
+																			variant="outlined"
+																			sx={{
+																				borderRadius: 1,
+																				fontSize: "0.7rem",
+																				height: 22,
+																				borderColor: "primary.main",
+																				color: "primary.main",
+																			}}
+																		/>
+																	))}
+																{cause.donationItems.length > 3 && (
+																	<Chip
+																		label={`+${
+																			cause.donationItems.length - 3
+																		} more`}
+																		size="small"
+																		variant="outlined"
+																		sx={{
+																			borderRadius: 1,
+																			fontSize: "0.7rem",
+																			height: 22,
+																		}}
+																	/>
+																)}
+															</Box>
+														) : (
+															<Typography
+																variant="caption"
+																color="text.secondary"
+															>
+																Accepting various item donations
+															</Typography>
+														)}
+													</>
+												) : (
+													<>
+														<Box
+															display="flex"
+															justifyContent="space-between"
+															alignItems="center"
+															mb={0.5}
+														>
+															<Typography
+																variant="body2"
+																sx={{ fontWeight: 600, color: "success.main" }}
+															>
+																${cause.raisedAmount.toLocaleString()}
+															</Typography>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																of ${cause.targetAmount.toLocaleString()}
+															</Typography>
+														</Box>
+														<Typography
+															variant="caption"
+															color="text.secondary"
+															sx={{ display: "block", mb: 1 }}
+														>
+															{cause.targetAmount - cause.raisedAmount > 0
+																? `$${(
+																		cause.targetAmount - cause.raisedAmount
+																  ).toLocaleString()} remaining`
+																: "Funding target achieved!"}
+														</Typography>
+														{cause.donationItems &&
+															cause.donationItems.length > 0 && (
+																<>
+																	<Typography
+																		variant="caption"
+																		color="text.secondary"
+																		sx={{
+																			fontWeight: 500,
+																			display: "block",
+																			mb: 0.5,
+																		}}
+																	>
+																		Also accepting items:
+																	</Typography>
+																	<Box display="flex" gap={0.5} flexWrap="wrap">
+																		{cause.donationItems
+																			.slice(0, 2)
+																			.map((item, index) => (
+																				<Chip
+																					key={index}
+																					label={item}
+																					size="small"
+																					variant="outlined"
+																					sx={{
+																						borderRadius: 1,
+																						fontSize: "0.65rem",
+																						height: 20,
+																					}}
+																				/>
+																			))}
+																		{cause.donationItems.length > 2 && (
+																			<Chip
+																				label={`+${
+																					cause.donationItems.length - 2
+																				}`}
+																				size="small"
+																				variant="outlined"
+																				sx={{
+																					borderRadius: 1,
+																					fontSize: "0.65rem",
+																					height: 20,
+																				}}
+																			/>
+																		)}
+																	</Box>
+																</>
+															)}
+													</>
+												)}
+											</Box>
+
+											{/* Tags Section */}
+											{cause.tags && cause.tags.length > 0 && (
+												<Box display="flex" gap={0.5} mt={1} flexWrap="wrap">
+													{cause.tags.map((tag) => (
+														<Chip
+															key={tag}
+															label={tag}
+															size="small"
+															variant="outlined"
+															sx={{
+																borderRadius: 1,
+																fontSize: "0.75rem",
+																height: 24,
+															}}
+														/>
+													))}
+												</Box>
+											)}
+										</CardContent>
+										<CardActions sx={{ justifyContent: "flex-end", pt: 0 }}>
+											<IconButton
+												size="small"
+												onClick={() => handleEditCause(cause.id)}
+												sx={{
+													color: "primary.main",
+													"&:hover": {
+														backgroundColor: "primary.light",
+														color: "white",
+													},
+												}}
+											>
+												<EditIcon />
+											</IconButton>
+											<IconButton
+												size="small"
+												onClick={() => handleDeleteCause(cause.id)}
+												disabled={isDeleting}
+												sx={{
+													color: "error.main",
+													"&:hover": {
+														backgroundColor: "error.light",
+														color: "white",
+													},
+												}}
+											>
+												<DeleteIcon />
+											</IconButton>
+										</CardActions>
+									</Card>
+								</Box>
+							);
+						})}
 					</Box>
->>>>>>> Stashed changes
 				)}
 			</Box>
 

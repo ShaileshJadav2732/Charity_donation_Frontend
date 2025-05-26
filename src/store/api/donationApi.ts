@@ -142,20 +142,6 @@ export const donationApi = apiSlice.injectEndpoints({
 				receiptUrl: string;
 				emailStatus: string;
 				notificationStatus: string;
-<<<<<<< Updated upstream
-			},
-			{ donationId: string; receiptFile: File }
-		>({
-			query: ({ donationId, receiptFile }) => {
-				const formData = new FormData();
-				formData.append("receipt", receiptFile);
-
-				return {
-					url: `/donations/${donationId}/confirmed`,
-					method: "PATCH",
-					body: formData,
-				};
-=======
 				pdfReceiptUrl?: string;
 			},
 			{ donationId: string; receiptFile: File }
@@ -220,7 +206,6 @@ export const donationApi = apiSlice.injectEndpoints({
 					}
 					return { error: { message: "Network error occurred" } };
 				}
->>>>>>> Stashed changes
 			},
 			invalidatesTags: ["Donations"],
 		}),

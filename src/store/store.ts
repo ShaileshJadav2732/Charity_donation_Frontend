@@ -9,11 +9,8 @@ import { causeApi } from "./api/causeApi";
 import { dashboardApi } from "./api/dashboardApi";
 import { feedbackApi } from "./api/feedbackApi";
 import { organizationApi } from "./api/organizationApi";
+import { paymentApi } from "./api/paymentApi";
 
-<<<<<<< Updated upstream
-import { notificationApi } from "./api/notificationApi";
-=======
->>>>>>> Stashed changes
 // Configure Redux store
 export const store = configureStore({
 	reducer: {
@@ -24,11 +21,7 @@ export const store = configureStore({
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
 		[feedbackApi.reducerPath]: feedbackApi.reducer,
 		[organizationApi.reducerPath]: organizationApi.reducer,
-<<<<<<< Updated upstream
-
-		[notificationApi.reducerPath]: notificationApi.reducer,
-=======
->>>>>>> Stashed changes
+		[paymentApi.reducerPath]: paymentApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
@@ -39,13 +32,8 @@ export const store = configureStore({
 			.concat(causeApi.middleware)
 			.concat(dashboardApi.middleware)
 			.concat(feedbackApi.middleware)
-<<<<<<< Updated upstream
 			.concat(organizationApi.middleware)
-
-			.concat(notificationApi.middleware),
-=======
-			.concat(organizationApi.middleware),
->>>>>>> Stashed changes
+			.concat(paymentApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });
 

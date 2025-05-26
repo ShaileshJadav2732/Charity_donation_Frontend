@@ -13,6 +13,8 @@ export interface Cause {
 	updatedAt: string;
 	donorCount?: number;
 	acceptedDonationTypes?: DonationType[];
+	acceptanceType?: "money" | "items" | "both";
+	donationItems?: string[];
 }
 
 export interface CreateCauseBody {

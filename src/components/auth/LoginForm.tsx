@@ -70,47 +70,8 @@ const LoginForm = () => {
 		return Object.keys(newErrors).length === 0;
 	};
 
-<<<<<<< Updated upstream
-  const handleGoogleLogin = async () => {
-    try {
-      console.log("LoginForm: Attempting Google login");
-      toast.loading("Signing in with Google...", { id: "google-login" });
-
-      // Check if browser supports popups
-      const popupBlocked = window.innerWidth < 1 || window.innerHeight < 1;
-      if (popupBlocked) {
-        toast.dismiss("google-login");
-        toast.error("Please allow popups for this site to use Google login");
-        return;
-      }
-
-      await loginWithGoogle();
-      console.log(
-        "LoginForm: Google login successful, relying on useAuth for redirect"
-      );
-      toast.dismiss("google-login");
-      toast.success("Logged in with Google!");
-    } catch (error: unknown) {
-      console.error("LoginForm: Google login error:", error);
-      toast.dismiss("google-login");
-      const parsedError = parseError(error);
-
-      // Provide more user-friendly error messages
-      if (parsedError.message?.includes("popup")) {
-        toast.error("Google login popup was blocked. Please allow popups for this site.");
-      } else if (parsedError.message?.includes("network")) {
-        toast.error("Network error. Please check your internet connection and try again.");
-      } else if (parsedError.message?.includes("cancelled")) {
-        toast.error("Google login was cancelled. Please try again.");
-      } else {
-        toast.error(parsedError.message || "Failed to log in with Google");
-      }
-    }
-  };
-=======
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
->>>>>>> Stashed changes
 
 		if (!validateForm()) {
 			return;
@@ -130,105 +91,6 @@ const LoginForm = () => {
 		}
 	};
 
-<<<<<<< Updated upstream
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
-            {/* Email Field */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email Address
-              </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
-                  />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  onFocus={() => handleFocus("email")}
-                  onBlur={handleBlur}
-                  required
-                  className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${focusedField === "email"
-                      ? "border-teal-500 ring-1 ring-teal-200"
-                      : "border-gray-200"
-                    } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
-                  placeholder="you@example.com"
-                  aria-describedby="email"
-                  autoComplete="email"
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Password
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-teal-600 hover:text-teal-500 transition-colors duration-200"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
-                  />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleChange}
-                  onFocus={() => handleFocus("password")}
-                  onBlur={handleBlur}
-                  required
-                  className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${focusedField === "password"
-                      ? "border-teal-500 ring-1 ring-teal-200"
-                      : "border-gray-200"
-                    } focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
-                  placeholder="••••••••"
-                  aria-describedby="password"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <FiEyeOff
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <FiEye
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              </div>
-            </div>
-=======
 	const handleGoogleLogin = async () => {
 		try {
 			console.log("LoginForm: Attempting Google login");
@@ -241,7 +103,6 @@ const LoginForm = () => {
 				toast.error("Please allow popups for this site to use Google login");
 				return;
 			}
->>>>>>> Stashed changes
 
 			await loginWithGoogle();
 			console.log(

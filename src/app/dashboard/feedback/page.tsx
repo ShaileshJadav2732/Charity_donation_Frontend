@@ -25,16 +25,7 @@ import {
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-<<<<<<< Updated upstream
-import {
-	useGetFeedbacksQuery,
-	useUpdateFeedbackMutation,
-	useDeleteFeedbackMutation,
-	Feedback,
-} from "@/store/api/feedbackApi";
-=======
 import { useGetFeedbacksQuery, Feedback } from "@/store/api/feedbackApi";
->>>>>>> Stashed changes
 import { formatDistanceToNow } from "date-fns";
 import FeedbackStats from "@/components/feedback/FeedbackStats";
 
@@ -64,11 +55,6 @@ const FeedbackPage = () => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [tabValue, setTabValue] = useState(0);
 	const [page, setPage] = useState(1);
-<<<<<<< Updated upstream
-	const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
-	const [dialogOpen, setDialogOpen] = useState(false);
-	const [dialogAction, setDialogAction] = useState<"approve" | "reject" | "delete">("approve");
-=======
 	const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(
 		null
 	);
@@ -76,7 +62,6 @@ const FeedbackPage = () => {
 	const [dialogAction, setDialogAction] = useState<
 		"approve" | "reject" | "delete"
 	>("approve");
->>>>>>> Stashed changes
 	const limit = 10;
 
 	// Get organization ID from user
@@ -87,33 +72,19 @@ const FeedbackPage = () => {
 		page,
 		limit,
 		organization: organizationId,
-<<<<<<< Updated upstream
-		status: tabValue === 0 ? "pending" : tabValue === 1 ? "approved" : "rejected",
-	};
-
-	// Fetch feedbacks
-	const { data, isLoading, error, refetch } = useGetFeedbacksQuery(
-=======
 		status:
 			tabValue === 0 ? "pending" : tabValue === 1 ? "approved" : "rejected",
 	};
 
 	// Fetch feedbacks
 	const { data, isLoading, error } = useGetFeedbacksQuery(
->>>>>>> Stashed changes
 		organizationId ? queryParams : { page: 1, limit: 1 }, // Skip if no organizationId
 		{ skip: !organizationId }
 	);
 
-<<<<<<< Updated upstream
-	// Mutations
-	const [updateFeedback, { isLoading: isUpdating }] = useUpdateFeedbackMutation();
-	const [deleteFeedback, { isLoading: isDeleting }] = useDeleteFeedbackMutation();
-=======
 	// Note: Update and delete mutations are not implemented yet
 	// const [updateFeedback, { isLoading: isUpdating }] = useUpdateFeedbackMutation();
 	// const [deleteFeedback, { isLoading: isDeleting }] = useDeleteFeedbackMutation();
->>>>>>> Stashed changes
 
 	// Handle tab change
 	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -122,26 +93,18 @@ const FeedbackPage = () => {
 	};
 
 	// Handle page change
-<<<<<<< Updated upstream
-	const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-=======
 	const handlePageChange = (
 		event: React.ChangeEvent<unknown>,
 		value: number
 	) => {
->>>>>>> Stashed changes
 		setPage(value);
 	};
 
 	// Open dialog for action
-<<<<<<< Updated upstream
-	const openActionDialog = (feedback: Feedback, action: "approve" | "reject" | "delete") => {
-=======
 	const openActionDialog = (
 		feedback: Feedback,
 		action: "approve" | "reject" | "delete"
 	) => {
->>>>>>> Stashed changes
 		setSelectedFeedback(feedback);
 		setDialogAction(action);
 		setDialogOpen(true);
@@ -151,31 +114,12 @@ const FeedbackPage = () => {
 	const handleActionConfirm = async () => {
 		if (!selectedFeedback) return;
 
-<<<<<<< Updated upstream
-		try {
-			if (dialogAction === "delete") {
-				await deleteFeedback(selectedFeedback.id).unwrap();
-			} else {
-				await updateFeedback({
-					id: selectedFeedback.id,
-					body: { status: dialogAction === "approve" ? "approved" : "rejected" },
-				}).unwrap();
-			}
-			refetch();
-		} catch (err) {
-			console.error(`Failed to ${dialogAction} feedback:`, err);
-		} finally {
-			setDialogOpen(false);
-			setSelectedFeedback(null);
-		}
-=======
 		// TODO: Implement update and delete mutations
 		console.log(`${dialogAction} feedback:`, selectedFeedback.id);
 		alert(`${dialogAction} functionality not implemented yet`);
 
 		setDialogOpen(false);
 		setSelectedFeedback(null);
->>>>>>> Stashed changes
 	};
 
 	// Access control
@@ -211,15 +155,11 @@ const FeedbackPage = () => {
 
 				{/* Tabs for different feedback statuses */}
 				<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-<<<<<<< Updated upstream
-					<Tabs value={tabValue} onChange={handleTabChange} aria-label="feedback tabs">
-=======
 					<Tabs
 						value={tabValue}
 						onChange={handleTabChange}
 						aria-label="feedback tabs"
 					>
->>>>>>> Stashed changes
 						<Tab label="Pending" />
 						<Tab label="Approved" />
 						<Tab label="Rejected" />
@@ -244,13 +184,8 @@ const FeedbackPage = () => {
 					{dialogAction === "approve"
 						? "Approve Feedback"
 						: dialogAction === "reject"
-<<<<<<< Updated upstream
-							? "Reject Feedback"
-							: "Delete Feedback"}
-=======
 						? "Reject Feedback"
 						: "Delete Feedback"}
->>>>>>> Stashed changes
 				</DialogTitle>
 				<DialogContent>
 					<Typography>
@@ -275,26 +210,12 @@ const FeedbackPage = () => {
 						onClick={handleActionConfirm}
 						color={dialogAction === "delete" ? "error" : "primary"}
 						variant="contained"
-<<<<<<< Updated upstream
-						disabled={isUpdating || isDeleting}
-					>
-						{isUpdating || isDeleting ? (
-							<CircularProgress size={24} />
-						) : dialogAction === "approve" ? (
-							"Approve"
-						) : dialogAction === "reject" ? (
-							"Reject"
-						) : (
-							"Delete"
-						)}
-=======
 					>
 						{dialogAction === "approve"
 							? "Approve"
 							: dialogAction === "reject"
 							? "Reject"
 							: "Delete"}
->>>>>>> Stashed changes
 					</Button>
 				</DialogActions>
 			</Dialog>
@@ -320,15 +241,7 @@ const FeedbackPage = () => {
 		}
 
 		if (!data || !data.feedbacks || data.feedbacks.length === 0) {
-<<<<<<< Updated upstream
-			return (
-				<Alert severity="info">
-					No {status} feedback available.
-				</Alert>
-			);
-=======
 			return <Alert severity="info">No {status} feedback available.</Alert>;
->>>>>>> Stashed changes
 		}
 
 		// Calculate total pages
@@ -340,13 +253,6 @@ const FeedbackPage = () => {
 					{data.feedbacks.map((feedback) => (
 						<Card key={feedback.id} variant="outlined">
 							<CardContent>
-<<<<<<< Updated upstream
-								<Box display="flex" justifyContent="space-between" alignItems="flex-start">
-									<Box>
-										<Box display="flex" alignItems="center" mb={1}>
-											<Rating value={feedback.rating} readOnly size="small" />
-											<Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-=======
 								<Box
 									display="flex"
 									justifyContent="space-between"
@@ -360,7 +266,6 @@ const FeedbackPage = () => {
 												color="text.secondary"
 												sx={{ ml: 1 }}
 											>
->>>>>>> Stashed changes
 												{formatDistanceToNow(new Date(feedback.createdAt), {
 													addSuffix: true,
 												})}
@@ -376,12 +281,6 @@ const FeedbackPage = () => {
 												color={feedback.isPublic ? "info" : "default"}
 											/>
 											{feedback.campaign && (
-<<<<<<< Updated upstream
-												<Chip label="Campaign Feedback" size="small" color="primary" />
-											)}
-											{feedback.cause && (
-												<Chip label="Cause Feedback" size="small" color="secondary" />
-=======
 												<Chip
 													label="Campaign Feedback"
 													size="small"
@@ -394,7 +293,6 @@ const FeedbackPage = () => {
 													size="small"
 													color="secondary"
 												/>
->>>>>>> Stashed changes
 											)}
 										</Box>
 									</Box>

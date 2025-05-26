@@ -5,11 +5,7 @@ import {
 	CampaignQueryParams,
 	CreateCampaignBody,
 	UpdateCampaignBody,
-<<<<<<< Updated upstream
-} from "@/types/campaigns";
-=======
 } from "@/types/campaings";
->>>>>>> Stashed changes
 import { RootState } from "../store";
 
 export const campaignApi = createApi({

@@ -11,8 +11,6 @@ const nextConfig: NextConfig = {
 		],
 	},
 	reactStrictMode: true,
-<<<<<<< Updated upstream
-=======
 	async rewrites() {
 		return [
 			{
@@ -21,7 +19,6 @@ const nextConfig: NextConfig = {
 			},
 		];
 	},
->>>>>>> Stashed changes
 };
 
 export default nextConfig;

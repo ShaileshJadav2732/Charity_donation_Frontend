@@ -33,6 +33,8 @@ import {
 import { useFormik } from "formik";
 import React, { useState } from "react";
 import * as Yup from "yup";
+import PaymentWrapper from "../payment/PaymentWrapper";
+import { toast } from "react-hot-toast";
 
 interface ImprovedDonationFormProps {
 	cause: any;
@@ -47,9 +49,18 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 }) => {
 	const [activeStep, setActiveStep] = useState(0);
 	const [isMonetary, setIsMonetary] = useState(false);
+	const [showPayment, setShowPayment] = useState(false);
+	const [paymentCompleted, setPaymentCompleted] = useState(false);
 	const customColor = "#287068";
 
-	const steps = ["Donation Type", "Details", "Delivery", "Contact", "Review"];
+	const steps = [
+		"Donation Type",
+		"Details",
+		"Delivery",
+		"Contact",
+		"Review",
+		"Payment",
+	];
 
 	const formik = useFormik({
 		initialValues: {
@@ -116,8 +127,9 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 		onSubmit: async (values) => {
 			console.log("Form submitted with values:", values);
 
-			// Final validation before submission
-			if (isMonetary) {
+			// For monetary donations, show payment form instead of submitting directly
+			if (isMonetary && !paymentCompleted) {
+				// Final validation before showing payment
 				if (
 					!values.amount ||
 					!values.description ||
@@ -127,7 +139,13 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 					toast.error("Please fill in all required fields");
 					return;
 				}
-			} else {
+				setShowPayment(true);
+				setActiveStep(5); // Go to payment step
+				return;
+			}
+
+			// For item donations or completed payments, proceed with submission
+			if (!isMonetary) {
 				if (
 					!values.quantity ||
 					!values.unit ||
@@ -200,6 +218,10 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 			// For monetary donations, skip the delivery step (step 2)
 			if (isMonetary && activeStep === 1) {
 				setActiveStep(3); // Skip to contact info
+			} else if (isMonetary && activeStep === 4) {
+				// For monetary donations, go to payment step after review
+				setShowPayment(true);
+				setActiveStep(5);
 			} else {
 				setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
 			}
@@ -822,6 +844,56 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 					</Card>
 				);
 
+			case 5:
+				// Payment step - only for monetary donations
+				console.log("Debug - Cause data structure:", cause);
+				console.log("Debug - Cause ID:", cause?.cause?.id || cause?.cause?._id);
+				console.log("Debug - Organization ID:", cause?.cause?.organizationId);
+				console.log("Debug - Form values:", formik.values);
+
+				return isMonetary && showPayment ? (
+					<PaymentWrapper
+						donationData={{
+							amount: Number(formik.values.amount),
+							cause: cause?.cause?.id || cause?.cause?._id || "",
+							organization: cause?.cause?.organizationId || "",
+							campaign: cause?.campaign?._id,
+							description: formik.values.description,
+							contactPhone: formik.values.contactPhone,
+							contactEmail: formik.values.contactEmail,
+						}}
+						onSuccess={(donation) => {
+							console.log("Payment successful:", donation);
+							setPaymentCompleted(true);
+							toast.success(
+								"Payment successful! Your donation has been processed."
+							);
+							// You can redirect or show success message here
+							if (onSubmit) {
+								// Call the parent's onSubmit to handle post-payment logic
+								onSubmit(formik.values);
+							}
+						}}
+						onError={(error) => {
+							console.error("Payment failed:", error);
+							toast.error(`Payment failed: ${error}`);
+						}}
+						onCancel={() => {
+							setShowPayment(false);
+							setActiveStep(4); // Go back to review step
+						}}
+					/>
+				) : (
+					<Alert severity="info" sx={{ textAlign: "center", p: 3 }}>
+						<Typography variant="h6" gutterBottom>
+							Payment Not Required
+						</Typography>
+						<Typography>
+							Item donations don't require online payment.
+						</Typography>
+					</Alert>
+				);
+
 			default:
 				return <Typography>Step content not implemented yet</Typography>;
 		}
@@ -881,60 +953,66 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				)}
 
 				{/* Navigation Buttons */}
-				<Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-					<Button
-						onClick={handleBack}
-						disabled={activeStep === 0}
-						startIcon={<ArrowBack />}
-						variant="outlined"
-						size="large"
-					>
-						Back
-					</Button>
-					<Button
-						type={
-							activeStep === steps.length - 1 ||
-							(isMonetary && activeStep === 3)
-								? "submit"
-								: "button"
-						}
-						onClick={
-							activeStep === steps.length - 1 ||
-							(isMonetary && activeStep === 3)
-								? undefined
-								: handleNext
-						}
-						endIcon={
-							activeStep === steps.length - 1 ||
-							(isMonetary && activeStep === 3) ? (
-								<CheckCircle />
+				{activeStep !== 5 && ( // Hide navigation buttons on payment step
+					<Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
+						<Button
+							onClick={handleBack}
+							disabled={activeStep === 0}
+							startIcon={<ArrowBack />}
+							variant="outlined"
+							size="large"
+						>
+							Back
+						</Button>
+						<Button
+							type={
+								(activeStep === steps.length - 2 && !isMonetary) || // Review step for item donations
+								(isMonetary && activeStep === 4) // Review step for monetary donations
+									? "submit"
+									: "button"
+							}
+							onClick={
+								(activeStep === steps.length - 2 && !isMonetary) ||
+								(isMonetary && activeStep === 4)
+									? undefined
+									: handleNext
+							}
+							endIcon={
+								(activeStep === steps.length - 2 && !isMonetary) ||
+								(isMonetary && activeStep === 4) ? (
+									<CheckCircle />
+								) : (
+									<ArrowForward />
+								)
+							}
+							variant="contained"
+							size="large"
+							disabled={isLoading}
+							sx={{
+								backgroundColor: customColor,
+								"&:hover": {
+									backgroundColor: `${customColor}dd`,
+								},
+								"&:disabled": {
+									backgroundColor: `${customColor}66`,
+								},
+							}}
+						>
+							{isLoading ? (
+								<CircularProgress size={20} color="inherit" />
+							) : (activeStep === steps.length - 2 && !isMonetary) ||
+							  (isMonetary && activeStep === 4) ? (
+								isMonetary ? (
+									"Proceed to Payment"
+								) : (
+									"Complete Donation"
+								)
 							) : (
-								<ArrowForward />
-							)
-						}
-						variant="contained"
-						size="large"
-						disabled={isLoading}
-						sx={{
-							backgroundColor: customColor,
-							"&:hover": {
-								backgroundColor: `${customColor}dd`,
-							},
-							"&:disabled": {
-								backgroundColor: `${customColor}66`,
-							},
-						}}
-					>
-						{isLoading ? (
-							<CircularProgress size={20} color="inherit" />
-						) : activeStep === steps.length - 1 ||
-						  (isMonetary && activeStep === 3) ? (
-							"Complete Donation"
-						) : (
-							"Next"
-						)}
-					</Button>
-				</Box>
+								"Next"
+							)}
+						</Button>
+					</Box>
+				)}
 			</Box>
 		</Box>
 	);
