@@ -1,22 +1,21 @@
 "use client";
 
-import React from "react";
+import { useGetFeedbacksQuery } from "@/store/api/feedbackApi";
 import {
+	Alert,
+	Avatar,
 	Box,
 	Card,
 	CardContent,
+	Chip,
 	CircularProgress,
-	Divider,
 	Pagination,
 	Rating,
 	Stack,
 	Typography,
-	Alert,
-	Avatar,
-	Chip,
 } from "@mui/material";
-import { useGetFeedbacksQuery } from "@/store/api/feedbackApi";
 import { formatDistanceToNow } from "date-fns";
+import React from "react";
 
 interface FeedbackListProps {
 	organizationId?: string;
@@ -95,14 +94,28 @@ const FeedbackList: React.FC<FeedbackListProps> = ({
 							<Box display="flex" justifyContent="space-between" mb={1}>
 								<Box display="flex" alignItems="center">
 									<Avatar
-										sx={{ width: 32, height: 32, mr: 1, bgcolor: "primary.main" }}
+										sx={{
+											width: 32,
+											height: 32,
+											mr: 1,
+											bgcolor: "primary.main",
+										}}
 									>
-										{feedback.donor.charAt(0).toUpperCase()}
+										{typeof feedback.donor === "string"
+											? feedback.donor.charAt(0).toUpperCase()
+											: (feedback.donor.firstName || feedback.donor.name || "")
+													?.charAt(0)
+													.toUpperCase()}
 									</Avatar>
 									<Typography variant="subtitle2">
-										{feedback.donor.length > 20
-											? `${feedback.donor.substring(0, 20)}...`
-											: feedback.donor}
+										{typeof feedback.donor === "string"
+											? feedback.donor.length > 20
+												? `${feedback.donor.substring(0, 20)}...`
+												: feedback.donor
+											: feedback.donor.name ||
+											  `${feedback.donor.firstName || ""} ${
+													feedback.donor.lastName || ""
+											  }`.trim()}
 									</Typography>
 								</Box>
 								<Chip
@@ -112,8 +125,8 @@ const FeedbackList: React.FC<FeedbackListProps> = ({
 										feedback.rating >= 4
 											? "success"
 											: feedback.rating >= 3
-												? "info"
-												: "warning"
+											? "info"
+											: "warning"
 									}
 								/>
 							</Box>
@@ -150,4 +163,3 @@ const FeedbackList: React.FC<FeedbackListProps> = ({
 	);
 };
 export default FeedbackList;
-

@@ -16,31 +16,14 @@ export default function HomePage() {
 	const { authInitialized } = useAuth();
 
 	useEffect(() => {
-		if (!authInitialized) {
-			console.log("HomePage: Waiting for auth initialization");
-			return;
-		}
-
-		console.log("HomePage: Checking authentication state", {
-			isAuthenticated,
-			user,
-		});
 		if (isAuthenticated) {
 			if (user?.profileCompleted) {
-				console.log(
-					"HomePage: User profile completed, redirecting to /dashboard"
-				);
 				router.push("/dashboard/home");
 			} else {
-				console.log(
-					"HomePage: User profile not completed, redirecting to /complete-profile"
-				);
 				router.push("/complete-profile");
 			}
-		} else {
-			console.log("HomePage: User not authenticated, staying on homepage");
 		}
-	}, [isAuthenticated, user, router, authInitialized]);
+	}, [isAuthenticated, user, router]);
 
 	if (!authInitialized) {
 		return (

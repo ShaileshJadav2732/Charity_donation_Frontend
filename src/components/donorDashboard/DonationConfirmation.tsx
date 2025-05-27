@@ -15,6 +15,7 @@ import { toast } from "react-hot-toast";
 import { getReceiptImageUrl } from "@/utils/url";
 import { parseError } from "@/types";
 import SuccessAnimation from "@/components/ui/SuccessAnimation";
+import FeedbackPromptModal from "@/components/feedback/FeedbackPromptModal";
 
 interface DonationConfirmationProps {
 	donation: Donation;
@@ -27,6 +28,7 @@ const DonationConfirmation: React.FC<DonationConfirmationProps> = ({
 }) => {
 	const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 	const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+	const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
 	const [retryCount, setRetryCount] = useState(0);
 	const [confirmReceipt, { isLoading }] = useConfirmDonationReceiptMutation();
 
@@ -45,19 +47,9 @@ const DonationConfirmation: React.FC<DonationConfirmationProps> = ({
 
 			if (retryCount < 2) {
 				toast.error(
-<<<<<<< Updated upstream
-					`❌ Failed to confirm receipt: ${errorMessage}. Click to retry.`,
-					{
-						duration: 6000,
-						action: {
-							label: "Retry",
-							onClick: () => handleConfirmReceipt(),
-						},
-=======
 					`❌ Failed to confirm receipt: ${errorMessage}. Please try again.`,
 					{
 						duration: 6000,
->>>>>>> Stashed changes
 					}
 				);
 			} else {
@@ -216,11 +208,38 @@ const DonationConfirmation: React.FC<DonationConfirmationProps> = ({
 					message="Thank you for confirming your donation receipt. The organization has been notified and your donation is now complete."
 					onComplete={() => {
 						setShowSuccessAnimation(false);
-						onConfirmed();
+						// Show feedback prompt after success animation
+						setTimeout(() => {
+							setShowFeedbackPrompt(true);
+						}, 500);
 					}}
-					duration={4000}
+					duration={3000}
 				/>
 			)}
+
+			{/* Feedback Prompt Modal */}
+			<FeedbackPromptModal
+				donation={donation}
+				isOpen={showFeedbackPrompt}
+				onClose={() => {
+					setShowFeedbackPrompt(false);
+					onConfirmed();
+				}}
+				onSubmit={() => {
+					setShowFeedbackPrompt(false);
+					onConfirmed();
+				}}
+				onSkip={() => {
+					setShowFeedbackPrompt(false);
+					onConfirmed();
+				}}
+				onLater={() => {
+					setShowFeedbackPrompt(false);
+					onConfirmed();
+					// TODO: Set reminder for later (could be implemented with local storage or user preferences)
+					toast.success("We'll remind you to leave feedback later!");
+				}}
+			/>
 		</>
 	);
 };

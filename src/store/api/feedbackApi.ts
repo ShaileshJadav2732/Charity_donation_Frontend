@@ -3,11 +3,29 @@ import { RootState } from "../store";
 
 // Feedback types
 export interface Feedback {
-	id: string;
-	donor: string;
+	_id: string;
+	id?: string; // For backward compatibility
+	donor:
+		| {
+				_id: string;
+				firstName?: string;
+				lastName?: string;
+				name?: string;
+		  }
+		| string;
 	organization: string;
-	campaign?: string;
-	cause?: string;
+	campaign?:
+		| {
+				_id: string;
+				title: string;
+		  }
+		| string;
+	cause?:
+		| {
+				_id: string;
+				title: string;
+		  }
+		| string;
 	rating: number;
 	comment: string;
 	isPublic: boolean;
@@ -54,6 +72,17 @@ export interface FeedbackQueryParams {
 	isPublic?: boolean;
 }
 
+export interface CheckFeedbackParams {
+	organizationId: string;
+	causeId?: string;
+	campaignId?: string;
+}
+
+export interface CheckFeedbackResponse {
+	exists: boolean;
+	feedback: Feedback | null;
+}
+
 // Create the feedback API
 export const feedbackApi = createApi({
 	reducerPath: "feedbackApi",
@@ -86,6 +115,32 @@ export const feedbackApi = createApi({
 			providesTags: ["Feedback"],
 		}),
 
+		// Get organization feedback
+		getOrganizationFeedback: builder.query<
+			{ success: boolean; data: Feedback[]; pagination: any },
+			{ organizationId: string; status?: string; page?: number; limit?: number }
+		>({
+			query: ({ organizationId, status, page = 1, limit = 10 }) => ({
+				url: `/feedbacks/organization/${organizationId}`,
+				method: "GET",
+				params: { status, page, limit },
+			}),
+			providesTags: ["Feedback"],
+		}),
+
+		// Check if feedback exists for donor/organization/cause
+		checkFeedbackExists: builder.query<
+			CheckFeedbackResponse,
+			CheckFeedbackParams
+		>({
+			query: (params) => ({
+				url: "/feedbacks/check",
+				method: "GET",
+				params,
+			}),
+			providesTags: ["Feedback"],
+		}),
+
 		// Create a new feedback
 		createFeedback: builder.mutation<FeedbackResponse, CreateFeedbackBody>({
 			query: (body) => ({
@@ -95,8 +150,27 @@ export const feedbackApi = createApi({
 			}),
 			invalidatesTags: ["Feedback"],
 		}),
+
+		// Update feedback status
+		updateFeedbackStatus: builder.mutation<
+			FeedbackResponse,
+			{ feedbackId: string; status: "pending" | "approved" | "rejected" }
+		>({
+			query: ({ feedbackId, status }) => ({
+				url: `/feedbacks/${feedbackId}/status`,
+				method: "PATCH",
+				body: { status },
+			}),
+			invalidatesTags: ["Feedback"],
+		}),
 	}),
 });
 
 // Export hooks
-export const { useGetFeedbacksQuery, useCreateFeedbackMutation } = feedbackApi;
+export const {
+	useGetFeedbacksQuery,
+	useGetOrganizationFeedbackQuery,
+	useCreateFeedbackMutation,
+	useCheckFeedbackExistsQuery,
+	useUpdateFeedbackStatusMutation,
+} = feedbackApi;

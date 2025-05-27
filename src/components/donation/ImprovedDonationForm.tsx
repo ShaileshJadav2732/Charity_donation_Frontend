@@ -256,15 +256,38 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				return (
 					<Card
 						elevation={0}
-						sx={{ border: "1px solid", borderColor: "divider" }}
+						sx={{
+							border: `3px solid ${customColor}`,
+							borderRadius: 4,
+							background: `linear-gradient(135deg, rgba(255,255,255,0.95), ${customColor}08)`,
+							overflow: "hidden",
+						}}
 					>
-						<CardContent sx={{ p: 4 }}>
-							<Box sx={{ textAlign: "center", mb: 4 }}>
-								<Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-									What would you like to donate?
+						<CardContent sx={{ p: 5 }}>
+							<Box sx={{ textAlign: "center", mb: 5 }}>
+								<Typography
+									variant="h4"
+									gutterBottom
+									sx={{
+										fontWeight: 700,
+										color: customColor,
+										mb: 2,
+									}}
+								>
+									🎯 Choose Your Donation Type
 								</Typography>
-								<Typography variant="body1" color="text.secondary">
-									Choose the type of donation you'd like to make
+								<Typography
+									variant="h6"
+									sx={{
+										color: "#4a5568",
+										fontWeight: 500,
+										maxWidth: 500,
+										mx: "auto",
+										lineHeight: 1.6,
+									}}
+								>
+									Select how you would like to make a difference and support
+									this amazing cause
 								</Typography>
 							</Box>
 
@@ -273,120 +296,185 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 									value={isMonetary ? "MONEY" : "ITEMS"}
 									onChange={handleDonationTypeChange}
 								>
-									<Grid container spacing={3}>
-										<Grid item xs={12} md={6}>
-											<Paper
-												elevation={isMonetary ? 3 : 1}
-												sx={{
-													p: 3,
-													cursor: "pointer",
-													border: "2px solid",
-													borderColor: isMonetary ? customColor : "transparent",
-													bgcolor: isMonetary
-														? `${customColor}15`
-														: "background.paper",
-													transition: "all 0.3s ease",
-													"&:hover": {
-														elevation: 3,
-														borderColor: customColor,
-													},
-												}}
-												onClick={() =>
-													handleDonationTypeChange({
-														target: { value: "MONEY" },
-													})
-												}
-											>
-												<Box sx={{ textAlign: "center" }}>
-													<AttachMoney
-														sx={{
-															fontSize: 48,
-															color: customColor,
-															mb: 2,
-														}}
-													/>
-													<FormControlLabel
-														value="MONEY"
-														control={<Radio />}
-														label={
-															<Box>
-																<Typography
-																	variant="h6"
-																	sx={{ fontWeight: 600 }}
-																>
-																	Monetary Donation
-																</Typography>
-																<Typography
-																	variant="body2"
-																	color="text.secondary"
-																>
-																	Donate money to support this cause directly
-																</Typography>
-															</Box>
-														}
-														sx={{ m: 0 }}
-													/>
+									<Box
+										sx={{
+											display: "grid",
+											gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+											gap: 4,
+										}}
+									>
+										{/* Monetary Donation Option */}
+										<Paper
+											elevation={isMonetary ? 8 : 2}
+											sx={{
+												p: 4,
+												cursor: "pointer",
+												border: "3px solid",
+												borderColor: isMonetary ? customColor : "#e0e0e0",
+												bgcolor: isMonetary
+													? `${customColor}15`
+													: "background.paper",
+												borderRadius: 4,
+												transition: "all 0.3s ease",
+												transform: isMonetary ? "scale(1.02)" : "scale(1)",
+												"&:hover": {
+													elevation: 8,
+													borderColor: customColor,
+													transform: "scale(1.02)",
+													bgcolor: `${customColor}10`,
+												},
+											}}
+											onClick={() =>
+												handleDonationTypeChange({
+													target: { value: "MONEY" },
+												})
+											}
+										>
+											<Box sx={{ textAlign: "center" }}>
+												<Box
+													sx={{
+														width: 80,
+														height: 80,
+														borderRadius: "50%",
+														background: `linear-gradient(135deg, ${customColor}, #3b82f6)`,
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "center",
+														mx: "auto",
+														mb: 3,
+														boxShadow: `0 8px 25px ${customColor}40`,
+													}}
+												>
+													<AttachMoney sx={{ fontSize: 40, color: "white" }} />
 												</Box>
-											</Paper>
-										</Grid>
-										<Grid item xs={12} md={6}>
-											<Paper
-												elevation={!isMonetary ? 3 : 1}
-												sx={{
-													p: 3,
-													cursor: "pointer",
-													border: "2px solid",
-													borderColor: !isMonetary
-														? customColor
-														: "transparent",
-													bgcolor: !isMonetary
-														? `${customColor}15`
-														: "background.paper",
-													transition: "all 0.3s ease",
-													"&:hover": {
-														elevation: 3,
-														borderColor: customColor,
-													},
-												}}
-												onClick={() =>
-													handleDonationTypeChange({
-														target: { value: "ITEMS" },
-													})
-												}
-											>
-												<Box sx={{ textAlign: "center" }}>
-													<Inventory
-														sx={{
-															fontSize: 48,
-															color: customColor,
-															mb: 2,
-														}}
-													/>
-													<FormControlLabel
-														value="ITEMS"
-														control={<Radio />}
-														label={
-															<Box>
-																<Typography
-																	variant="h6"
-																	sx={{ fontWeight: 600 }}
-																>
-																	Item Donation
-																</Typography>
-																<Typography
-																	variant="body2"
-																	color="text.secondary"
-																>
-																	Donate physical items that this cause needs
-																</Typography>
-															</Box>
-														}
-														sx={{ m: 0 }}
-													/>
+												<FormControlLabel
+													value="MONEY"
+													control={
+														<Radio
+															sx={{
+																color: customColor,
+																"&.Mui-checked": {
+																	color: customColor,
+																},
+															}}
+														/>
+													}
+													label={
+														<Box>
+															<Typography
+																variant="h5"
+																sx={{
+																	fontWeight: 700,
+																	color: isMonetary ? customColor : "#1a1a1a",
+																	mb: 1,
+																}}
+															>
+																💰 Monetary Donation
+															</Typography>
+															<Typography
+																variant="body1"
+																sx={{
+																	color: "#6b7280",
+																	fontWeight: 500,
+																	lineHeight: 1.5,
+																}}
+															>
+																Make an instant impact with a secure online
+																donation. Every dollar counts!
+															</Typography>
+														</Box>
+													}
+													sx={{ m: 0 }}
+												/>
+											</Box>
+										</Paper>
+
+										{/* Item Donation Option */}
+										<Paper
+											elevation={!isMonetary ? 8 : 2}
+											sx={{
+												p: 4,
+												cursor: "pointer",
+												border: "3px solid",
+												borderColor: !isMonetary ? customColor : "#e0e0e0",
+												bgcolor: !isMonetary
+													? `${customColor}15`
+													: "background.paper",
+												borderRadius: 4,
+												transition: "all 0.3s ease",
+												transform: !isMonetary ? "scale(1.02)" : "scale(1)",
+												"&:hover": {
+													elevation: 8,
+													borderColor: customColor,
+													transform: "scale(1.02)",
+													bgcolor: `${customColor}10`,
+												},
+											}}
+											onClick={() =>
+												handleDonationTypeChange({
+													target: { value: "ITEMS" },
+												})
+											}
+										>
+											<Box sx={{ textAlign: "center" }}>
+												<Box
+													sx={{
+														width: 80,
+														height: 80,
+														borderRadius: "50%",
+														background: `linear-gradient(135deg, #ec4899, #f59e0b)`,
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "center",
+														mx: "auto",
+														mb: 3,
+														boxShadow: "0 8px 25px rgba(236, 72, 153, 0.4)",
+													}}
+												>
+													<Inventory sx={{ fontSize: 40, color: "white" }} />
 												</Box>
-											</Paper>
-										</Grid>
-									</Grid>
+												<FormControlLabel
+													value="ITEMS"
+													control={
+														<Radio
+															sx={{
+																color: customColor,
+																"&.Mui-checked": {
+																	color: customColor,
+																},
+															}}
+														/>
+													}
+													label={
+														<Box>
+															<Typography
+																variant="h5"
+																sx={{
+																	fontWeight: 700,
+																	color: !isMonetary ? customColor : "#1a1a1a",
+																	mb: 1,
+																}}
+															>
+																📦 Item Donation
+															</Typography>
+															<Typography
+																variant="body1"
+																sx={{
+																	color: "#6b7280",
+																	fontWeight: 500,
+																	lineHeight: 1.5,
+																}}
+															>
+																Donate physical items that this cause needs.
+																Your items will directly help those in need!
+															</Typography>
+														</Box>
+													}
+													sx={{ m: 0 }}
+												/>
+											</Box>
+										</Paper>
+									</Box>
 								</RadioGroup>
 							</FormControl>
 						</CardContent>
@@ -397,67 +485,213 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				return (
 					<Card
 						elevation={0}
-						sx={{ border: "1px solid", borderColor: "divider" }}
+						sx={{
+							border: `3px solid ${customColor}`,
+							borderRadius: 4,
+							background: `linear-gradient(135deg, rgba(255,255,255,0.95), ${customColor}08)`,
+							overflow: "hidden",
+						}}
 					>
-						<CardContent sx={{ p: 4 }}>
-							<Box sx={{ textAlign: "center", mb: 4 }}>
-								<Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-									Donation Details
+						<CardContent sx={{ p: 5 }}>
+							<Box sx={{ textAlign: "center", mb: 5 }}>
+								<Typography
+									variant="h4"
+									gutterBottom
+									sx={{
+										fontWeight: 700,
+										color: customColor,
+										mb: 2,
+									}}
+								>
+									{isMonetary ? "💰 Donation Amount" : "📦 Item Details"}
 								</Typography>
-								<Typography variant="body1" color="text.secondary">
-									Provide details about your donation
+								<Typography
+									variant="h6"
+									sx={{
+										color: "#4a5568",
+										fontWeight: 500,
+										maxWidth: 500,
+										mx: "auto",
+										lineHeight: 1.6,
+									}}
+								>
+									{isMonetary
+										? "Every contribution makes a difference! Choose an amount that feels right for you."
+										: "Tell us about the items you'd like to donate to help this cause."}
 								</Typography>
 							</Box>
 
 							{isMonetary ? (
 								<Box>
-									<Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-										How much would you like to donate?
-									</Typography>
-									<Box
-										sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}
+									<Typography
+										variant="h5"
+										gutterBottom
+										sx={{
+											mb: 4,
+											fontWeight: 600,
+											color: customColor,
+											textAlign: "center",
+										}}
 									>
-										{[10, 25, 50, 100, 250, 500].map((amount) => (
-											<Chip
-												key={amount}
-												label={`$${amount}`}
-												onClick={() => formik.setFieldValue("amount", amount)}
-												sx={{
-													px: 2,
-													py: 3,
-													fontSize: "1.1rem",
-													fontWeight: 600,
-													cursor: "pointer",
-													backgroundColor:
-														Number(formik.values.amount) === amount
-															? customColor
-															: "transparent",
-													color:
-														Number(formik.values.amount) === amount
-															? "white"
-															: customColor,
-													border: `1px solid ${customColor}`,
-													"&:hover": {
-														backgroundColor: customColor,
-														color: "white",
-													},
-												}}
-											/>
-										))}
+										🎯 How much would you like to donate?
+									</Typography>
+
+									{/* Quick Amount Selection */}
+									<Box sx={{ mb: 4 }}>
+										<Typography
+											variant="h6"
+											sx={{
+												mb: 3,
+												fontWeight: 600,
+												color: "#374151",
+											}}
+										>
+											Quick Select:
+										</Typography>
+										<Box
+											sx={{
+												display: "grid",
+												gridTemplateColumns:
+													"repeat(auto-fit, minmax(120px, 1fr))",
+												gap: 2,
+											}}
+										>
+											{[10, 25, 50, 100, 250, 500].map((amount) => (
+												<Paper
+													key={amount}
+													elevation={
+														Number(formik.values.amount) === amount ? 8 : 2
+													}
+													sx={{
+														p: 3,
+														cursor: "pointer",
+														border: "3px solid",
+														borderColor:
+															Number(formik.values.amount) === amount
+																? customColor
+																: "#e0e0e0",
+														backgroundColor:
+															Number(formik.values.amount) === amount
+																? `${customColor}15`
+																: "white",
+														borderRadius: 3,
+														textAlign: "center",
+														transition: "all 0.3s ease",
+														transform:
+															Number(formik.values.amount) === amount
+																? "scale(1.05)"
+																: "scale(1)",
+														"&:hover": {
+															elevation: 8,
+															borderColor: customColor,
+															backgroundColor: `${customColor}10`,
+															transform: "scale(1.05)",
+														},
+													}}
+													onClick={() => formik.setFieldValue("amount", amount)}
+												>
+													<Typography
+														variant="h5"
+														sx={{
+															fontWeight: 700,
+															color:
+																Number(formik.values.amount) === amount
+																	? customColor
+																	: "#1a1a1a",
+															mb: 1,
+														}}
+													>
+														${amount}
+													</Typography>
+													<Typography
+														variant="body2"
+														sx={{
+															color: "#6b7280",
+															fontWeight: 500,
+														}}
+													>
+														{amount <= 25
+															? "Starter"
+															: amount <= 100
+															? "Popular"
+															: "Generous"}
+													</Typography>
+												</Paper>
+											))}
+										</Box>
 									</Box>
-									<TextField
-										fullWidth
-										label="Custom Amount ($)"
-										name="amount"
-										type="number"
-										value={formik.values.amount}
-										onChange={formik.handleChange}
-										error={
-											formik.touched.amount && Boolean(formik.errors.amount)
-										}
-										helperText={formik.touched.amount && formik.errors.amount}
-										sx={{ mb: 3 }}
-									/>
+
+									{/* Custom Amount Input */}
+									<Box
+										sx={{
+											p: 4,
+											borderRadius: 3,
+											border: `2px solid ${customColor}30`,
+											backgroundColor: `${customColor}05`,
+										}}
+									>
+										<Typography
+											variant="h6"
+											sx={{
+												mb: 3,
+												fontWeight: 600,
+												color: customColor,
+												textAlign: "center",
+											}}
+										>
+											💡 Or enter a custom amount:
+										</Typography>
+										<TextField
+											fullWidth
+											label="Custom Amount ($)"
+											name="amount"
+											type="number"
+											value={formik.values.amount}
+											onChange={formik.handleChange}
+											error={
+												formik.touched.amount && Boolean(formik.errors.amount)
+											}
+											helperText={formik.touched.amount && formik.errors.amount}
+											sx={{
+												"& .MuiOutlinedInput-root": {
+													borderRadius: 3,
+													fontSize: "1.2rem",
+													fontWeight: 600,
+													"& fieldset": {
+														borderColor: customColor,
+														borderWidth: 2,
+													},
+													"&:hover fieldset": {
+														borderColor: customColor,
+													},
+													"&.Mui-focused fieldset": {
+														borderColor: customColor,
+													},
+												},
+												"& .MuiInputLabel-root": {
+													color: customColor,
+													fontWeight: 600,
+													"&.Mui-focused": {
+														color: customColor,
+													},
+												},
+											}}
+											InputProps={{
+												startAdornment: (
+													<Box
+														sx={{
+															mr: 1,
+															color: customColor,
+															fontWeight: 700,
+															fontSize: "1.2rem",
+														}}
+													>
+														$
+													</Box>
+												),
+											}}
+										/>
+									</Box>
 								</Box>
 							) : (
 								<Grid container spacing={3}>
@@ -557,7 +791,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 												Pickup Service
 											</Typography>
 											<Typography variant="body2" color="text.secondary">
-												We'll collect the donation from your address
+												We will collect the donation from your address
 											</Typography>
 										</Box>
 									</Paper>
@@ -586,7 +820,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 												Drop-off
 											</Typography>
 											<Typography variant="body2" color="text.secondary">
-												You'll deliver to the organization's address
+												You will deliver to the organizations address
 											</Typography>
 										</Box>
 									</Paper>
@@ -664,7 +898,8 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 									Contact Information
 								</Typography>
 								<Typography variant="body1" color="text.secondary">
-									We'll use this information to contact you about your donation
+									We will use this information to contact you about your
+									donation
 								</Typography>
 							</Box>
 
@@ -889,7 +1124,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 							Payment Not Required
 						</Typography>
 						<Typography>
-							Item donations don't require online payment.
+							Item donations do not require online payment.
 						</Typography>
 					</Alert>
 				);
@@ -900,32 +1135,143 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 	};
 
 	return (
-		<Box sx={{ maxWidth: 900, mx: "auto", p: { xs: 2, md: 4 } }}>
-			{/* Header */}
-			<Paper
-				elevation={0}
-				sx={{ p: 4, mb: 4, bgcolor: `${customColor}15`, borderRadius: 3 }}
+		<Box sx={{ maxWidth: 1000, mx: "auto", p: { xs: 2, md: 4 } }}>
+			{/* Enhanced Header */}
+			<Box
+				sx={{
+					background: `linear-gradient(135deg, ${customColor}20, #3b82f640, #ec489940)`,
+					borderRadius: 4,
+					p: 5,
+					mb: 4,
+					position: "relative",
+					overflow: "hidden",
+					border: `3px solid ${customColor}`,
+				}}
 			>
-				<Typography
-					variant="h4"
-					gutterBottom
-					sx={{ fontWeight: 700, color: customColor }}
-				>
-					Make a Donation
-				</Typography>
-				<Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-					{cause?.cause?.title}
-				</Typography>
-				<Typography variant="body1" color="text.secondary">
-					Your generosity makes a difference. Follow the simple steps below to
-					complete your donation.
-				</Typography>
-			</Paper>
+				{/* Background Pattern */}
+				<Box
+					sx={{
+						position: "absolute",
+						top: -50,
+						right: -50,
+						width: 200,
+						height: 200,
+						borderRadius: "50%",
+						background: `linear-gradient(45deg, ${customColor}30, #3b82f630)`,
+						opacity: 0.3,
+					}}
+				/>
+				<Box
+					sx={{
+						position: "absolute",
+						bottom: -30,
+						left: -30,
+						width: 150,
+						height: 150,
+						borderRadius: "50%",
+						background: `linear-gradient(45deg, #ec489930, #f59e0b30)`,
+						opacity: 0.3,
+					}}
+				/>
 
-			{/* Stepper */}
-			<Card elevation={2} sx={{ mb: 4, borderRadius: 3 }}>
-				<CardContent sx={{ p: 3 }}>
-					<Stepper activeStep={activeStep} alternativeLabel>
+				<Box sx={{ position: "relative", zIndex: 2, textAlign: "center" }}>
+					<Typography
+						variant="h3"
+						gutterBottom
+						sx={{
+							fontWeight: 800,
+							color: customColor,
+							textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+							mb: 2,
+						}}
+					>
+						💝 Make a Donation
+					</Typography>
+					<Typography
+						variant="h5"
+						sx={{
+							mb: 3,
+							color: "#1a1a1a",
+							fontWeight: 600,
+							background: "rgba(255,255,255,0.9)",
+							borderRadius: 2,
+							px: 3,
+							py: 1,
+							display: "inline-block",
+						}}
+					>
+						{cause?.cause?.title}
+					</Typography>
+					<Typography
+						variant="h6"
+						sx={{
+							color: "#4a5568",
+							fontWeight: 500,
+							maxWidth: 600,
+							mx: "auto",
+							lineHeight: 1.6,
+						}}
+					>
+						🌟 Your generosity creates real impact! Follow our simple steps to
+						complete your donation and make a difference in someone's life.
+					</Typography>
+				</Box>
+			</Box>
+
+			{/* Enhanced Stepper */}
+			<Card
+				elevation={0}
+				sx={{
+					mb: 4,
+					borderRadius: 4,
+					border: `2px solid ${customColor}`,
+					background: `linear-gradient(135deg, rgba(255,255,255,0.9), ${customColor}05)`,
+					overflow: "hidden",
+				}}
+			>
+				<CardContent sx={{ p: 4 }}>
+					<Stepper
+						activeStep={activeStep}
+						alternativeLabel
+						sx={{
+							"& .MuiStepLabel-root .Mui-completed": {
+								color: customColor,
+							},
+							"& .MuiStepLabel-root .Mui-active": {
+								color: customColor,
+							},
+							"& .MuiStepConnector-line": {
+								borderColor: "#e0e0e0",
+							},
+							"& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line": {
+								borderColor: customColor,
+							},
+							"& .MuiStepConnector-root.Mui-active .MuiStepConnector-line": {
+								borderColor: customColor,
+							},
+							"& .MuiStepIcon-root": {
+								fontSize: "2rem",
+							},
+							"& .MuiStepIcon-root.Mui-completed": {
+								color: customColor,
+							},
+							"& .MuiStepIcon-root.Mui-active": {
+								color: customColor,
+							},
+							"& .MuiStepLabel-label": {
+								fontWeight: 600,
+								fontSize: "1rem",
+							},
+							"& .MuiStepLabel-label.Mui-active": {
+								color: customColor,
+								fontWeight: 700,
+							},
+							"& .MuiStepLabel-label.Mui-completed": {
+								color: customColor,
+								fontWeight: 600,
+							},
+						}}
+					>
 						{steps.map((label, index) => (
 							<Step key={label}>
 								<StepLabel>{label}</StepLabel>

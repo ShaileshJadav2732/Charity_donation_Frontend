@@ -22,12 +22,26 @@ import {
 	Stack,
 	Pagination,
 	Divider,
+	Avatar,
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { useGetFeedbacksQuery, Feedback } from "@/store/api/feedbackApi";
+import {
+	useGetOrganizationFeedbackQuery,
+	useUpdateFeedbackStatusMutation,
+	Feedback,
+} from "@/store/api/feedbackApi";
 import { formatDistanceToNow } from "date-fns";
 import FeedbackStats from "@/components/feedback/FeedbackStats";
+import { toast } from "react-hot-toast";
+import {
+	FaUser,
+	FaEye,
+	FaEyeSlash,
+	FaCheck,
+	FaTimes,
+	FaTrash,
+} from "react-icons/fa";
 
 interface TabPanelProps {
 	children?: React.ReactNode;
@@ -64,39 +78,43 @@ const FeedbackPage = () => {
 	>("approve");
 	const limit = 10;
 
-	// Get organization ID from user
-	const organizationId = user?.id;
-
-	// Prepare query params based on current tab
-	const queryParams = {
-		page,
-		limit,
-		organization: organizationId,
-		status:
-			tabValue === 0 ? "pending" : tabValue === 1 ? "approved" : "rejected",
+	// Get status based on current tab
+	const getStatusForTab = (tabIndex: number) => {
+		switch (tabIndex) {
+			case 0:
+				return "pending";
+			case 1:
+				return "approved";
+			case 2:
+				return "rejected";
+			default:
+				return "pending";
+		}
 	};
 
-	// Fetch feedbacks
-	const { data, isLoading, error } = useGetFeedbacksQuery(
-		organizationId ? queryParams : { page: 1, limit: 1 }, // Skip if no organizationId
-		{ skip: !organizationId }
+	// Fetch organization feedback using "me" to let backend determine the organization
+	const { data, isLoading, error } = useGetOrganizationFeedbackQuery(
+		{
+			organizationId: "me", // Backend will resolve this to the actual organization ID
+			status: getStatusForTab(tabValue),
+			page,
+			limit,
+		},
+		{ skip: !user || user.role !== "organization" }
 	);
 
-	// Note: Update and delete mutations are not implemented yet
-	// const [updateFeedback, { isLoading: isUpdating }] = useUpdateFeedbackMutation();
-	// const [deleteFeedback, { isLoading: isDeleting }] = useDeleteFeedbackMutation();
+	// Update feedback status mutation
+	const [updateFeedbackStatus, { isLoading: isUpdating }] =
+		useUpdateFeedbackStatusMutation();
 
 	// Handle tab change
-	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+	const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
 		setTabValue(newValue);
 		setPage(1); // Reset to first page when changing tabs
 	};
 
 	// Handle page change
-	const handlePageChange = (
-		event: React.ChangeEvent<unknown>,
-		value: number
-	) => {
+	const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
 		setPage(value);
 	};
 
@@ -114,9 +132,22 @@ const FeedbackPage = () => {
 	const handleActionConfirm = async () => {
 		if (!selectedFeedback) return;
 
-		// TODO: Implement update and delete mutations
-		console.log(`${dialogAction} feedback:`, selectedFeedback.id);
-		alert(`${dialogAction} functionality not implemented yet`);
+		try {
+			if (dialogAction === "approve" || dialogAction === "reject") {
+				await updateFeedbackStatus({
+					feedbackId: selectedFeedback._id || selectedFeedback.id!,
+					status: dialogAction === "approve" ? "approved" : "rejected",
+				}).unwrap();
+
+				toast.success(`Feedback ${dialogAction}d successfully!`);
+			} else if (dialogAction === "delete") {
+				// TODO: Implement delete functionality when backend supports it
+				toast.error("Delete functionality not yet implemented");
+			}
+		} catch (error) {
+			console.error(`Failed to ${dialogAction} feedback:`, error);
+			toast.error(`Failed to ${dialogAction} feedback. Please try again.`);
+		}
 
 		setDialogOpen(false);
 		setSelectedFeedback(null);
@@ -139,7 +170,7 @@ const FeedbackPage = () => {
 				<Typography variant="h5" gutterBottom>
 					Feedback Management
 				</Typography>
-				<Typography variant="body2" color="text.secondary" paragraph>
+				<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
 					View and manage feedback from your donors and supporters.
 				</Typography>
 
@@ -148,7 +179,7 @@ const FeedbackPage = () => {
 					<Typography variant="h6" gutterBottom>
 						Feedback Statistics
 					</Typography>
-					<FeedbackStats organizationId={organizationId} />
+					<FeedbackStats organizationId="me" />
 				</Box>
 
 				<Divider sx={{ my: 3 }} />
@@ -196,6 +227,22 @@ const FeedbackPage = () => {
 					{selectedFeedback && (
 						<Card variant="outlined" sx={{ mt: 2 }}>
 							<CardContent>
+								<Box display="flex" alignItems="center" mb={1}>
+									<Avatar
+										sx={{ bgcolor: "#2f8077", width: 32, height: 32, mr: 2 }}
+									>
+										<FaUser />
+									</Avatar>
+									<Typography variant="subtitle2">
+										{typeof selectedFeedback.donor === "string"
+											? "Anonymous Donor"
+											: selectedFeedback.donor.name ||
+											  `${selectedFeedback.donor.firstName || ""} ${
+													selectedFeedback.donor.lastName || ""
+											  }`.trim() ||
+											  "Anonymous Donor"}
+									</Typography>
+								</Box>
 								<Rating value={selectedFeedback.rating} readOnly size="small" />
 								<Typography variant="body2" sx={{ mt: 1 }}>
 									{selectedFeedback.comment}
@@ -240,87 +287,179 @@ const FeedbackPage = () => {
 			);
 		}
 
-		if (!data || !data.feedbacks || data.feedbacks.length === 0) {
+		if (!data || !data.data || data.data.length === 0) {
 			return <Alert severity="info">No {status} feedback available.</Alert>;
 		}
 
 		// Calculate total pages
-		const totalPages = Math.ceil(data.total / limit);
+		const totalPages = Math.ceil((data.pagination?.total || 0) / limit);
+
+		// Helper function to get donor name
+		const getDonorName = (donor: Feedback["donor"]) => {
+			if (typeof donor === "string") return "Anonymous Donor";
+			return (
+				donor.name ||
+				`${donor.firstName || ""} ${donor.lastName || ""}`.trim() ||
+				"Anonymous Donor"
+			);
+		};
+
+		// Helper function to get cause/campaign title
+		const getTitle = (item: string | { title: string } | undefined) => {
+			if (typeof item === "string") return item;
+			return item?.title || "N/A";
+		};
 
 		return (
 			<>
-				<Stack spacing={2}>
-					{data.feedbacks.map((feedback) => (
-						<Card key={feedback.id} variant="outlined">
-							<CardContent>
+				<Stack spacing={3}>
+					{data.data.map((feedback) => (
+						<Card
+							key={feedback._id || feedback.id}
+							variant="outlined"
+							sx={{
+								border: "1px solid #e0e0e0",
+								borderRadius: 2,
+								"&:hover": {
+									boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+									transform: "translateY(-2px)",
+									transition: "all 0.2s ease-in-out",
+								},
+							}}
+						>
+							<CardContent sx={{ p: 3 }}>
 								<Box
 									display="flex"
 									justifyContent="space-between"
 									alignItems="flex-start"
 								>
-									<Box>
-										<Box display="flex" alignItems="center" mb={1}>
-											<Rating value={feedback.rating} readOnly size="small" />
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{ ml: 1 }}
+									<Box sx={{ flex: 1 }}>
+										{/* Header with donor info and rating */}
+										<Box display="flex" alignItems="center" mb={2}>
+											<Avatar
+												sx={{
+													bgcolor: "#2f8077",
+													width: 40,
+													height: 40,
+													mr: 2,
+													fontSize: "1rem",
+												}}
 											>
-												{formatDistanceToNow(new Date(feedback.createdAt), {
-													addSuffix: true,
-												})}
-											</Typography>
+												<FaUser />
+											</Avatar>
+											<Box>
+												<Typography variant="subtitle1" fontWeight={600}>
+													{getDonorName(feedback.donor)}
+												</Typography>
+												<Box display="flex" alignItems="center" gap={1}>
+													<Rating
+														value={feedback.rating}
+														readOnly
+														size="small"
+													/>
+													<Typography variant="body2" color="text.secondary">
+														{formatDistanceToNow(new Date(feedback.createdAt), {
+															addSuffix: true,
+														})}
+													</Typography>
+												</Box>
+											</Box>
 										</Box>
-										<Typography variant="body1" paragraph>
+
+										{/* Feedback comment */}
+										<Typography
+											variant="body1"
+											sx={{
+												mb: 2,
+												lineHeight: 1.6,
+												color: "#333",
+											}}
+										>
 											{feedback.comment}
 										</Typography>
-										<Box display="flex" alignItems="center" gap={1}>
+
+										{/* Tags and metadata */}
+										<Box
+											display="flex"
+											alignItems="center"
+											gap={1}
+											flexWrap="wrap"
+										>
 											<Chip
+												icon={feedback.isPublic ? <FaEye /> : <FaEyeSlash />}
 												label={feedback.isPublic ? "Public" : "Private"}
 												size="small"
-												color={feedback.isPublic ? "info" : "default"}
+												color={feedback.isPublic ? "success" : "default"}
+												variant="outlined"
 											/>
 											{feedback.campaign && (
 												<Chip
-													label="Campaign Feedback"
+													label={`Campaign: ${getTitle(feedback.campaign)}`}
 													size="small"
 													color="primary"
+													variant="outlined"
 												/>
 											)}
 											{feedback.cause && (
 												<Chip
-													label="Cause Feedback"
+													label={`Cause: ${getTitle(feedback.cause)}`}
 													size="small"
 													color="secondary"
+													variant="outlined"
 												/>
 											)}
 										</Box>
 									</Box>
-									<Box>
+									{/* Action buttons */}
+									<Box display="flex" flexDirection="column" gap={1}>
 										{status === "pending" && (
-											<>
+											<Box display="flex" gap={1}>
 												<Button
 													size="small"
-													color="primary"
+													variant="contained"
+													color="success"
+													startIcon={<FaCheck />}
 													onClick={() => openActionDialog(feedback, "approve")}
-													sx={{ mr: 1 }}
+													disabled={isUpdating}
+													sx={{
+														minWidth: 100,
+														fontSize: "0.75rem",
+													}}
 												>
 													Approve
 												</Button>
 												<Button
 													size="small"
+													variant="contained"
 													color="error"
+													startIcon={<FaTimes />}
 													onClick={() => openActionDialog(feedback, "reject")}
+													disabled={isUpdating}
+													sx={{
+														minWidth: 100,
+														fontSize: "0.75rem",
+													}}
 												>
 													Reject
 												</Button>
-											</>
+											</Box>
 										)}
 										<Button
 											size="small"
+											variant="outlined"
 											color="error"
+											startIcon={<FaTrash />}
 											onClick={() => openActionDialog(feedback, "delete")}
-											sx={{ mt: status === "pending" ? 1 : 0 }}
+											disabled={isUpdating}
+											sx={{
+												fontSize: "0.75rem",
+												borderColor: "#f44336",
+												color: "#f44336",
+												"&:hover": {
+													borderColor: "#d32f2f",
+													backgroundColor: "rgba(244, 67, 54, 0.04)",
+												},
+											}}
 										>
 											Delete
 										</Button>

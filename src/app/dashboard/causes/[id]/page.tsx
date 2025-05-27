@@ -75,8 +75,8 @@ const donationTypeIcons: Record<string, React.ComponentType<any>> = {
 	[DonationType.HOUSEHOLD]: HouseholdIcon,
 	[ExtendedDonationType.IN_KIND]: MoneyIcon,
 	[ExtendedDonationType.VOLUNTEER]: PeopleIcon,
-	"CLOTHES": ClothesIcon,
-	"OTHER": CategoryIcon,
+	CLOTHES: ClothesIcon,
+	OTHER: CategoryIcon,
 };
 
 export default function CauseDetailPage({
@@ -148,7 +148,7 @@ export default function CauseDetailPage({
 
 		if (error) {
 			// Check if it's a FetchBaseQueryError
-			if ('status' in error) {
+			if ("status" in error) {
 				const fetchError = error as FetchBaseQueryError;
 				if (fetchError.status === 404) {
 					errorMessage = "This cause doesn't exist or has been removed.";
@@ -158,7 +158,8 @@ export default function CauseDetailPage({
 					errorMessage = "Please log in to view this cause.";
 					isAuthError = true;
 				} else {
-					errorMessage = "There was an error loading this cause. Please try again later.";
+					errorMessage =
+						"There was an error loading this cause. Please try again later.";
 				}
 			}
 		}
@@ -172,7 +173,8 @@ export default function CauseDetailPage({
 				</Alert>
 				{!isAuthError && (
 					<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-						If you believe this is an error, please try refreshing the page or contact support.
+						If you believe this is an error, please try refreshing the page or
+						contact support.
 					</Typography>
 				)}
 				<Button
@@ -189,16 +191,16 @@ export default function CauseDetailPage({
 	const progress =
 		data?.cause.raisedAmount && data.cause.targetAmount
 			? Math.min(
-				100,
-				Math.round((data?.cause.raisedAmount / data.cause.targetAmount) * 100)
-			)
+					100,
+					Math.round((data?.cause.raisedAmount / data.cause.targetAmount) * 100)
+			  )
 			: 0;
 
 	// Extract data from the API response
 	const donorCount = data?.cause?.donorCount || 0;
 
 	// Handle donation types and acceptance type
-	let acceptanceType: 'money' | 'items' | 'both' = 'money';
+	let acceptanceType: "money" | "items" | "both" = "money";
 	let donationItems: string[] = [];
 	let acceptedDonationTypes: DonationType[] = [DonationType.MONEY];
 
@@ -217,34 +219,97 @@ export default function CauseDetailPage({
 		}
 
 		// @ts-ignore
-		if (data.cause.acceptedDonationTypes && Array.isArray(data.cause.acceptedDonationTypes)) {
+		if (
+			data.cause.acceptedDonationTypes &&
+			Array.isArray(data.cause.acceptedDonationTypes)
+		) {
 			// @ts-ignore
 			acceptedDonationTypes = data.cause.acceptedDonationTypes;
-		} else if (acceptanceType === 'both') {
+		} else if (acceptanceType === "both") {
 			// If acceptanceType is 'both' but no acceptedDonationTypes, include MONEY and some default item types
-			acceptedDonationTypes = [DonationType.MONEY, DonationType.CLOTHES, DonationType.FOOD];
-		} else if (acceptanceType === 'items') {
+			acceptedDonationTypes = [
+				DonationType.MONEY,
+				DonationType.CLOTHES,
+				DonationType.FOOD,
+			];
+		} else if (acceptanceType === "items") {
 			// If acceptanceType is 'items' but no acceptedDonationTypes, include some default item types
-			acceptedDonationTypes = [DonationType.CLOTHES, DonationType.FOOD, DonationType.HOUSEHOLD];
+			acceptedDonationTypes = [
+				DonationType.CLOTHES,
+				DonationType.FOOD,
+				DonationType.HOUSEHOLD,
+			];
 		}
 	}
 
+	// Calculate urgency based on progress
+	let urgency = "Low";
+	let urgencyColor = "#10b981";
+	if (progress < 30) {
+		urgency = "High";
+		urgencyColor = "#ef4444";
+	} else if (progress < 70) {
+		urgency = "Medium";
+		urgencyColor = "#f59e0b";
+	}
+
+	const formatCurrency = (amount: number) => {
+		return new Intl.NumberFormat("en-US", {
+			style: "currency",
+			currency: "USD",
+		}).format(amount);
+	};
+
 	return (
-		<Box p={4}>
+		<Box sx={{ p: 3, maxWidth: "1200px", mx: "auto" }}>
 			{/* Back button */}
-			<Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mb: 4 }}>
+			<Button
+				startIcon={<ArrowBackIcon />}
+				onClick={handleBack}
+				sx={{
+					mb: 4,
+					color: "#287068",
+					fontWeight: 600,
+					"&:hover": {
+						backgroundColor: "rgba(40, 112, 104, 0.1)",
+					},
+				}}
+			>
 				Back to causes
 			</Button>
 
 			{/* Cause Header */}
-			<Card sx={{ mb: 4, overflow: "hidden" }}>
+			<Card
+				sx={{ mb: 4, borderRadius: 3, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+			>
+				{/* Hero Section */}
 				<Box
 					sx={{
-						height: { xs: 200, md: 300 },
+						height: { xs: 250, md: 350 },
 						position: "relative",
-						bgcolor: "grey.100",
+						background: `linear-gradient(135deg, ${urgencyColor}20, ${urgencyColor}40)`,
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
 					}}
 				>
+					{/* Urgency Badge */}
+					<Chip
+						label={`${urgency} Priority`}
+						sx={{
+							position: "absolute",
+							top: 24,
+							right: 24,
+							backgroundColor: urgencyColor,
+							color: "white",
+							fontWeight: 600,
+							fontSize: "0.875rem",
+							px: 2,
+							py: 1,
+						}}
+					/>
+
+					{/* Main Icon */}
 					{data?.cause.imageUrl ? (
 						<Box
 							component="img"
@@ -254,167 +319,341 @@ export default function CauseDetailPage({
 								width: "100%",
 								height: "100%",
 								objectFit: "cover",
+								position: "absolute",
+								top: 0,
+								left: 0,
+								zIndex: 1,
 							}}
 						/>
 					) : (
+						<PublicIcon
+							sx={{ fontSize: 120, color: urgencyColor, zIndex: 2 }}
+						/>
+					)}
+
+					{/* Overlay for better text readability when image is present */}
+					{data?.cause.imageUrl && (
 						<Box
-							display="flex"
-							alignItems="center"
-							justifyContent="center"
-							height="100%"
-						>
-							<PublicIcon sx={{ fontSize: 80, color: "grey.300" }} />
-						</Box>
+							sx={{
+								position: "absolute",
+								top: 0,
+								left: 0,
+								right: 0,
+								bottom: 0,
+								background: `linear-gradient(135deg, ${urgencyColor}40, ${urgencyColor}60)`,
+								zIndex: 2,
+							}}
+						/>
 					)}
 				</Box>
 
 				<CardContent sx={{ p: 4 }}>
-					<Typography variant="h4" fontWeight="bold" gutterBottom>
+					{/* Title and Organization */}
+					<Typography
+						variant="h3"
+						sx={{
+							fontWeight: "bold",
+							mb: 2,
+							color: "#1a1a1a",
+						}}
+					>
 						{data?.cause?.title || "Untitled Cause"}
 					</Typography>
 
-					<Box display="flex" alignItems="center" mb={3}>
-						<PeopleIcon sx={{ mr: 1, color: "grey.500" }} />
-						<Typography variant="body2" color="text.secondary">
+					<Box display="flex" alignItems="center" mb={4}>
+						<Avatar
+							sx={{
+								backgroundColor: "#287068",
+								width: 32,
+								height: 32,
+								mr: 2,
+							}}
+						>
+							<PeopleIcon sx={{ fontSize: 18 }} />
+						</Avatar>
+						<Typography variant="h6" sx={{ color: "#287068", fontWeight: 600 }}>
 							{data?.cause.organizationName || "Organization"}
 						</Typography>
 					</Box>
 
 					{/* Cause Stats */}
-					<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 4 }}>
-						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: "220px" }}>
-							<CardContent>
-								<Box
-									display="flex"
-									alignItems="center"
-									justifyContent="space-between"
-									mb={1}
-								>
-									<Typography variant="body2" color="text.secondary">
-										Raised
-									</Typography>
-									<MoneyIcon color="primary" />
+					<Box
+						sx={{
+							display: "grid",
+							gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+							gap: 3,
+							mb: 4,
+						}}
+					>
+						<Card
+							sx={{
+								borderRadius: 3,
+								border: "2px solid #287068",
+								backgroundColor: "rgba(40, 112, 104, 0.05)",
+								transition: "all 0.3s ease",
+								"&:hover": {
+									transform: "translateY(-4px)",
+									boxShadow: "0 8px 25px rgba(40, 112, 104, 0.15)",
+								},
+							}}
+						>
+							<CardContent sx={{ p: 3 }}>
+								<Box display="flex" alignItems="center" mb={2}>
+									<Avatar
+										sx={{
+											backgroundColor: "#287068",
+											width: 48,
+											height: 48,
+											mr: 2,
+										}}
+									>
+										<MoneyIcon sx={{ fontSize: 24 }} />
+									</Avatar>
+									<Box>
+										<Typography
+											variant="body2"
+											color="text.secondary"
+											sx={{ fontWeight: 500 }}
+										>
+											Amount Raised
+										</Typography>
+										<Typography
+											variant="h4"
+											sx={{ fontWeight: "bold", color: "#287068" }}
+										>
+											{formatCurrency(data?.cause.raisedAmount || 0)}
+										</Typography>
+									</Box>
 								</Box>
-								<Typography variant="h5" fontWeight="bold">
-									$
-									{data?.cause.raisedAmount
-										? data.cause.raisedAmount.toLocaleString()
-										: "0"}
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
-									of $
-									{data?.cause.targetAmount
-										? data.cause.targetAmount.toLocaleString()
-										: "0"}{" "}
-									goal
+								<Typography variant="body2" color="text.secondary">
+									of {formatCurrency(data?.cause.targetAmount || 0)} goal
 								</Typography>
 							</CardContent>
 						</Card>
 
-						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: "220px" }}>
-							<CardContent>
-								<Box
-									display="flex"
-									alignItems="center"
-									justifyContent="space-between"
-									mb={1}
-								>
-									<Typography variant="body2" color="text.secondary">
-										Contributors
-									</Typography>
-									<HeartIcon color="error" />
+						<Card
+							sx={{
+								borderRadius: 3,
+								border: "2px solid #ef4444",
+								backgroundColor: "rgba(239, 68, 68, 0.05)",
+								transition: "all 0.3s ease",
+								"&:hover": {
+									transform: "translateY(-4px)",
+									boxShadow: "0 8px 25px rgba(239, 68, 68, 0.15)",
+								},
+							}}
+						>
+							<CardContent sx={{ p: 3 }}>
+								<Box display="flex" alignItems="center" mb={2}>
+									<Avatar
+										sx={{
+											backgroundColor: "#ef4444",
+											width: 48,
+											height: 48,
+											mr: 2,
+										}}
+									>
+										<HeartIcon sx={{ fontSize: 24 }} />
+									</Avatar>
+									<Box>
+										<Typography
+											variant="body2"
+											color="text.secondary"
+											sx={{ fontWeight: 500 }}
+										>
+											Contributors
+										</Typography>
+										<Typography
+											variant="h4"
+											sx={{ fontWeight: "bold", color: "#ef4444" }}
+										>
+											{donorCount}
+										</Typography>
+									</Box>
 								</Box>
-								<Typography variant="h5" fontWeight="bold">
-									{donorCount}
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
+								<Typography variant="body2" color="text.secondary">
 									people have donated
 								</Typography>
 							</CardContent>
 						</Card>
 
-						<Card variant="outlined" sx={{ flexGrow: 1, minWidth: "220px" }}>
-							<CardContent>
-								<Box
-									display="flex"
-									alignItems="center"
-									justifyContent="space-between"
-									mb={1}
-								>
-									<Typography variant="body2" color="text.secondary">
-										Created
-									</Typography>
-									<CalendarIcon color="info" />
+						<Card
+							sx={{
+								borderRadius: 3,
+								border: "2px solid #3b82f6",
+								backgroundColor: "rgba(59, 130, 246, 0.05)",
+								transition: "all 0.3s ease",
+								"&:hover": {
+									transform: "translateY(-4px)",
+									boxShadow: "0 8px 25px rgba(59, 130, 246, 0.15)",
+								},
+							}}
+						>
+							<CardContent sx={{ p: 3 }}>
+								<Box display="flex" alignItems="center" mb={2}>
+									<Avatar
+										sx={{
+											backgroundColor: "#3b82f6",
+											width: 48,
+											height: 48,
+											mr: 2,
+										}}
+									>
+										<CalendarIcon sx={{ fontSize: 24 }} />
+									</Avatar>
+									<Box>
+										<Typography
+											variant="body2"
+											color="text.secondary"
+											sx={{ fontWeight: 500 }}
+										>
+											Created On
+										</Typography>
+										<Typography
+											variant="h6"
+											sx={{ fontWeight: "bold", color: "#3b82f6" }}
+										>
+											{data?.cause.createdAt
+												? new Date(data.cause.createdAt).toLocaleDateString(
+														undefined,
+														{
+															month: "short",
+															day: "numeric",
+															year: "numeric",
+														}
+												  )
+												: "N/A"}
+										</Typography>
+									</Box>
 								</Box>
-								<Typography variant="h5" fontWeight="bold">
-									{data?.cause.createdAt
-										? new Date(data.cause.createdAt).toLocaleDateString(
-											undefined,
-											{
-												month: "short",
-												day: "numeric",
-												year: "numeric",
-											}
-										)
-										: "N/A"}
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
-									start date
+								<Typography variant="body2" color="text.secondary">
+									campaign start date
 								</Typography>
 							</CardContent>
 						</Card>
 					</Box>
 
-					{/* Progress Bar */}
-					<Box mb={4}>
-						<LinearProgress
-							variant="determinate"
-							value={progress}
-							sx={{ height: 10, borderRadius: 5, mb: 1 }}
-						/>
-						<Box display="flex" justifyContent="space-between">
-							<Typography variant="body2" color="text.secondary">
-								{progress}% funded
-							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								$
-								{data?.cause.targetAmount
-									? data.cause.targetAmount.toLocaleString()
-									: "0"}{" "}
-								goal
-							</Typography>
+					{/* Enhanced Progress Section */}
+					<Box
+						sx={{
+							mb: 4,
+							p: 3,
+							backgroundColor: "rgba(40, 112, 104, 0.05)",
+							borderRadius: 3,
+							border: "1px solid rgba(40, 112, 104, 0.2)",
+						}}
+					>
+						<Typography
+							variant="h6"
+							sx={{ mb: 2, fontWeight: 600, color: "#287068" }}
+						>
+							Funding Progress
+						</Typography>
+						<Box sx={{ mb: 2 }}>
+							<Box display="flex" justifyContent="space-between" mb={1}>
+								<Typography variant="body1" sx={{ fontWeight: 600 }}>
+									{formatCurrency(data?.cause.raisedAmount || 0)}
+								</Typography>
+								<Typography variant="body1" sx={{ fontWeight: 600 }}>
+									{formatCurrency(data?.cause.targetAmount || 0)}
+								</Typography>
+							</Box>
+							<LinearProgress
+								variant="determinate"
+								value={progress}
+								sx={{
+									height: 12,
+									borderRadius: 6,
+									backgroundColor: "#f0f0f0",
+									"& .MuiLinearProgress-bar": {
+										backgroundColor: urgencyColor,
+										borderRadius: 6,
+									},
+								}}
+							/>
+							<Box display="flex" justifyContent="space-between" mt={1}>
+								<Typography variant="body2" color="text.secondary">
+									{progress}% funded
+								</Typography>
+								<Typography variant="body2" color="text.secondary">
+									{100 - progress}% remaining
+								</Typography>
+							</Box>
 						</Box>
 					</Box>
 
 					{/* Action Buttons */}
-					<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 4 }}>
+					<Box
+						sx={{
+							display: "grid",
+							gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+							gap: 3,
+							mb: 4,
+						}}
+					>
 						{/* Monetary Donation Button */}
-						{(acceptanceType === 'money' || acceptanceType === 'both') && (
+						{(acceptanceType === "money" || acceptanceType === "both") && (
 							<Button
-								fullWidth
 								variant="contained"
-								color="primary"
 								size="large"
 								startIcon={<MoneyIcon />}
 								onClick={handleDonate}
 								disabled={user?.role !== "donor"}
-								sx={{ flexGrow: 1, minWidth: "200px" }}
+								sx={{
+									backgroundColor: "#287068",
+									borderRadius: 3,
+									textTransform: "none",
+									fontWeight: 600,
+									py: 2,
+									fontSize: "1rem",
+									transition: "all 0.3s ease",
+									"&:hover": {
+										backgroundColor: "#1f5a52",
+										transform: "translateY(-2px)",
+										boxShadow: "0 8px 25px rgba(40, 112, 104, 0.3)",
+									},
+									"&:disabled": {
+										backgroundColor: "#e0e0e0",
+										color: "#9e9e9e",
+									},
+								}}
 							>
 								Donate Money
 							</Button>
 						)}
 
 						{/* Item Donation Button */}
-						{(acceptanceType === 'items' || acceptanceType === 'both') && (
+						{(acceptanceType === "items" || acceptanceType === "both") && (
 							<Button
-								fullWidth
-								variant={acceptanceType === 'both' ? "outlined" : "contained"}
-								color="primary"
+								variant={acceptanceType === "both" ? "outlined" : "contained"}
 								size="large"
 								startIcon={<CategoryIcon />}
 								onClick={handleDonate}
 								disabled={user?.role !== "donor"}
-								sx={{ flexGrow: 1, minWidth: "200px" }}
+								sx={{
+									backgroundColor:
+										acceptanceType === "both" ? "transparent" : "#287068",
+									borderColor: "#287068",
+									color: acceptanceType === "both" ? "#287068" : "white",
+									borderWidth: 2,
+									borderRadius: 3,
+									textTransform: "none",
+									fontWeight: 600,
+									py: 2,
+									fontSize: "1rem",
+									transition: "all 0.3s ease",
+									"&:hover": {
+										backgroundColor: "#287068",
+										color: "white",
+										transform: "translateY(-2px)",
+										boxShadow: "0 8px 25px rgba(40, 112, 104, 0.3)",
+									},
+									"&:disabled": {
+										backgroundColor: "transparent",
+										borderColor: "#e0e0e0",
+										color: "#9e9e9e",
+									},
+								}}
 							>
 								Donate Items
 							</Button>
@@ -424,73 +663,159 @@ export default function CauseDetailPage({
 						{acceptedDonationTypes.includes(
 							ExtendedDonationType.VOLUNTEER as unknown as DonationType
 						) && (
-								<Button
-									fullWidth
-									variant="outlined"
-									color="primary"
-									size="large"
-									startIcon={<PeopleIcon />}
-									disabled={user?.role !== "donor"}
-									sx={{ flexGrow: 1, minWidth: "200px" }}
-								>
-									Volunteer
-								</Button>
-							)}
+							<Button
+								variant="outlined"
+								size="large"
+								startIcon={<PeopleIcon />}
+								disabled={user?.role !== "donor"}
+								sx={{
+									borderColor: "#f59e0b",
+									color: "#f59e0b",
+									borderWidth: 2,
+									borderRadius: 3,
+									textTransform: "none",
+									fontWeight: 600,
+									py: 2,
+									fontSize: "1rem",
+									transition: "all 0.3s ease",
+									"&:hover": {
+										backgroundColor: "#f59e0b",
+										color: "white",
+										transform: "translateY(-2px)",
+										boxShadow: "0 8px 25px rgba(245, 158, 11, 0.3)",
+									},
+									"&:disabled": {
+										borderColor: "#e0e0e0",
+										color: "#9e9e9e",
+									},
+								}}
+							>
+								Volunteer
+							</Button>
+						)}
 					</Box>
 
 					{/* User Role Alert */}
 					{user?.role !== "donor" && (
-						<>
-							<Alert severity="info" sx={{ mb: 2 }}>
-								You are logged in as an organization. Donation features are only
-								available to donors.
+						<Box
+							sx={{
+								mb: 4,
+								p: 3,
+								backgroundColor: "rgba(59, 130, 246, 0.05)",
+								borderRadius: 3,
+								border: "2px solid #3b82f6",
+							}}
+						>
+							<Alert
+								severity="info"
+								sx={{
+									mb: 3,
+									backgroundColor: "transparent",
+									border: "none",
+									"& .MuiAlert-icon": {
+										color: "#3b82f6",
+									},
+								}}
+							>
+								<Typography variant="body1" sx={{ fontWeight: 500 }}>
+									You are logged in as an organization. Donation features are
+									only available to donors.
+								</Typography>
 							</Alert>
 
 							{/* Add to Campaign Button for Organizations */}
-							<Box sx={{ mb: 4 }}>
-								<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-									Make this cause visible to donors by adding it to an active campaign:
+							<Box>
+								<Typography
+									variant="h6"
+									sx={{ mb: 2, fontWeight: 600, color: "#3b82f6" }}
+								>
+									Campaign Management
+								</Typography>
+								<Typography
+									variant="body2"
+									color="text.secondary"
+									sx={{ mb: 2 }}
+								>
+									Make this cause visible to donors by adding it to an active
+									campaign:
 								</Typography>
 								<AddCauseToCampaignButton causeId={id} />
 							</Box>
-						</>
+						</Box>
 					)}
 
 					{/* Acceptance Type Alert */}
-					<Alert
-						severity="info"
-						sx={{ mb: 4 }}
-						icon={
-							acceptanceType === 'money' ? <MoneyIcon /> :
-								acceptanceType === 'items' ? <CategoryIcon /> :
-									<HeartIcon />
-						}
+					<Box
+						sx={{
+							mb: 4,
+							p: 3,
+							backgroundColor: "rgba(40, 112, 104, 0.05)",
+							borderRadius: 3,
+							border: "2px solid #287068",
+						}}
 					>
-						<Typography variant="body1">
-							{acceptanceType === 'money'
-								? 'This cause accepts monetary donations only.'
-								: acceptanceType === 'items'
-									? 'This cause accepts item donations only.'
-									: 'This cause accepts both monetary and item donations.'
-							}
-							{(acceptanceType === 'items' || acceptanceType === 'both') && donationItems.length > 0 && (
-								<span> See the "Details" tab for a list of specific items needed.</span>
-							)}
+						<Box display="flex" alignItems="center" mb={2}>
+							<Avatar
+								sx={{
+									backgroundColor: "#287068",
+									width: 40,
+									height: 40,
+									mr: 2,
+								}}
+							>
+								{acceptanceType === "money" ? (
+									<MoneyIcon sx={{ fontSize: 20 }} />
+								) : acceptanceType === "items" ? (
+									<CategoryIcon sx={{ fontSize: 20 }} />
+								) : (
+									<HeartIcon sx={{ fontSize: 20 }} />
+								)}
+							</Avatar>
+							<Typography
+								variant="h6"
+								sx={{ fontWeight: 600, color: "#287068" }}
+							>
+								Donation Information
+							</Typography>
+						</Box>
+						<Typography variant="body1" sx={{ fontWeight: 500, mb: 1 }}>
+							{acceptanceType === "money"
+								? "This cause accepts monetary donations only."
+								: acceptanceType === "items"
+								? "This cause accepts item donations only."
+								: "This cause accepts both monetary and item donations."}
 						</Typography>
-					</Alert>
+						{(acceptanceType === "items" || acceptanceType === "both") &&
+							donationItems.length > 0 && (
+								<Typography variant="body2" color="text.secondary">
+									See the "Details" tab for a list of specific items needed.
+								</Typography>
+							)}
+					</Box>
 
 					{/* Organization Information */}
 					{data?.cause.organizationName && (
 						<Box mb={4}>
-							<Typography variant="h6" gutterBottom>
+							<Typography
+								variant="h6"
+								sx={{ mb: 3, fontWeight: 600, color: "#287068" }}
+							>
 								About the Organization
 							</Typography>
-							<Paper variant="outlined" sx={{ p: 3 }}>
+							<Card
+								sx={{
+									p: 4,
+									borderRadius: 3,
+									border: "2px solid #287068",
+									backgroundColor: "rgba(40, 112, 104, 0.02)",
+									boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+								}}
+							>
 								<Box
 									sx={{
 										display: "flex",
 										flexDirection: { xs: "column", md: "row" },
-										gap: 3,
+										gap: 4,
 									}}
 								>
 									<Box
@@ -498,17 +823,19 @@ export default function CauseDetailPage({
 											display: "flex",
 											justifyContent: "center",
 											alignItems: "center",
-											minWidth: { xs: "100%", md: "120px" },
+											minWidth: { xs: "100%", md: "140px" },
 										}}
 									>
 										<Avatar
 											sx={{
-												width: 80,
-												height: 80,
-												bgcolor: "primary.main",
+												width: 100,
+												height: 100,
+												backgroundColor: "#287068",
+												border: "3px solid white",
+												boxShadow: "0 4px 12px rgba(40, 112, 104, 0.3)",
 											}}
 										>
-											<BusinessIcon sx={{ fontSize: 40 }} />
+											<BusinessIcon sx={{ fontSize: 50 }} />
 										</Avatar>
 									</Box>
 									<Box sx={{ flexGrow: 1 }}>
@@ -593,16 +920,19 @@ export default function CauseDetailPage({
 															}}
 														/>
 														<Typography variant="body2" color="text.secondary">
-															{`${organization.address}${organization.city
-																? `, ${organization.city}`
-																: ""
-																}${organization.state
+															{`${organization.address}${
+																organization.city
+																	? `, ${organization.city}`
+																	: ""
+															}${
+																organization.state
 																	? `, ${organization.state}`
 																	: ""
-																}${organization.country
+															}${
+																organization.country
 																	? `, ${organization.country}`
 																	: ""
-																}`}
+															}`}
 														</Typography>
 													</Box>
 												)}
@@ -635,33 +965,59 @@ export default function CauseDetailPage({
 										)}
 
 										<Button
-											variant="text"
-											color="primary"
+											variant="contained"
 											startIcon={<BusinessIcon />}
 											onClick={handleViewOrganization}
-											sx={{ mt: 2 }}
+											sx={{
+												mt: 3,
+												backgroundColor: "#287068",
+												borderRadius: 2,
+												textTransform: "none",
+												fontWeight: 600,
+												px: 3,
+												py: 1.5,
+												transition: "all 0.3s ease",
+												"&:hover": {
+													backgroundColor: "#1f5a52",
+													transform: "translateY(-2px)",
+													boxShadow: "0 4px 12px rgba(40, 112, 104, 0.3)",
+												},
+											}}
 										>
 											View Organization Profile
 										</Button>
 									</Box>
 								</Box>
-							</Paper>
+							</Card>
 						</Box>
 					)}
 
 					{/* Tags */}
 					{data?.cause.tags && data.cause.tags.length > 0 && (
 						<Box mb={4}>
-							<Typography variant="subtitle2" gutterBottom>
+							<Typography
+								variant="h6"
+								sx={{ mb: 2, fontWeight: 600, color: "#287068" }}
+							>
 								Categories
 							</Typography>
-							<Box display="flex" flexWrap="wrap" gap={1}>
+							<Box display="flex" flexWrap="wrap" gap={2}>
 								{data.cause.tags.map((tag) => (
 									<Chip
 										key={tag}
 										label={tag}
 										icon={<CategoryIcon />}
-										variant="outlined"
+										sx={{
+											borderRadius: 3,
+											backgroundColor: "#f8f9fa",
+											color: "#287068",
+											fontWeight: 500,
+											border: "1px solid #287068",
+											"&:hover": {
+												backgroundColor: "#287068",
+												color: "white",
+											},
+										}}
 									/>
 								))}
 							</Box>
@@ -671,441 +1027,371 @@ export default function CauseDetailPage({
 			</Card>
 
 			{/* Tabs */}
-			<Card>
-				<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+			<Card sx={{ borderRadius: 3, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+				<Box sx={{ borderBottom: 2, borderColor: "#287068" }}>
 					<Tabs
 						value={activeTab}
 						onChange={handleTabChange}
 						aria-label="cause details tabs"
+						sx={{
+							"& .MuiTab-root": {
+								textTransform: "none",
+								fontWeight: 600,
+								fontSize: "1rem",
+								color: "#6b7280",
+								"&.Mui-selected": {
+									color: "#287068",
+								},
+							},
+							"& .MuiTabs-indicator": {
+								backgroundColor: "#287068",
+								height: 3,
+							},
+						}}
 					>
 						<Tab label="About" value="about" />
-						<Tab label="Details" value="details" />
 						<Tab label="Donors" value="donors" />
 					</Tabs>
 				</Box>
 
-				<CardContent>
+				<CardContent sx={{ p: 4 }}>
 					{activeTab === "about" && (
 						<Box>
-							<Typography variant="h6" gutterBottom>
+							<Typography
+								variant="h5"
+								sx={{ mb: 3, fontWeight: 600, color: "#287068" }}
+							>
 								About This Cause
 							</Typography>
 							<Typography
 								variant="body1"
-								sx={{ whiteSpace: "pre-wrap", mb: 4 }}
+								sx={{
+									whiteSpace: "pre-wrap",
+									mb: 4,
+									lineHeight: 1.7,
+									fontSize: "1.1rem",
+								}}
 							>
 								{data?.cause.description || "No description available."}
 							</Typography>
 
 							{/* Donation Acceptance Type */}
 							<Box mt={4}>
-								<Typography variant="h6" gutterBottom>
+								<Typography
+									variant="h5"
+									sx={{ mb: 3, fontWeight: 600, color: "#287068" }}
+								>
 									Ways You Can Help
 								</Typography>
 
 								{/* Acceptance Type Banner */}
-								<Alert
-									severity="info"
-									sx={{ mb: 3 }}
-									icon={
-										acceptanceType === 'money' ? <MoneyIcon /> :
-											acceptanceType === 'items' ? <CategoryIcon /> :
-												<HeartIcon />
-									}
+								<Box
+									sx={{
+										mb: 4,
+										p: 3,
+										backgroundColor: "rgba(40, 112, 104, 0.05)",
+										borderRadius: 3,
+										border: "2px solid #287068",
+									}}
 								>
-									<Typography variant="subtitle1">
-										{acceptanceType === 'money'
-											? 'This cause accepts monetary donations only'
-											: acceptanceType === 'items'
-												? 'This cause accepts item donations only'
-												: 'This cause accepts both monetary and item donations'
-										}
+									<Box display="flex" alignItems="center" mb={2}>
+										<Avatar
+											sx={{
+												backgroundColor: "#287068",
+												width: 40,
+												height: 40,
+												mr: 2,
+											}}
+										>
+											{acceptanceType === "money" ? (
+												<MoneyIcon sx={{ fontSize: 20 }} />
+											) : acceptanceType === "items" ? (
+												<CategoryIcon sx={{ fontSize: 20 }} />
+											) : (
+												<HeartIcon sx={{ fontSize: 20 }} />
+											)}
+										</Avatar>
+										<Typography
+											variant="h6"
+											sx={{ fontWeight: 600, color: "#287068" }}
+										>
+											Donation Types Accepted
+										</Typography>
+									</Box>
+									<Typography variant="body1" sx={{ fontWeight: 500 }}>
+										{acceptanceType === "money"
+											? "This cause accepts monetary donations only"
+											: acceptanceType === "items"
+											? "This cause accepts item donations only"
+											: "This cause accepts both monetary and item donations"}
 									</Typography>
-								</Alert>
+								</Box>
 
 								{/* Donation Types Cards */}
-								<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-									{acceptedDonationTypes.map((type: DonationType, index: number) => {
-										const TypeIcon = donationTypeIcons[type] || MoneyIcon;
-										let title = "Donation";
-										let description = "Support this cause";
+								<Box
+									sx={{
+										display: "grid",
+										gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+										gap: 3,
+									}}
+								>
+									{acceptedDonationTypes.map(
+										(type: DonationType, index: number) => {
+											const TypeIcon = donationTypeIcons[type] || MoneyIcon;
+											let title = "Donation";
+											let description = "Support this cause";
+											let cardColor = "#287068";
 
-										switch (type) {
-											case DonationType.MONEY:
-												title = "Monetary Donations";
-												description =
-													"Support this cause with financial contributions.";
-												break;
-											case ExtendedDonationType.IN_KIND as unknown as DonationType:
-												title = "In-Kind Donations";
-												description = "Donate goods, supplies, or services.";
-												break;
-											case ExtendedDonationType.VOLUNTEER as unknown as DonationType:
-												title = "Volunteer Work";
-												description = "Contribute your time and skills.";
-												break;
-											case DonationType.BLOOD:
-												title = "Blood Donations";
-												description = "Donate blood to save lives.";
-												break;
-											case DonationType.FOOD:
-												title = "Food Donations";
-												description = "Donate food items to those in need.";
-												break;
-											case DonationType.BOOKS:
-												title = "Book Donations";
-												description =
-													"Donate books for education and knowledge.";
-												break;
-											case DonationType.CLOTHES:
-												title = "Clothing Donations";
-												description = "Donate clothes to those in need.";
-												break;
-											case DonationType.FURNITURE:
-												title = "Furniture Donations";
-												description = "Donate furniture to help furnish homes.";
-												break;
-											case DonationType.HOUSEHOLD:
-												title = "Household Items";
-												description = "Donate household items to support families.";
-												break;
-											default:
-												title = `${type} Donations`;
-												description = `Donate ${type.toLowerCase()} to support this cause.`;
-										}
+											switch (type) {
+												case DonationType.MONEY:
+													title = "Monetary Donations";
+													description =
+														"Support this cause with financial contributions.";
+													cardColor = "#287068";
+													break;
+												case ExtendedDonationType.IN_KIND as unknown as DonationType:
+													title = "In-Kind Donations";
+													description = "Donate goods, supplies, or services.";
+													cardColor = "#3b82f6";
+													break;
+												case ExtendedDonationType.VOLUNTEER as unknown as DonationType:
+													title = "Volunteer Work";
+													description = "Contribute your time and skills.";
+													cardColor = "#f59e0b";
+													break;
+												case DonationType.BLOOD:
+													title = "Blood Donations";
+													description = "Donate blood to save lives.";
+													cardColor = "#ef4444";
+													break;
+												case DonationType.FOOD:
+													title = "Food Donations";
+													description = "Donate food items to those in need.";
+													cardColor = "#10b981";
+													break;
+												case DonationType.BOOKS:
+													title = "Book Donations";
+													description =
+														"Donate books for education and knowledge.";
+													cardColor = "#8b5cf6";
+													break;
+												case DonationType.CLOTHES:
+													title = "Clothing Donations";
+													description = "Donate clothes to those in need.";
+													cardColor = "#f97316";
+													break;
+												case DonationType.FURNITURE:
+													title = "Furniture Donations";
+													description =
+														"Donate furniture to help furnish homes.";
+													cardColor = "#6b7280";
+													break;
+												case DonationType.HOUSEHOLD:
+													title = "Household Items";
+													description =
+														"Donate household items to support families.";
+													cardColor = "#ec4899";
+													break;
+												default:
+													title = `${type} Donations`;
+													description = `Donate ${type.toLowerCase()} to support this cause.`;
+													cardColor = "#287068";
+											}
 
-										return (
-											<Card
-												key={index}
-												variant="outlined"
-												sx={{
-													flexGrow: 1,
-													minWidth: "240px",
-													maxWidth: "350px",
-												}}
-											>
-												<CardContent>
-													<Box display="flex" alignItems="center" mb={2}>
-														<Box
-															sx={{
-																bgcolor: "primary.50",
-																borderRadius: "50%",
-																p: 1,
-																mr: 2,
-															}}
-														>
-															{TypeIcon && <TypeIcon color="primary" />}
+											return (
+												<Card
+													key={index}
+													sx={{
+														borderRadius: 3,
+														border: `2px solid ${cardColor}`,
+														backgroundColor: `${cardColor}05`,
+														transition: "all 0.3s ease",
+														"&:hover": {
+															transform: "translateY(-4px)",
+															boxShadow: `0 8px 25px ${cardColor}20`,
+														},
+													}}
+												>
+													<CardContent sx={{ p: 3 }}>
+														<Box display="flex" alignItems="center" mb={2}>
+															<Avatar
+																sx={{
+																	backgroundColor: cardColor,
+																	width: 48,
+																	height: 48,
+																	mr: 2,
+																}}
+															>
+																{TypeIcon && (
+																	<TypeIcon
+																		sx={{ fontSize: 24, color: "white" }}
+																	/>
+																)}
+															</Avatar>
+															<Typography
+																variant="h6"
+																sx={{ fontWeight: 600, color: cardColor }}
+															>
+																{title}
+															</Typography>
 														</Box>
-														<Typography variant="h6">{title}</Typography>
-													</Box>
-													<Typography variant="body2">
-														{description}
-													</Typography>
-												</CardContent>
-											</Card>
-										);
-									})}
+														<Typography
+															variant="body2"
+															sx={{ lineHeight: 1.6 }}
+														>
+															{description}
+														</Typography>
+													</CardContent>
+												</Card>
+											);
+										}
+									)}
 								</Box>
 
 								{/* Donation Items Section */}
-								{(acceptanceType === 'items' || acceptanceType === 'both') && donationItems.length > 0 && (
-									<Box mt={4}>
-										<Typography variant="subtitle1" gutterBottom fontWeight="medium">
-											Specific Items Needed:
-										</Typography>
-										<Box display="flex" flexWrap="wrap" gap={1} mt={1}>
-											{donationItems.map((item: string, index: number) => (
-												<Chip
-													key={index}
-													label={item}
-													color="primary"
-													variant="outlined"
-													icon={<CategoryIcon />}
-													sx={{ m: 0.5 }}
-												/>
-											))}
+								{(acceptanceType === "items" || acceptanceType === "both") &&
+									donationItems.length > 0 && (
+										<Box mt={4}>
+											<Typography
+												variant="h6"
+												sx={{ mb: 3, fontWeight: 600, color: "#287068" }}
+											>
+												Specific Items Needed
+											</Typography>
+											<Card
+												sx={{
+													p: 3,
+													borderRadius: 3,
+													border: "2px solid #287068",
+													backgroundColor: "rgba(40, 112, 104, 0.02)",
+												}}
+											>
+												<Box display="flex" flexWrap="wrap" gap={2}>
+													{donationItems.map((item: string, index: number) => (
+														<Chip
+															key={index}
+															label={item}
+															icon={<CategoryIcon />}
+															sx={{
+																borderRadius: 3,
+																backgroundColor: "#f8f9fa",
+																color: "#287068",
+																fontWeight: 500,
+																border: "1px solid #287068",
+																px: 2,
+																py: 1,
+																"&:hover": {
+																	backgroundColor: "#287068",
+																	color: "white",
+																},
+															}}
+														/>
+													))}
+												</Box>
+											</Card>
 										</Box>
-									</Box>
-								)}
+									)}
 							</Box>
 						</Box>
 					)}
 
-					{activeTab === "details" && (
-						<Box>
-							<Typography variant="h6" gutterBottom>
-								Cause Details
-							</Typography>
-							<List>
-								<ListItem>
-									<ListItemAvatar>
-										<Avatar sx={{ bgcolor: "primary.light" }}>
-											<MoneyIcon />
-										</Avatar>
-									</ListItemAvatar>
-									<ListItemText
-										primary="Funding Goal"
-										secondary={`$${data?.cause.targetAmount
-											? data.cause?.targetAmount.toLocaleString()
-											: "0"
-											}`}
-									/>
-								</ListItem>
-								<Divider variant="inset" component="li" />
-								<ListItem>
-									<ListItemAvatar>
-										<Avatar sx={{ bgcolor: "primary.light" }}>
-											<ClockIcon />
-										</Avatar>
-									</ListItemAvatar>
-									<ListItemText
-										primary="Created On"
-										secondary={
-											data?.cause?.createdAt
-												? new Date(data.cause?.createdAt).toLocaleDateString()
-												: "N/A"
-										}
-									/>
-									{/* {console.log("cause data", data?.data.cause)} */}
-								</ListItem>
-								<Divider variant="inset" component="li" />
-								<ListItem>
-									<ListItemAvatar>
-										<Avatar sx={{ bgcolor: "primary.light" }}>
-											<PeopleIcon />
-										</Avatar>
-									</ListItemAvatar>
-									<ListItemText
-										primary="Organization"
-										secondary={data?.cause?.organizationName || "Organization"}
-									/>
-								</ListItem>
-								<Divider variant="inset" component="li" />
-								<ListItem>
-									<ListItemAvatar>
-										<Avatar sx={{ bgcolor: "primary.light" }}>
-											<BusinessIcon />
-										</Avatar>
-									</ListItemAvatar>
-									<ListItemText
-										primary="Organization ID"
-										secondary={data?.cause?.organizationId || "N/A"}
-									/>
-								</ListItem>
-								<Divider variant="inset" component="li" />
-								<ListItem>
-									<ListItemAvatar>
-										<Avatar sx={{ bgcolor: "primary.light" }}>
-											<MoneyIcon />
-										</Avatar>
-									</ListItemAvatar>
-									<ListItemText
-										primary="Donation Acceptance Type"
-										secondary={
-											acceptanceType === 'money'
-												? 'Monetary Donations Only'
-												: acceptanceType === 'items'
-													? 'Item Donations Only'
-													: 'Both Monetary and Item Donations'
-										}
-									/>
-								</ListItem>
-							</List>
-
-							{/* Donation Items Section */}
-							{(acceptanceType === 'items' || acceptanceType === 'both') && donationItems.length > 0 && (
-								<Box mt={4}>
-									<Typography variant="h6" gutterBottom>
-										Accepted Donation Items
-									</Typography>
-									<Card variant="outlined">
-										<CardContent>
-											<Box display="flex" flexWrap="wrap" gap={1}>
-												{donationItems.map((item: string, index: number) => (
-													<Chip
-														key={index}
-														label={item}
-														color="primary"
-														variant="outlined"
-														icon={<CategoryIcon />}
-														sx={{ m: 0.5 }}
-													/>
-												))}
-											</Box>
-											{donationItems.length === 0 && (
-												<Typography variant="body2" color="text.secondary">
-													No specific items listed. Please contact the organization for details.
-												</Typography>
-											)}
-										</CardContent>
-									</Card>
-								</Box>
-							)}
-
-							{/* Organization Contact Information */}
-							{data?.cause.organizationId && (
-								<Box mt={4}>
-									<Typography variant="h6" gutterBottom>
-										Organization Contact Information
-									</Typography>
-									<Card variant="outlined" sx={{ mt: 2 }}>
-										<CardContent>
-											{orgLoading ? (
-												<Box display="flex" justifyContent="center" p={3}>
-													<CircularProgress size={30} />
-												</Box>
-											) : organization ? (
-												<List>
-													<ListItem>
-														<ListItemAvatar>
-															<Avatar sx={{ bgcolor: "primary.light" }}>
-																<BusinessIcon />
-															</Avatar>
-														</ListItemAvatar>
-														<ListItemText
-															primary="Organization"
-															secondary={organization.name || data?.cause.organizationName || "Organization"}
-														/>
-													</ListItem>
-
-													{organization.email &&
-														organization.email !== "Not available" && (
-															<>
-																<Divider variant="inset" component="li" />
-																<ListItem>
-																	<ListItemAvatar>
-																		<Avatar sx={{ bgcolor: "primary.light" }}>
-																			<EmailIcon />
-																		</Avatar>
-																	</ListItemAvatar>
-																	<ListItemText
-																		primary="Email"
-																		secondary={organization.email}
-																	/>
-																</ListItem>
-															</>
-														)}
-
-													{organization.phoneNumber &&
-														organization.phoneNumber !== "Not available" && (
-															<>
-																<Divider variant="inset" component="li" />
-																<ListItem>
-																	<ListItemAvatar>
-																		<Avatar sx={{ bgcolor: "primary.light" }}>
-																			<PhoneIcon />
-																		</Avatar>
-																	</ListItemAvatar>
-																	<ListItemText
-																		primary="Phone"
-																		secondary={organization.phoneNumber}
-																	/>
-																</ListItem>
-															</>
-														)}
-
-													{organization.address && (
-														<>
-															<Divider variant="inset" component="li" />
-															<ListItem>
-																<ListItemAvatar>
-																	<Avatar sx={{ bgcolor: "primary.light" }}>
-																		<LocationIcon />
-																	</Avatar>
-																</ListItemAvatar>
-																<ListItemText
-																	primary="Address"
-																	secondary={`${organization.address}${organization.city
-																		? `, ${organization.city}`
-																		: ""
-																		}${organization.state
-																			? `, ${organization.state}`
-																			: ""
-																		}${organization.country
-																			? `, ${organization.country}`
-																			: ""
-																		}`}
-																/>
-															</ListItem>
-														</>
-													)}
-												</List>
-											) : (
-												<Box p={3}>
-													<Typography
-														variant="body2"
-														color="text.secondary"
-														align="center"
-													>
-														Click below to view full organization details.
-													</Typography>
-												</Box>
-											)}
-
-											<Box display="flex" justifyContent="center" mt={2}>
-												<Button
-													variant="contained"
-													color="primary"
-													startIcon={<BusinessIcon />}
-													onClick={handleViewOrganization}
-												>
-													View Full Organization Profile
-												</Button>
-											</Box>
-										</CardContent>
-									</Card>
-								</Box>
-							)}
-						</Box>
-					)}
-
 					{activeTab === "donors" && (
-						<Box
-							display="flex"
-							flexDirection="column"
-							alignItems="center"
-							py={4}
-						>
+						<Box sx={{ textAlign: "center", py: 6 }}>
 							<Avatar
 								sx={{
-									width: 80,
-									height: 80,
-									bgcolor: "grey.200",
-									mb: 2,
+									width: 120,
+									height: 120,
+									backgroundColor: "#287068",
+									mx: "auto",
+									mb: 3,
+									boxShadow: "0 8px 25px rgba(40, 112, 104, 0.3)",
 								}}
 							>
-								<PeopleIcon sx={{ width: 40, height: 40, color: "grey.500" }} />
+								<PeopleIcon sx={{ width: 60, height: 60, color: "white" }} />
 							</Avatar>
-							<Typography variant="h6" gutterBottom>
+
+							<Typography
+								variant="h4"
+								sx={{ mb: 2, fontWeight: 600, color: "#287068" }}
+							>
 								{donorCount
-									? `${donorCount} people have donated`
-									: "No donors yet"}
+									? `${donorCount} People Have Donated`
+									: "No Donors Yet"}
 							</Typography>
-							<Typography variant="body2" color="text.secondary">
+
+							<Typography
+								variant="h6"
+								color="text.secondary"
+								sx={{ mb: 4, maxWidth: 600, mx: "auto" }}
+							>
 								{donorCount
-									? "Thank you to all our donors for supporting this cause!"
-									: "Be the first to support this cause!"}
+									? "Thank you to all our amazing donors for supporting this cause and making a difference!"
+									: "Be the first to support this cause and help make a positive impact in the community!"}
 							</Typography>
 
 							{user?.role === "donor" && (
-								<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, mt: 3 }}>
-									{(acceptanceType === 'money' || acceptanceType === 'both') && (
+								<Box
+									sx={{
+										display: "flex",
+										justifyContent: "center",
+										gap: 3,
+										flexWrap: "wrap",
+									}}
+								>
+									{(acceptanceType === "money" ||
+										acceptanceType === "both") && (
 										<Button
 											variant="contained"
-											color="primary"
 											onClick={handleDonate}
 											startIcon={<MoneyIcon />}
+											sx={{
+												backgroundColor: "#287068",
+												borderRadius: 3,
+												textTransform: "none",
+												fontWeight: 600,
+												px: 4,
+												py: 2,
+												fontSize: "1rem",
+												transition: "all 0.3s ease",
+												"&:hover": {
+													backgroundColor: "#1f5a52",
+													transform: "translateY(-2px)",
+													boxShadow: "0 8px 25px rgba(40, 112, 104, 0.3)",
+												},
+											}}
 										>
 											Donate Money
 										</Button>
 									)}
 
-									{(acceptanceType === 'items' || acceptanceType === 'both') && (
+									{(acceptanceType === "items" ||
+										acceptanceType === "both") && (
 										<Button
-											variant={acceptanceType === 'both' ? "outlined" : "contained"}
-											color="primary"
+											variant={
+												acceptanceType === "both" ? "outlined" : "contained"
+											}
 											onClick={handleDonate}
 											startIcon={<CategoryIcon />}
+											sx={{
+												backgroundColor:
+													acceptanceType === "both" ? "transparent" : "#287068",
+												borderColor: "#287068",
+												color: acceptanceType === "both" ? "#287068" : "white",
+												borderWidth: 2,
+												borderRadius: 3,
+												textTransform: "none",
+												fontWeight: 600,
+												px: 4,
+												py: 2,
+												fontSize: "1rem",
+												transition: "all 0.3s ease",
+												"&:hover": {
+													backgroundColor: "#287068",
+													color: "white",
+													transform: "translateY(-2px)",
+													boxShadow: "0 8px 25px rgba(40, 112, 104, 0.3)",
+												},
+											}}
 										>
 											Donate Items
 										</Button>

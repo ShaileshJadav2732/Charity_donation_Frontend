@@ -11,12 +11,25 @@ import apiSlice from "./apiSlice";
 
 export const donationApi = apiSlice.injectEndpoints({
 	endpoints: (builder) => ({
-		createDonation: builder.mutation<void, DonationFormData>({
-			query: (data) => ({
-				url: "/donations",
-				method: "POST",
-				body: data,
-			}),
+		createDonation: builder.mutation<
+			{ success: boolean; message: string; data: Donation },
+			DonationFormData
+		>({
+			query: (data) => {
+				console.log("Creating donation with data:", data);
+				return {
+					url: "/donations",
+					method: "POST",
+					body: data,
+				};
+			},
+			transformErrorResponse: (response: any) => {
+				console.error("Donation creation error response:", response);
+				if (response.status === 401) {
+					console.error("Authentication failed - user not authenticated");
+				}
+				return response;
+			},
 		}),
 		getDonationById: builder.query<Donation, string>({
 			query: (id) => `/donations/${id}`,

@@ -14,7 +14,7 @@ import {
 	FaHandHoldingHeart,
 	FaHeart,
 } from "react-icons/fa";
-import { StatusReceiptDisplay } from "@/components/ui/ReceiptDownload";
+import EnhancedDonationCard from "@/components/donation/EnhancedDonationCard";
 
 export default function DonationsPage() {
 	const [activeTab, setActiveTab] = useState<"all" | "approved" | "pending">(
@@ -42,7 +42,6 @@ export default function DonationsPage() {
 		page,
 		limit,
 	});
-	console.log("donationsData", donationsData);
 
 	if (isStatsLoading || isDonationsLoading) {
 		return <p className="text-gray-700 text-center py-10">Loading...</p>;
@@ -65,70 +64,11 @@ export default function DonationsPage() {
 	const donations = donationsData.data as Donation[];
 	const pagination = donationsData.pagination;
 
-	const DonationCard = ({ donation }: { donation: Donation }) => (
-		<div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-			<div className="flex justify-between items-start mb-4">
-				<div>
-					<h3 className="text-lg font-semibold text-gray-900">
-						{donation.cause.title}
-					</h3>
-					<p className="text-sm text-gray-600">
-						<span className="flex items-center mt-1">
-							<FaCalendarAlt className="h-4 w-4 text-gray-400 mr-2" />
-							{new Date(donation.createdAt).toLocaleDateString()}
-						</span>
-					</p>
-					<p className="text-sm text-gray-600 mt-1">
-						Organization: {donation.organization.name}
-					</p>
-				</div>
-				<div className="flex flex-col items-end gap-2">
-					<span
-						className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-							donation.status === "CONFIRMED"
-								? "bg-green-100 text-green-800"
-								: donation.status === "PENDING"
-								? "bg-yellow-100 text-yellow-800"
-								: donation.status === "RECEIVED"
-								? "bg-blue-100 text-blue-800"
-								: donation.status === "APPROVED"
-								? "bg-purple-100 text-purple-800"
-								: "bg-red-100 text-red-800"
-						}`}
-					>
-						{donation.status.charAt(0).toUpperCase() +
-							donation.status.slice(1).toLowerCase()}
-					</span>
-
-					<Link
-						href={`/dashboard/donations/status/${donation._id}`}
-						className="text-sm text-primary hover:text-primary-dark"
-					>
-						View Details
-					</Link>
-				</div>
-			</div>
-
-			<div className="grid grid-cols-2 gap-4 mb-4">
-				<div>
-					<p className="text-sm text-gray-600">
-						{donation.type === "MONEY" ? "Amount" : "Type"}
-					</p>
-					<p className="text-lg font-semibold text-gray-900">
-						{donation.type === "MONEY"
-							? `₹${donation.amount?.toLocaleString()}`
-							: donation.type}
-					</p>
-				</div>
-				<div>
-					<p className="text-sm text-gray-600">Impact</p>
-					<p className="text-sm text-gray-900">{donation.description}</p>
-				</div>
-			</div>
-
-			<StatusReceiptDisplay donation={donation} />
-		</div>
-	);
+	const handleFeedbackSubmitted = () => {
+		// Refetch donations to update the feedback status
+		// This will trigger a re-render and update the feedback check
+		window.location.reload(); // Simple approach, could be optimized with cache invalidation
+	};
 
 	return (
 		<div className="max-w-7xl mx-auto">
@@ -289,7 +229,11 @@ export default function DonationsPage() {
 				<div className="grid gap-6 md:grid-cols-2">
 					{donations && donations.length > 0 ? (
 						donations.map((donation: Donation) => (
-							<DonationCard key={donation._id} donation={donation} />
+							<EnhancedDonationCard
+								key={donation._id}
+								donation={donation}
+								onFeedbackSubmitted={handleFeedbackSubmitted}
+							/>
 						))
 					) : (
 						<p className="text-gray-600 text-center col-span-2">

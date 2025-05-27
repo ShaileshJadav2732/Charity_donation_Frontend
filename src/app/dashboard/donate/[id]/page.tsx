@@ -1,12 +1,12 @@
 "use client";
 
-import { Box, Typography, CircularProgress } from "@mui/material";
-import { useParams, useRouter } from "next/navigation";
-import { useCreateDonationMutation } from "@/store/api/donationApi";
-import toast from "react-hot-toast";
-import { useGetCauseByIdQuery } from "@/store/api/causeApi";
-import React from "react";
 import ImprovedDonationForm from "@/components/donation/ImprovedDonationForm";
+import { useGetCauseByIdQuery } from "@/store/api/causeApi";
+import { useCreateDonationMutation } from "@/store/api/donationApi";
+import { Box, CircularProgress, Typography } from "@mui/material";
+import { useParams, useRouter } from "next/navigation";
+import React from "react";
+import toast from "react-hot-toast";
 
 export default function DonationForm() {
 	const params = useParams();
@@ -14,6 +14,8 @@ export default function DonationForm() {
 	const causeId = params.id;
 	const { data: cause, isLoading } = useGetCauseByIdQuery(causeId as string);
 	const [createDonation, { isLoading: creating }] = useCreateDonationMutation();
+
+	// Get authentication state
 
 	const handleDonationSubmit = async (values: any) => {
 		try {
@@ -50,7 +52,8 @@ export default function DonationForm() {
 			};
 
 			console.log("Sending donation payload:", payload);
-			await createDonation(payload).unwrap();
+			const result = await createDonation(payload).unwrap();
+			console.log("Donation creation successful:", result);
 			toast.success("Donation created successfully!");
 
 			// Redirect to donations page after successful creation
@@ -59,7 +62,17 @@ export default function DonationForm() {
 			}, 1500);
 		} catch (error: any) {
 			console.error("Donation creation error:", error);
-			toast.error(error?.data?.message || "Failed to create donation");
+
+			// Handle specific authentication errors
+			if (error?.status === 401) {
+				console.error("Authentication failed during donation creation");
+				toast.error("Authentication failed. Please log in again.");
+				router.push("/login");
+			} else if (error?.data?.message) {
+				toast.error(error.data.message);
+			} else {
+				toast.error("Failed to create donation. Please try again.");
+			}
 		}
 	};
 

@@ -16,19 +16,7 @@ export const campaignApi = createApi({
 			// Get token from auth state
 			const token = (getState() as RootState).auth.token;
 
-			// Log auth headers for debugging
-			console.log(
-				"Setting auth headers with token:",
-				token ? "present" : "missing"
-			);
-
-			// If token exists, add it to the headers
 			if (token) {
-				// Log the full token for debugging
-				console.log(
-					"Using token (first 15 chars):",
-					token.substring(0, 15) + "..."
-				);
 				headers.set("Authorization", `Bearer ${token}`);
 			}
 
