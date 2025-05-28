@@ -2,53 +2,92 @@
 
 import React from "react";
 import {
-	Grid,
 	Typography,
 	Box,
 	CircularProgress,
 	Alert,
-	Paper,
 	Button,
 	Card,
-	CardContent,
 	Avatar,
 	Container,
 	Fade,
 	Grow,
-	Chip,
-	IconButton,
 	Stack,
-	Divider,
 } from "@mui/material";
 import {
 	DollarSign,
 	Users,
 	Target,
-	Star,
 	TrendingUp,
 	Megaphone,
-	Plus,
-	Eye,
-	Heart,
-	Award,
-	Activity,
-	ArrowUpRight,
-	Gift,
 	Sparkles,
 	Zap,
-	Calendar,
 	BarChart3,
-	PieChart as PieChartIcon,
-	TrendingDown,
+	Award,
+	Gift,
 } from "lucide-react";
 import { useGetOrganizationAnalyticsQuery } from "@/store/api/analyticsApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import Link from "next/link";
-import StatsCard from "./StatsCard";
-import LineChart from "./LineChart";
-import PieChart from "./PieChart";
-import BarChart from "./BarChart";
+// Define the actual API response type
+interface OrganizationStats {
+	donations: {
+		totalAmount: number;
+		totalDonations: number;
+		averageDonation: number;
+	};
+	campaigns: {
+		totalCampaigns: number;
+		activeCampaigns: number;
+	};
+	feedback: {
+		averageRating: number;
+		totalFeedback: number;
+	};
+}
+
+interface ChartData {
+	monthlyTrends: Array<{
+		month: string;
+		amount: number;
+		count: number;
+	}>;
+	donationsByType: Array<{
+		type: string;
+		count: number;
+		amount: number;
+	}>;
+}
+
+interface RecentActivity {
+	id: string;
+	type: string;
+	amount?: number;
+	campaignName: string;
+	timestamp: string;
+}
+
+interface OrganizationAnalyticsData {
+	stats: OrganizationStats;
+	charts: ChartData;
+	recentActivities: {
+		donations: RecentActivity[];
+		campaigns: RecentActivity[];
+		feedback: RecentActivity[];
+	};
+}
+
+interface StatCard {
+	title: string;
+	value: number;
+	prefix?: string;
+	suffix?: string;
+	subtitle?: string;
+	icon: React.ReactElement;
+	color: string;
+	bgGradient: string;
+}
 
 // Stunning Welcome Component for new organizations
 const StunningWelcome: React.FC = () => {
@@ -197,7 +236,7 @@ const StunningWelcome: React.FC = () => {
 								mb: 6,
 							}}
 						>
-							Transform your organization's impact with our revolutionary
+							Transform your organization&apos;s impact with our revolutionary
 							donation platform. Track, manage, and amplify your social good
 							with stunning analytics and seamless donor experiences.
 						</Typography>
@@ -263,35 +302,41 @@ const StunningWelcome: React.FC = () => {
 				</Fade>
 
 				{/* Feature Cards */}
-				<Grid container spacing={4} sx={{ mb: 8 }}>
-					{[
-						{
-							icon: <BarChart3 size={40} />,
-							title: "Real-time Analytics",
-							description:
-								"Track your impact with beautiful, real-time dashboards and insights",
-							color: "#14b8a6",
-							delay: 1200,
-						},
-						{
-							icon: <Users size={40} />,
-							title: "Donor Management",
-							description:
-								"Build lasting relationships with comprehensive donor profiles and engagement tools",
-							color: "#3b82f6",
-							delay: 1400,
-						},
-						{
-							icon: <Zap size={40} />,
-							title: "Campaign Power",
-							description:
-								"Create compelling campaigns that inspire action and drive donations",
-							color: "#8b5cf6",
-							delay: 1600,
-						},
-					].map((feature, index) => (
-						<Grid item xs={12} md={4} key={index}>
-							<Grow in timeout={feature.delay}>
+				<Box sx={{ mb: 8 }}>
+					<Box
+						sx={{
+							display: "grid",
+							gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+							gap: 4,
+						}}
+					>
+						{[
+							{
+								icon: <BarChart3 size={40} />,
+								title: "Real-time Analytics",
+								description:
+									"Track your impact with beautiful, real-time dashboards and insights",
+								color: "#14b8a6",
+								delay: 1200,
+							},
+							{
+								icon: <Users size={40} />,
+								title: "Donor Management",
+								description:
+									"Build lasting relationships with comprehensive donor profiles and engagement tools",
+								color: "#3b82f6",
+								delay: 1400,
+							},
+							{
+								icon: <Zap size={40} />,
+								title: "Campaign Power",
+								description:
+									"Create compelling campaigns that inspire action and drive donations",
+								color: "#8b5cf6",
+								delay: 1600,
+							},
+						].map((feature, index) => (
+							<Grow in timeout={feature.delay} key={index}>
 								<Card
 									sx={{
 										background: "rgba(255,255,255,0.05)",
@@ -344,9 +389,9 @@ const StunningWelcome: React.FC = () => {
 									</Typography>
 								</Card>
 							</Grow>
-						</Grid>
-					))}
-				</Grid>
+						))}
+					</Box>
+				</Box>
 
 				{/* Quick Start Guide */}
 				<Fade in timeout={1800}>
@@ -366,7 +411,17 @@ const StunningWelcome: React.FC = () => {
 						>
 							🚀 Quick Start Guide
 						</Typography>
-						<Grid container spacing={4}>
+						<Box
+							sx={{
+								display: "grid",
+								gridTemplateColumns: {
+									xs: "1fr",
+									sm: "repeat(2, 1fr)",
+									md: "repeat(4, 1fr)",
+								},
+								gap: 4,
+							}}
+						>
 							{[
 								{
 									step: "1",
@@ -389,38 +444,36 @@ const StunningWelcome: React.FC = () => {
 									desc: "Monitor donations and measure your success",
 								},
 							].map((item, index) => (
-								<Grid item xs={12} sm={6} md={3} key={index}>
-									<Box sx={{ textAlign: "center" }}>
-										<Avatar
-											sx={{
-												width: 60,
-												height: 60,
-												bgcolor: "#14b8a6",
-												fontSize: "1.5rem",
-												fontWeight: "bold",
-												mx: "auto",
-												mb: 2,
-											}}
-										>
-											{item.step}
-										</Avatar>
-										<Typography
-											variant="h6"
-											fontWeight="bold"
-											sx={{ color: "white", mb: 1 }}
-										>
-											{item.title}
-										</Typography>
-										<Typography
-											variant="body2"
-											sx={{ color: "rgba(255,255,255,0.7)" }}
-										>
-											{item.desc}
-										</Typography>
-									</Box>
-								</Grid>
+								<Box sx={{ textAlign: "center" }} key={index}>
+									<Avatar
+										sx={{
+											width: 60,
+											height: 60,
+											bgcolor: "#14b8a6",
+											fontSize: "1.5rem",
+											fontWeight: "bold",
+											mx: "auto",
+											mb: 2,
+										}}
+									>
+										{item.step}
+									</Avatar>
+									<Typography
+										variant="h6"
+										fontWeight="bold"
+										sx={{ color: "white", mb: 1 }}
+									>
+										{item.title}
+									</Typography>
+									<Typography
+										variant="body2"
+										sx={{ color: "rgba(255,255,255,0.7)" }}
+									>
+										{item.desc}
+									</Typography>
+								</Box>
 							))}
-						</Grid>
+						</Box>
 					</Card>
 				</Fade>
 			</Container>
@@ -429,7 +482,9 @@ const StunningWelcome: React.FC = () => {
 };
 
 // Enhanced Dashboard with Data
-const EnhancedDashboard: React.FC<{ data: any }> = ({ data }) => {
+const EnhancedDashboard: React.FC<{ data: OrganizationAnalyticsData }> = ({
+	data,
+}) => {
 	const { user } = useSelector((state: RootState) => state.auth);
 
 	// Debug: Log the data structure
@@ -444,10 +499,6 @@ const EnhancedDashboard: React.FC<{ data: any }> = ({ data }) => {
 		campaigns: {
 			totalCampaigns: data?.stats?.campaigns?.totalCampaigns || 0,
 			activeCampaigns: data?.stats?.campaigns?.activeCampaigns || 0,
-		},
-		feedback: {
-			averageRating: data?.stats?.feedback?.averageRating || 0,
-			totalFeedback: data?.stats?.feedback?.totalFeedback || 0,
 		},
 	};
 
@@ -493,99 +544,108 @@ const EnhancedDashboard: React.FC<{ data: any }> = ({ data }) => {
 							}}
 						/>
 
-						<Grid container spacing={4} alignItems="center">
-							<Grid item xs={12} md={8}>
-								<Box sx={{ position: "relative", zIndex: 2 }}>
-									<Typography variant="h3" fontWeight="800" gutterBottom>
-										Welcome back, {user?.email?.split("@")[0] || "there"}! 👋
-									</Typography>
-									<Typography
-										variant="h6"
-										sx={{ opacity: 0.9, mb: 2, fontWeight: 400 }}
-									>
-										Your organization is making a real difference. Here's your
-										impact dashboard.
-									</Typography>
-									<Typography
-										variant="body1"
-										sx={{ opacity: 0.8, maxWidth: 600 }}
-									>
-										Track your progress, engage with donors, and amplify your
-										social impact with real-time insights.
-									</Typography>
-								</Box>
-							</Grid>
-							<Grid item xs={12} md={4}>
-								<Box
-									sx={{ textAlign: "center", position: "relative", zIndex: 2 }}
+						<Box
+							sx={{
+								display: "flex",
+								flexDirection: { xs: "column", md: "row" },
+								gap: 4,
+								alignItems: "center",
+							}}
+						>
+							<Box sx={{ flex: 1, position: "relative", zIndex: 2 }}>
+								<Typography variant="h3" fontWeight="800" gutterBottom>
+									Welcome back, {user?.email?.split("@")[0] || "there"}! 👋
+								</Typography>
+								<Typography
+									variant="h6"
+									sx={{ opacity: 0.9, mb: 2, fontWeight: 400 }}
 								>
-									<Box
-										sx={{
-											width: 120,
-											height: 120,
-											borderRadius: "50%",
-											background: "rgba(255,255,255,0.2)",
-											backdropFilter: "blur(10px)",
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "center",
-											mx: "auto",
-											animation: "float 3s ease-in-out infinite",
-											"@keyframes float": {
-												"0%, 100%": { transform: "translateY(0px)" },
-												"50%": { transform: "translateY(-10px)" },
-											},
-										}}
-									>
-										<Award size={60} color="white" />
-									</Box>
+									Your organization is making a real difference. Here&apos;s
+									your impact dashboard.
+								</Typography>
+								<Typography
+									variant="body1"
+									sx={{ opacity: 0.8, maxWidth: 600 }}
+								>
+									Track your progress, engage with donors, and amplify your
+									social impact with real-time insights.
+								</Typography>
+							</Box>
+							<Box
+								sx={{ textAlign: "center", position: "relative", zIndex: 2 }}
+							>
+								<Box
+									sx={{
+										width: 120,
+										height: 120,
+										borderRadius: "50%",
+										background: "rgba(255,255,255,0.2)",
+										backdropFilter: "blur(10px)",
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										mx: "auto",
+										animation: "float 3s ease-in-out infinite",
+										"@keyframes float": {
+											"0%, 100%": { transform: "translateY(0px)" },
+											"50%": { transform: "translateY(-10px)" },
+										},
+									}}
+								>
+									<Award size={60} color="white" />
 								</Box>
-							</Grid>
-						</Grid>
+							</Box>
+						</Box>
 					</Card>
 				</Fade>
 
 				{/* Enhanced Stats Cards */}
 				<Fade in timeout={800}>
-					<Grid container spacing={4} sx={{ mb: 6 }}>
-						{[
-							{
-								title: "Total Raised",
-								value: safeStats.donations.totalAmount,
-								prefix: "₹",
-								subtitle: `${safeStats.donations.totalDonations} donations`,
-								icon: <DollarSign size={28} />,
-								color: "#0f766e",
-								bgGradient: "linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)",
-							},
-							{
-								title: "Average Donation",
-								value: safeStats.donations.averageDonation,
-								prefix: "₹",
-								icon: <TrendingUp size={28} />,
-								color: "#0d9488",
-								bgGradient: "linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%)",
-							},
-							{
-								title: "Active Campaigns",
-								value: safeStats.campaigns.activeCampaigns,
-								subtitle: `${safeStats.campaigns.totalCampaigns} total`,
-								icon: <Megaphone size={28} />,
-								color: "#14b8a6",
-								bgGradient: "linear-gradient(135deg, #14b8a6 0%, #5eead4 100%)",
-							},
-							{
-								title: "Average Rating",
-								value: safeStats.feedback.averageRating.toFixed(1),
-								suffix: "/5",
-								subtitle: `${safeStats.feedback.totalFeedback} reviews`,
-								icon: <Star size={28} />,
-								color: "#2dd4bf",
-								bgGradient: "linear-gradient(135deg, #2dd4bf 0%, #7dd3fc 100%)",
-							},
-						].map((stat, index) => (
-							<Grid item xs={12} sm={6} md={3} key={index}>
-								<Grow in timeout={800 + index * 200}>
+					<Box sx={{ mb: 6 }}>
+						<Box
+							sx={{
+								display: "grid",
+								gridTemplateColumns: {
+									xs: "1fr",
+									sm: "repeat(2, 1fr)",
+									md: "repeat(4, 1fr)",
+								},
+								gap: 4,
+							}}
+						>
+							{(
+								[
+									{
+										title: "Total Raised",
+										value: safeStats.donations.totalAmount,
+										prefix: "₹",
+										subtitle: `${safeStats.donations.totalDonations} donations`,
+										icon: <DollarSign size={28} />,
+										color: "#0f766e",
+										bgGradient:
+											"linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)",
+									},
+									{
+										title: "Average Donation",
+										value: safeStats.donations.averageDonation,
+										prefix: "₹",
+										icon: <TrendingUp size={28} />,
+										color: "#0d9488",
+										bgGradient:
+											"linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%)",
+									},
+									{
+										title: "Active Campaigns",
+										value: safeStats.campaigns.activeCampaigns,
+										subtitle: `${safeStats.campaigns.totalCampaigns} total`,
+										icon: <Megaphone size={28} />,
+										color: "#14b8a6",
+										bgGradient:
+											"linear-gradient(135deg, #14b8a6 0%, #5eead4 100%)",
+									},
+								] as StatCard[]
+							).map((stat, index) => (
+								<Grow in timeout={800 + index * 200} key={index}>
 									<Card
 										sx={{
 											p: 4,
@@ -697,9 +757,9 @@ const EnhancedDashboard: React.FC<{ data: any }> = ({ data }) => {
 										</Box>
 									</Card>
 								</Grow>
-							</Grid>
-						))}
-					</Grid>
+							))}
+						</Box>
+					</Box>
 				</Fade>
 
 				{/* Quick Actions */}
@@ -720,7 +780,17 @@ const EnhancedDashboard: React.FC<{ data: any }> = ({ data }) => {
 						>
 							⚡ Quick Actions
 						</Typography>
-						<Grid container spacing={3}>
+						<Box
+							sx={{
+								display: "grid",
+								gridTemplateColumns: {
+									xs: "1fr",
+									sm: "repeat(2, 1fr)",
+									md: "repeat(4, 1fr)",
+								},
+								gap: 3,
+							}}
+						>
 							{[
 								{
 									label: "New Cause",
@@ -747,33 +817,32 @@ const EnhancedDashboard: React.FC<{ data: any }> = ({ data }) => {
 									color: "#2dd4bf",
 								},
 							].map((action, index) => (
-								<Grid item xs={12} sm={6} md={3} key={index}>
-									<Button
-										component={Link}
-										href={action.href}
-										variant="outlined"
-										fullWidth
-										sx={{
-											py: 2,
-											borderRadius: 3,
+								<Button
+									key={index}
+									component={Link}
+									href={action.href}
+									variant="outlined"
+									fullWidth
+									sx={{
+										py: 2,
+										borderRadius: 3,
+										borderColor: action.color,
+										color: action.color,
+										fontWeight: 600,
+										textTransform: "none",
+										"&:hover": {
+											bgcolor: `${action.color}10`,
 											borderColor: action.color,
-											color: action.color,
-											fontWeight: 600,
-											textTransform: "none",
-											"&:hover": {
-												bgcolor: `${action.color}10`,
-												borderColor: action.color,
-												transform: "translateY(-2px)",
-											},
-											transition: "all 0.3s ease",
-										}}
-										startIcon={action.icon}
-									>
-										{action.label}
-									</Button>
-								</Grid>
+											transform: "translateY(-2px)",
+										},
+										transition: "all 0.3s ease",
+									}}
+									startIcon={action.icon}
+								>
+									{action.label}
+								</Button>
 							))}
-						</Grid>
+						</Box>
 					</Card>
 				</Fade>
 			</Container>

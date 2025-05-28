@@ -13,19 +13,7 @@ import {
 import { motion } from "framer-motion";
 import { useCompleteOrganizationProfileMutation } from "@/store/api/profileApi";
 import { parseError } from "@/types/errors";
-
-interface OrganizationProfileFormData {
-	name: string;
-	description: string;
-	phoneNumber: string;
-	email: string;
-	website: string;
-	address: string;
-	city: string;
-	state: string;
-	country: string;
-	profileCompleted: boolean;
-}
+import { OrganizationProfileFormData } from "@/types";
 export default function OrganizationProfileForm() {
 	const router = useRouter();
 	const [completeOrgProfile, { isLoading }] =
@@ -41,7 +29,6 @@ export default function OrganizationProfileForm() {
 		city: "",
 		state: "",
 		country: "",
-		profileCompleted: false,
 	});
 	const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -71,34 +58,23 @@ export default function OrganizationProfileForm() {
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		console.log("OrganizationProfileForm: Submitting form", formData);
 
 		if (!validateForm()) {
-			console.log("OrganizationProfileForm: Validation failed", errors);
 			toast.error("Please fix the errors in the form.");
 			return;
 		}
 
 		try {
-			await completeOrgProfile({
-				...formData,
-				profileCompleted: true,
-			});
+			await completeOrgProfile(formData);
 
 			toast.success("Organization profile completed successfully!");
 			router.push("/dashboard/home");
 		} catch (error) {
 			// Use the improved parseError
 			const errorDetails = parseError(error);
-			console.error("Organization profile error:", errorDetails);
 
 			// Show the error message to the user
 			toast.error(errorDetails.message || "Failed to complete profile");
-
-			// If there are field-specific errors, update your form errors state
-			if (errorDetails.fields) {
-				setErrors(errorDetails.fields);
-			}
 		}
 	};
 

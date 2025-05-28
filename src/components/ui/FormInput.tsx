@@ -1,8 +1,8 @@
 "use client";
 
-import React, { forwardRef } from "react";
-import { TextField, TextFieldProps, Box, Typography } from "@mui/material";
+import { Box, TextField, TextFieldProps } from "@mui/material";
 import { motion } from "framer-motion";
+import React, { forwardRef } from "react";
 
 interface FormInputProps extends Omit<TextFieldProps, "variant"> {
 	icon?: React.ReactNode;

@@ -273,7 +273,6 @@ const CreateCausePage = () => {
 							value={formData.targetAmount}
 							onChange={handleChange}
 							required
-							// @ts-ignore - InputProps is deprecated but still works
 							InputProps={{
 								startAdornment: <span>$</span>,
 							}}

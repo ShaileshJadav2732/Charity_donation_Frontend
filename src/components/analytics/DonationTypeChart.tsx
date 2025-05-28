@@ -1,18 +1,17 @@
 "use client";
 
+import { Box, Chip, Paper, Typography } from "@mui/material";
 import React from "react";
-import { Paper, Typography, Box, Grid, Chip } from "@mui/material";
 import {
-	FaTshirt,
-	FaUtensils,
 	FaBook,
 	FaCouch,
-	FaHome,
-	FaQuestion,
-	FaBoxOpen,
 	FaDollarSign,
 	FaGamepad,
+	FaHome,
 	FaLaptop,
+	FaQuestion,
+	FaTshirt,
+	FaUtensils,
 } from "react-icons/fa";
 import { GiBlood } from "react-icons/gi";
 
@@ -124,18 +123,31 @@ const DonationTypeChart: React.FC<DonationTypeChartProps> = ({
 	};
 
 	// Calculate total for percentages
-	const total = data.reduce((sum, item) => sum + (showAmount ? (item.amount || 0) : item.count), 0);
+	const total = data.reduce(
+		(sum, item) => sum + (showAmount ? item.amount || 0 : item.count),
+		0
+	);
 
 	// Grid variant - shows cards for each donation type
 	const renderGridVariant = () => (
-		<Grid container spacing={2}>
+		<Box
+			sx={{
+				display: "grid",
+				gridTemplateColumns: {
+					xs: "1fr",
+					sm: "repeat(2, 1fr)",
+					md: "repeat(3, 1fr)",
+				},
+				gap: 2,
+			}}
+		>
 			{data.map((item, index) => {
 				const config = getDonationTypeConfig(item.type);
-				const value = showAmount ? (item.amount || 0) : item.count;
+				const value = showAmount ? item.amount || 0 : item.count;
 				const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : "0";
 
 				return (
-					<Grid item xs={12} sm={6} md={4} key={index}>
+					<Box key={index}>
 						<Box
 							sx={{
 								p: 2,
@@ -166,16 +178,16 @@ const DonationTypeChart: React.FC<DonationTypeChartProps> = ({
 								</Typography>
 							</Box>
 							<Typography variant="h6" fontWeight="bold" color={config.color}>
-								{showAmount ? `$${value.toLocaleString()}` : value}
+								{showAmount ? `₹${value.toLocaleString()}` : value}
 							</Typography>
 							<Typography variant="caption" color="text.secondary">
 								{percentage}% of total
 							</Typography>
 						</Box>
-					</Grid>
+					</Box>
 				);
 			})}
-		</Grid>
+		</Box>
 	);
 
 	// List variant - shows horizontal bars
@@ -183,12 +195,19 @@ const DonationTypeChart: React.FC<DonationTypeChartProps> = ({
 		<Box sx={{ space: 2 }}>
 			{data.map((item, index) => {
 				const config = getDonationTypeConfig(item.type);
-				const value = showAmount ? (item.amount || 0) : item.count;
-				const percentage = total > 0 ? ((value / total) * 100) : 0;
+				const value = showAmount ? item.amount || 0 : item.count;
+				const percentage = total > 0 ? (value / total) * 100 : 0;
 
 				return (
 					<Box key={index} sx={{ mb: 2 }}>
-						<Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+						<Box
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "space-between",
+								mb: 1,
+							}}
+						>
 							<Box sx={{ display: "flex", alignItems: "center" }}>
 								<Box
 									sx={{
@@ -206,7 +225,7 @@ const DonationTypeChart: React.FC<DonationTypeChartProps> = ({
 								</Typography>
 							</Box>
 							<Typography variant="body2" fontWeight="600" color={config.color}>
-								{showAmount ? `$${value.toLocaleString()}` : value}
+								{showAmount ? `₹${value.toLocaleString()}` : value}
 							</Typography>
 						</Box>
 						<Box
@@ -241,13 +260,15 @@ const DonationTypeChart: React.FC<DonationTypeChartProps> = ({
 		<Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
 			{data.map((item, index) => {
 				const config = getDonationTypeConfig(item.type);
-				const value = showAmount ? (item.amount || 0) : item.count;
+				const value = showAmount ? item.amount || 0 : item.count;
 
 				return (
 					<Chip
 						key={index}
 						icon={config.icon}
-						label={`${config.label}: ${showAmount ? `$${value.toLocaleString()}` : value}`}
+						label={`${config.label}: ${
+							showAmount ? `₹${value.toLocaleString()}` : value
+						}`}
 						sx={{
 							backgroundColor: config.lightBg,
 							color: config.color,

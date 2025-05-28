@@ -1,12 +1,17 @@
 "use client";
 
+import RealTimeNotificationList from "@/components/notifications/RealTimeNotificationList";
+import { useSocket } from "@/contexts/SocketContext";
 import { useAuth } from "@/hooks/useAuth";
+import AuthGuard from "@/lib/AuthGuard";
 import { RootState } from "@/store/store";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
 	FaBars,
+	FaBell,
+	FaChartBar,
 	FaHandsHelping,
 	FaHeart,
 	FaHome,
@@ -14,14 +19,8 @@ import {
 	FaTimes,
 	FaUser,
 	FaUsers,
-	FaBell,
-	FaChartBar,
-	FaComments,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
-import RealTimeNotificationList from "@/components/notifications/RealTimeNotificationList";
-import AuthGuard from "@/lib/AuthGuard";
-import { useSocket } from "@/contexts/SocketContext";
 
 export default function DashboardLayout({
 	children,
@@ -110,11 +109,6 @@ export default function DashboardLayout({
 						icon: FaChartBar,
 						text: "Analytics",
 						path: "/dashboard/analytics",
-					},
-					{
-						icon: FaComments,
-						text: "Feedback",
-						path: "/dashboard/feedback",
 					},
 			  ]),
 	];

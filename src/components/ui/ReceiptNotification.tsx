@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { FaFilePdf, FaTimes, FaDownload } from "react-icons/fa";
 import { getReceiptImageUrl } from "@/utils/url";
+import { useEffect, useState } from "react";
+import { FaDownload, FaFilePdf, FaTimes } from "react-icons/fa";
 
 interface ReceiptNotificationProps {
 	show: boolean;
@@ -17,7 +17,7 @@ interface ReceiptNotificationProps {
 export default function ReceiptNotification({
 	show,
 	onClose,
-	donationId,
+
 	pdfReceiptUrl,
 	donorName = "the donor",
 	autoHide = true,
@@ -73,7 +73,8 @@ export default function ReceiptNotification({
 								PDF Receipt Generated!
 							</p>
 							<p className="mt-1 text-sm text-gray-500">
-								A PDF receipt has been automatically generated for {donorName}'s donation.
+								A PDF receipt has been automatically generated for {donorName}s
+								donation.
 							</p>
 							<div className="mt-3 flex space-x-2">
 								{pdfReceiptUrl && (

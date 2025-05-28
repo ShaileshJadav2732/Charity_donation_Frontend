@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { toast } from "react-hot-toast";
-import { FiCamera, FiUpload, FiX } from "react-icons/fi";
+import { Camera, Upload, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUploadProfileImageMutation } from "@/store/api/profileApi";
 import Image from "next/image";
@@ -64,9 +64,12 @@ export default function ProfileImageUpload({
 				onImageUpdate?.(result.profileImage);
 				setPreviewImage(null);
 			}
-		} catch (error: any) {
-			console.error("Upload error:", error);
-			toast.error(error?.data?.message || "Failed to upload image");
+		} catch (error) {
+			const errorMessage =
+				error && typeof error === "object" && "data" in error
+					? (error as { data?: { message?: string } }).data?.message
+					: "Failed to upload image";
+			toast.error(errorMessage || "Failed to upload image");
 			setPreviewImage(null);
 		} finally {
 			setIsUploading(false);
@@ -109,7 +112,7 @@ export default function ProfileImageUpload({
 						/>
 					) : (
 						<div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-teal-400 to-green-500">
-							<FiCamera className="h-8 w-8 text-white" />
+							<Camera className="h-8 w-8 text-white" />
 						</div>
 					)}
 				</div>
@@ -125,7 +128,7 @@ export default function ProfileImageUpload({
 					{isUploading ? (
 						<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
 					) : (
-						<FiUpload className="h-6 w-6 text-white" />
+						<Upload className="h-6 w-6 text-white" />
 					)}
 				</motion.button>
 
@@ -135,7 +138,7 @@ export default function ProfileImageUpload({
 						onClick={handleRemovePreview}
 						className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
 					>
-						<FiX className="h-4 w-4" />
+						<X className="h-4 w-4" />
 					</button>
 				)}
 			</div>

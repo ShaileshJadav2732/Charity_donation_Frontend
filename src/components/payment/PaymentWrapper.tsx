@@ -6,27 +6,14 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import stripePromise from "@/lib/stripe";
 import StripePaymentForm from "./StripePaymentForm";
 import { useCreatePaymentIntentMutation } from "@/store/api/paymentApi";
+import { PaymentWrapperProps } from "@/types/payment";
 
-interface PaymentWrapperProps {
-	donationData: {
-		amount: number;
-		cause: string;
-		organization: string;
-		campaign?: string;
-		description: string;
-		contactPhone: string;
-		contactEmail: string;
-	};
-	onSuccess: (donation: any) => void;
-	onError: (error: string) => void;
-	onCancel: () => void;
-}
+// Interface is now imported from types/payment.ts
 
 const PaymentWrapper: React.FC<PaymentWrapperProps> = ({
 	donationData,
 	onSuccess,
 	onError,
-	onCancel,
 }) => {
 	const [clientSecret, setClientSecret] = useState("");
 	const [paymentIntentId, setPaymentIntentId] = useState("");
@@ -84,10 +71,13 @@ const PaymentWrapper: React.FC<PaymentWrapperProps> = ({
 				console.log("Payment intent created successfully:", result);
 				setClientSecret(result.clientSecret);
 				setPaymentIntentId(result.paymentIntentId);
-			} catch (err: any) {
+			} catch (err: unknown) {
 				console.error("ERROR creating payment intent:", err);
 				console.error("Full error object:", JSON.stringify(err, null, 2));
-				onError(err?.data?.message || "Failed to initialize payment");
+				const errorMessage =
+					(err as { data?: { message?: string } })?.data?.message ||
+					"Failed to initialize payment";
+				onError(errorMessage);
 			}
 		};
 
@@ -137,6 +127,7 @@ const PaymentWrapper: React.FC<PaymentWrapperProps> = ({
 					clientSecret={clientSecret}
 					paymentIntentId={paymentIntentId}
 					donationData={{
+						amount: donationData.amount,
 						cause: donationData.cause,
 						organization: donationData.organization,
 						campaign: donationData.campaign,

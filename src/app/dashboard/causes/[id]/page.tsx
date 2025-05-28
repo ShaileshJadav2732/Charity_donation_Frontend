@@ -1,15 +1,15 @@
 "use client";
 
+import AddCauseToCampaignButton from "@/components/cause/AddCauseToCampaignButton";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
 import { RootState } from "@/store/store";
 import { DonationType } from "@/types/donation";
-import { useRouter } from "next/navigation";
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { LocalMall as ClothesIcon } from "@mui/icons-material";
-import AddCauseToCampaignButton from "@/components/cause/AddCauseToCampaignButton";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
 import {
 	ArrowBack as ArrowBackIcon,
@@ -18,7 +18,6 @@ import {
 	Business as BusinessIcon,
 	CalendarToday as CalendarIcon,
 	Category as CategoryIcon,
-	AccessTime as ClockIcon,
 	Email as EmailIcon,
 	Fastfood as FoodIcon,
 	Living as FurnitureIcon,
@@ -40,13 +39,7 @@ import {
 	CardContent,
 	Chip,
 	CircularProgress,
-	Divider,
 	LinearProgress,
-	List,
-	ListItem,
-	ListItemAvatar,
-	ListItemText,
-	Paper,
 	Tab,
 	Tabs,
 	Typography,
@@ -65,7 +58,7 @@ enum ExtendedDonationType {
 	VOLUNTEER = "VOLUNTEER",
 }
 
-const donationTypeIcons: Record<string, React.ComponentType<any>> = {
+const donationTypeIcons = {
 	[DonationType.MONEY]: MoneyIcon,
 	[DonationType.BLOOD]: BloodIcon,
 	[DonationType.FOOD]: FoodIcon,
@@ -206,24 +199,18 @@ export default function CauseDetailPage({
 
 	// Check if the API response includes these fields
 	if (data?.cause) {
-		// @ts-ignore - These properties might exist in the API response but not in the TypeScript type
 		if (data.cause.acceptanceType) {
-			// @ts-ignore
 			acceptanceType = data.cause.acceptanceType;
 		}
 
-		// @ts-ignore
 		if (data.cause.donationItems && Array.isArray(data.cause.donationItems)) {
-			// @ts-ignore
 			donationItems = data.cause.donationItems;
 		}
 
-		// @ts-ignore
 		if (
 			data.cause.acceptedDonationTypes &&
 			Array.isArray(data.cause.acceptedDonationTypes)
 		) {
-			// @ts-ignore
 			acceptedDonationTypes = data.cause.acceptedDonationTypes;
 		} else if (acceptanceType === "both") {
 			// If acceptanceType is 'both' but no acceptedDonationTypes, include MONEY and some default item types

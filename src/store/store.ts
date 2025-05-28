@@ -7,7 +7,6 @@ import { profileApi } from "./api/profileApi";
 import { campaignApi } from "./api/campaignApi";
 import { causeApi } from "./api/causeApi";
 import { dashboardApi } from "./api/dashboardApi";
-import { feedbackApi } from "./api/feedbackApi";
 import { organizationApi } from "./api/organizationApi";
 import { paymentApi } from "./api/paymentApi";
 
@@ -19,7 +18,7 @@ export const store = configureStore({
 		[campaignApi.reducerPath]: campaignApi.reducer,
 		[causeApi.reducerPath]: causeApi.reducer,
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
-		[feedbackApi.reducerPath]: feedbackApi.reducer,
+
 		[organizationApi.reducerPath]: organizationApi.reducer,
 		[paymentApi.reducerPath]: paymentApi.reducer,
 		auth: authReducer,
@@ -31,7 +30,7 @@ export const store = configureStore({
 			.concat(campaignApi.middleware)
 			.concat(causeApi.middleware)
 			.concat(dashboardApi.middleware)
-			.concat(feedbackApi.middleware)
+
 			.concat(organizationApi.middleware)
 			.concat(paymentApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",

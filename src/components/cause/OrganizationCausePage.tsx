@@ -48,7 +48,7 @@ import { Cause } from "@/types/cause";
 import { DonationType } from "@/types/donation";
 import { toast } from "react-hot-toast";
 
-const DonationTypeIcons: Record<DonationType, React.ComponentType<any>> = {
+const DonationTypeIcons = {
 	[DonationType.MONEY]: MoneyIcon,
 	[DonationType.CLOTHES]: ClothesIcon,
 	[DonationType.BLOOD]: BloodIcon,

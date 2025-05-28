@@ -132,13 +132,14 @@ export default function DonationTypeAnalyticsPage({
 	}
 
 	// Ensure we have valid data or provide defaults
-	const analytics: ItemDonationTypeAnalytics = data.data || {
-		type: decodedType as DonationType,
-		stats: { totalDonations: 0, totalQuantity: 0, avgQuantity: 0 },
-		recentDonations: [],
-		monthlyTrend: [],
-		topCauses: [],
-	};
+	const analytics: ItemDonationTypeAnalytics =
+		(data.data as ItemDonationTypeAnalytics) || {
+			type: decodedType as DonationType,
+			stats: { totalDonations: 0, totalQuantity: 0, avgQuantity: 0 },
+			recentDonations: [],
+			monthlyTrend: [],
+			topCauses: [],
+		};
 
 	const {
 		stats = { totalDonations: 0, totalQuantity: 0, avgQuantity: 0 },
@@ -258,9 +259,9 @@ export default function DonationTypeAnalyticsPage({
 							No {decodedType.toLowerCase()} donations yet
 						</h3>
 						<p className="mt-2 text-sm text-gray-600 max-w-md mx-auto">
-							You haven't made any {decodedType.toLowerCase()} donations yet.
-							When you donate {decodedType.toLowerCase()}, your donation history
-							and impact will appear here.
+							You haven&apos;t made any {decodedType.toLowerCase()} donations
+							yet. When you donate {decodedType.toLowerCase()}, your donation
+							history and impact will appear here.
 						</p>
 						<Link
 							href="/dashboard/donations"

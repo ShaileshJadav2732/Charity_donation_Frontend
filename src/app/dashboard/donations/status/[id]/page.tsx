@@ -10,10 +10,6 @@ import { DonationStatus } from "@/types/donation";
 import { toast } from "react-hot-toast";
 import { getReceiptImageUrl } from "@/utils/url";
 import { FaDownload, FaImage } from "react-icons/fa";
-<<<<<<< Updated upstream
-import { ReceiptStatusIndicator } from "@/components/ui/ReceiptNotification";
-=======
->>>>>>> Stashed changes
 
 const StatusUpdatePage = () => {
 	const params = useParams();
@@ -33,7 +29,7 @@ const StatusUpdatePage = () => {
 		useUpdateDonationStatusMutation();
 
 	useEffect(() => {
-		if (donation) {
+		if (donation?.status) {
 			setSelectedStatus(donation.status as DonationStatus);
 		}
 	}, [donation]);
@@ -47,8 +43,13 @@ const StatusUpdatePage = () => {
 
 			toast.success("Donation status updated successfully");
 			router.push("/dashboard/donations"); // Redirect back to donations list
-		} catch (error: any) {
-			toast.error(error?.data?.message || "Failed to update status");
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: (error as { data?: { message?: string } })?.data?.message ||
+					  "Failed to update status";
+			toast.error(errorMessage);
 		}
 	};
 
@@ -84,13 +85,6 @@ const StatusUpdatePage = () => {
 								<h3 className="font-semibold text-gray-700">Current Status</h3>
 								<div className="flex items-center space-x-2">
 									<p className="text-gray-600">{donation.status}</p>
-<<<<<<< Updated upstream
-									<ReceiptStatusIndicator
-										hasPhoto={!!donation.receiptImage}
-										hasPdfReceipt={!!donation.pdfReceiptUrl}
-										status={donation.status}
-									/>
-=======
 									<div className="flex items-center space-x-1">
 										{donation.receiptImage && (
 											<span className="inline-flex items-center px-2 py-1 rounded-full bg-teal-100 text-teal-800 text-xs">
@@ -103,12 +97,13 @@ const StatusUpdatePage = () => {
 											</span>
 										)}
 									</div>
->>>>>>> Stashed changes
 								</div>
 							</div>
 							<div>
 								<h3 className="font-semibold text-gray-700">Donor</h3>
-								<p className="text-gray-600">{donation.donor.name}</p>
+								<p className="text-gray-600">
+									{donation.donor?.name || "Unknown"}
+								</p>
 							</div>
 							<div>
 								<h3 className="font-semibold text-gray-700">Type</h3>
@@ -117,14 +112,14 @@ const StatusUpdatePage = () => {
 							{donation.amount && (
 								<div>
 									<h3 className="font-semibold text-gray-700">Amount</h3>
-									<p className="text-gray-600">${donation.amount.toFixed(2)}</p>
+									<p className="text-gray-600">₹{donation.amount.toFixed(2)}</p>
 								</div>
 							)}
 							{donation.quantity && (
 								<div>
 									<h3 className="font-semibold text-gray-700">Quantity</h3>
 									<p className="text-gray-600">
-										{donation.quantity} {donation.unit}
+										{donation.quantity} {donation.unit || "items"}
 									</p>
 								</div>
 							)}
@@ -164,10 +159,17 @@ const StatusUpdatePage = () => {
 									</div>
 									{donation.status === "RECEIVED" && (
 										<p className="text-sm text-gray-600 mt-2">
-											📄 PDF receipt was automatically generated when your
-											donation was received.
+											📄 PDF receipt will be automatically generated when your
+											donation is confirmed.
 										</p>
 									)}
+									{donation.status === "CONFIRMED" &&
+										donation.pdfReceiptUrl && (
+											<p className="text-sm text-gray-600 mt-2">
+												📄 PDF receipt was automatically generated when your
+												donation was confirmed.
+											</p>
+										)}
 								</div>
 							)}
 
@@ -203,7 +205,7 @@ const StatusUpdatePage = () => {
 							</button>
 							<button
 								onClick={handleStatusUpdate}
-								disabled={isUpdating || selectedStatus === donation.status}
+								disabled={isUpdating || selectedStatus === donation?.status}
 								className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								{isUpdating ? "Updating..." : "Update Status"}

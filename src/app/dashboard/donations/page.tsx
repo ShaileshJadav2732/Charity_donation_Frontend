@@ -1,25 +1,42 @@
 "use client";
 
+import EnhancedDonationCard from "@/components/donation/EnhancedDonationCard";
 import {
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
 } from "@/store/api/donationApi";
-import { Donation, DonationStats } from "@/types/donation";
+import { Donation } from "@/types/donation";
+
+// Define the actual stats structure returned by the API
+interface DonorStatsResponse {
+	monetary: {
+		totalDonated: number;
+		averageDonation: number;
+		donationCount: number;
+	};
+	items: {
+		totalDonations: number;
+		byType: Array<{
+			type: string;
+			count: number;
+			totalQuantity: number;
+		}>;
+	};
+	totalCauses: number;
+}
 import Link from "next/link";
 import { useState } from "react";
 import {
 	FaBoxOpen,
-	FaCalendarAlt,
 	FaChartLine,
 	FaHandHoldingHeart,
 	FaHeart,
 } from "react-icons/fa";
-import EnhancedDonationCard from "@/components/donation/EnhancedDonationCard";
 
 export default function DonationsPage() {
-	const [activeTab, setActiveTab] = useState<"all" | "approved" | "pending">(
-		"all"
-	);
+	const [activeTab, setActiveTab] = useState<
+		"all" | "donations" | "pending" | "received" | "approved" | "confirmed"
+	>("all");
 	const [page, setPage] = useState(1);
 	const limit = 10;
 
@@ -38,7 +55,15 @@ export default function DonationsPage() {
 				? undefined
 				: activeTab === "approved"
 				? "APPROVED"
-				: "PENDING",
+				: activeTab === "pending"
+				? "PENDING"
+				: activeTab === "received"
+				? "RECEIVED"
+				: activeTab === "confirmed"
+				? "CONFIRMED"
+				: activeTab === "donations"
+				? "DONATIONS"
+				: undefined,
 		page,
 		limit,
 	});
@@ -60,14 +85,17 @@ export default function DonationsPage() {
 		);
 	}
 
-	const stats = statsData.data as DonationStats;
-	const donations = donationsData.data as Donation[];
+	const stats = statsData.data as unknown as DonorStatsResponse;
+	const donations = Array.isArray(donationsData.data)
+		? donationsData.data
+		: donationsData.data?.data || [];
 	const pagination = donationsData.pagination;
 
 	const handleFeedbackSubmitted = () => {
 		// Refetch donations to update the feedback status
 		// This will trigger a re-render and update the feedback check
-		window.location.reload(); // Simple approach, could be optimized with cache invalidation
+		// Note: This could be optimized with cache invalidation instead of page reload
+		window.location.reload();
 	};
 
 	return (
@@ -158,22 +186,31 @@ export default function DonationsPage() {
 										Donations by Type
 									</p>
 									<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-										{stats.items.byType.map((item, index) => (
-											<div key={index} className="bg-gray-50 p-3 rounded-lg">
-												<p className="text-sm font-medium text-gray-800">
-													{item.type}
-												</p>
-												<div className="flex justify-between mt-1">
-													<p className="text-sm text-gray-600">
-														{item.count} donation{item.count !== 1 && "s"}
+										{stats.items.byType.map(
+											(
+												item: {
+													type: string;
+													count: number;
+													totalQuantity: number;
+												},
+												index: number
+											) => (
+												<div key={index} className="bg-gray-50 p-3 rounded-lg">
+													<p className="text-sm font-medium text-gray-800">
+														{item.type}
 													</p>
-													<p className="text-sm text-gray-600">
-														{item.totalQuantity} item
-														{item.totalQuantity !== 1 && "s"}
-													</p>
+													<div className="flex justify-between mt-1">
+														<p className="text-sm text-gray-600">
+															{item.count} donation{item.count !== 1 && "s"}
+														</p>
+														<p className="text-sm text-gray-600">
+															{item.totalQuantity} item
+															{item.totalQuantity !== 1 && "s"}
+														</p>
+													</div>
 												</div>
-											</div>
-										))}
+											)
+										)}
 									</div>
 								</div>
 							)}
@@ -195,14 +232,14 @@ export default function DonationsPage() {
 							All Donations
 						</button>
 						<button
-							onClick={() => setActiveTab("approved")}
+							onClick={() => setActiveTab("donations")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "approved"
+								activeTab === "donations"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
-							Approved
+							Donations
 						</button>
 						<button
 							onClick={() => setActiveTab("pending")}
@@ -213,6 +250,36 @@ export default function DonationsPage() {
 							}`}
 						>
 							Pending
+						</button>
+						<button
+							onClick={() => setActiveTab("received")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "received"
+									? "border-teal-600 text-teal-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							Received
+						</button>
+						<button
+							onClick={() => setActiveTab("approved")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "approved"
+									? "border-teal-600 text-teal-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							Approved
+						</button>
+						<button
+							onClick={() => setActiveTab("confirmed")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "confirmed"
+									? "border-teal-600 text-teal-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							Confirmed
 						</button>
 						{stats.items && stats.items.totalDonations > 0 && (
 							<Link

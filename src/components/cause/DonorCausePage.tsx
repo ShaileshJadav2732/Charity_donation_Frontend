@@ -27,9 +27,7 @@ import {
 	Box,
 	Button,
 	Card,
-	CardActions,
 	CardContent,
-	CardMedia,
 	Chip,
 	Collapse,
 	FormControl,
@@ -42,13 +40,12 @@ import {
 	Skeleton,
 	TextField,
 	Typography,
-	useTheme,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 
-const DonationTypeIcons: Record<DonationType, React.ComponentType> = {
+const DonationTypeIcons = {
 	[DonationType.MONEY]: MoneyIcon,
 	[DonationType.CLOTHES]: ClothesIcon,
 	[DonationType.BLOOD]: BloodIcon,
@@ -62,7 +59,7 @@ const DonationTypeIcons: Record<DonationType, React.ComponentType> = {
 
 const CausesPage = () => {
 	const router = useRouter();
-	const theme = useTheme();
+
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedTag, setSelectedTag] = useState<string>("");

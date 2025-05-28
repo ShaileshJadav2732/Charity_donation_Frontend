@@ -4,7 +4,6 @@ import React from "react";
 import {
 	Box,
 	Typography,
-	Grid,
 	Card,
 	CardContent,
 	Button,
@@ -27,6 +26,7 @@ import { RootState } from "@/store/store";
 import { useGetDonorStatsQuery } from "@/store/api/donationApi";
 import { useGetActiveCampaignCausesQuery } from "@/store/api/causeApi";
 import { useRouter } from "next/navigation";
+import { Cause } from "@/types/cause";
 
 interface DonationData {
 	_id: string;
@@ -35,9 +35,11 @@ interface DonationData {
 	createdAt: string;
 	cause?: {
 		title: string;
+		_id?: string;
 	};
 	organization?: {
 		name: string;
+		_id?: string;
 	};
 }
 
@@ -55,17 +57,20 @@ const DonorHomePage: React.FC = () => {
 		totalDonations: statsData?.data?.length || 0,
 		totalAmount: Array.isArray(statsData?.data)
 			? statsData.data.reduce(
-					(sum: number, donation: any) => sum + (donation.amount || 0),
+					(sum: number, donation: DonationData) => sum + (donation.amount || 0),
 					0
 			  )
 			: 0,
 		causesSupported: Array.isArray(statsData?.data)
-			? new Set(statsData.data.map((d: any) => d.cause?._id).filter(Boolean))
-					.size
+			? new Set(
+					statsData.data.map((d: DonationData) => d.cause?._id).filter(Boolean)
+			  ).size
 			: 0,
 		organizationsSupported: Array.isArray(statsData?.data)
 			? new Set(
-					statsData.data.map((d: any) => d.organization?._id).filter(Boolean)
+					statsData.data
+						.map((d: DonationData) => d.organization?._id)
+						.filter(Boolean)
 			  ).size
 			: 0,
 		recentDonations: Array.isArray(statsData?.data)
@@ -77,7 +82,7 @@ const DonorHomePage: React.FC = () => {
 	const realCauses = causesData?.causes || [];
 
 	// Transform real causes into featured causes with urgency calculation
-	const featuredCauses = realCauses.slice(0, 3).map((cause: any) => {
+	const featuredCauses = realCauses.slice(0, 3).map((cause: Cause) => {
 		const raised = cause.raisedAmount || 0;
 		const goal = cause.targetAmount || 1;
 		const progressPercentage = (raised / goal) * 100;
@@ -91,9 +96,9 @@ const DonorHomePage: React.FC = () => {
 		}
 
 		return {
-			id: cause._id || cause.id, // Handle both _id and id fields
+			id: cause.id, // Use the id field from Cause type
 			title: cause.title,
-			organization: cause.organizationId?.name || "Organization",
+			organization: cause.organizationName || "Organization",
 			description: cause.description,
 			raised: raised,
 			goal: goal,
@@ -140,8 +145,10 @@ const DonorHomePage: React.FC = () => {
 					sx={{ fontWeight: "bold", color: "#1a1a1a", mb: 1 }}
 				>
 					{getGreeting()},{" "}
-					{(user as any)?.firstName || user?.email?.split("@")[0] || "Friend"}!
-					👋
+					{(user as { firstName?: string; email?: string })?.firstName ||
+						user?.email?.split("@")[0] ||
+						"Friend"}
+					! 👋
 				</Typography>
 				<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
 					Thank you for making a difference. Your generosity is changing lives.
@@ -156,47 +163,63 @@ const DonorHomePage: React.FC = () => {
 						borderRadius: 3,
 					}}
 				>
-					<Grid container spacing={3} alignItems="center">
-						<Grid item xs={12} md={8}>
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: { xs: "column", md: "row" },
+							gap: 3,
+							alignItems: "center",
+						}}
+					>
+						<Box sx={{ flex: 1 }}>
 							<Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
 								Your Impact So Far
 							</Typography>
-							<Grid container spacing={3}>
-								<Grid item xs={6} sm={3}>
+							<Box
+								sx={{
+									display: "grid",
+									gridTemplateColumns: {
+										xs: "repeat(2, 1fr)",
+										sm: "repeat(4, 1fr)",
+									},
+									gap: 3,
+								}}
+							>
+								<Box>
 									<Typography variant="h4" sx={{ fontWeight: "bold" }}>
 										{formatCurrency(stats.totalAmount)}
 									</Typography>
 									<Typography variant="body2" sx={{ opacity: 0.9 }}>
 										Total Donated
 									</Typography>
-								</Grid>
-								<Grid item xs={6} sm={3}>
+								</Box>
+								<Box>
 									<Typography variant="h4" sx={{ fontWeight: "bold" }}>
 										{stats.causesSupported}
 									</Typography>
 									<Typography variant="body2" sx={{ opacity: 0.9 }}>
 										Causes Supported
 									</Typography>
-								</Grid>
-								<Grid item xs={6} sm={3}>
+								</Box>
+								<Box>
 									<Typography variant="h4" sx={{ fontWeight: "bold" }}>
 										{stats.organizationsSupported}
 									</Typography>
 									<Typography variant="body2" sx={{ opacity: 0.9 }}>
 										Organizations
 									</Typography>
-								</Grid>
-								<Grid item xs={6} sm={3}>
+								</Box>
+								<Box>
 									<Typography variant="h4" sx={{ fontWeight: "bold" }}>
 										{stats.totalDonations}
 									</Typography>
 									<Typography variant="body2" sx={{ opacity: 0.9 }}>
 										Total Donations
 									</Typography>
-								</Grid>
-							</Grid>
-						</Grid>
-						<Grid item xs={12} md={4} sx={{ textAlign: "center" }}>
+								</Box>
+							</Box>
+						</Box>
+						<Box sx={{ textAlign: "center" }}>
 							<Button
 								variant="contained"
 								size="large"
@@ -215,14 +238,20 @@ const DonorHomePage: React.FC = () => {
 							>
 								Make a Donation
 							</Button>
-						</Grid>
-					</Grid>
+						</Box>
+					</Box>
 				</Paper>
 			</Box>
 
 			{/* Quick Actions */}
-			<Grid container spacing={3} sx={{ mb: 4 }}>
-				<Grid item xs={12} sm={4}>
+			<Box sx={{ mb: 4 }}>
+				<Box
+					sx={{
+						display: "grid",
+						gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+						gap: 3,
+					}}
+				>
 					<Card
 						sx={{
 							p: 2,
@@ -254,8 +283,6 @@ const DonorHomePage: React.FC = () => {
 							Discover causes that need your support
 						</Typography>
 					</Card>
-				</Grid>
-				<Grid item xs={12} sm={4}>
 					<Card
 						sx={{
 							p: 2,
@@ -287,8 +314,6 @@ const DonorHomePage: React.FC = () => {
 							Track your donation history and status
 						</Typography>
 					</Card>
-				</Grid>
-				<Grid item xs={12} sm={4}>
 					<Card
 						sx={{
 							p: 2,
@@ -320,8 +345,8 @@ const DonorHomePage: React.FC = () => {
 							See detailed insights about your impact
 						</Typography>
 					</Card>
-				</Grid>
-			</Grid>
+				</Box>
+			</Box>
 
 			{/* Featured Urgent Causes */}
 			<Box sx={{ mb: 4 }}>
@@ -347,107 +372,112 @@ const DonorHomePage: React.FC = () => {
 						View All
 					</Button>
 				</Box>
-				<Grid container spacing={3}>
+				<Box
+					sx={{
+						display: "grid",
+						gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+						gap: 3,
+					}}
+				>
 					{featuredCauses.map((cause) => (
-						<Grid item xs={12} md={4} key={cause.id}>
-							<Card
+						<Card
+							key={cause.id}
+							sx={{
+								height: "100%",
+								cursor: "pointer",
+								transition: "all 0.2s",
+								"&:hover": {
+									transform: "translateY(-4px)",
+									boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
+								},
+							}}
+						>
+							<Box
 								sx={{
-									height: "100%",
-									cursor: "pointer",
-									transition: "all 0.2s",
-									"&:hover": {
-										transform: "translateY(-4px)",
-										boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
-									},
+									height: 160,
+									background: `linear-gradient(45deg, ${getUrgencyColor(
+										cause.urgency
+									)}20, ${getUrgencyColor(cause.urgency)}40)`,
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									position: "relative",
 								}}
 							>
-								<Box
+								<Chip
+									label={`${cause.urgency} Priority`}
+									size="small"
 									sx={{
-										height: 160,
-										background: `linear-gradient(45deg, ${getUrgencyColor(
-											cause.urgency
-										)}20, ${getUrgencyColor(cause.urgency)}40)`,
-										display: "flex",
-										alignItems: "center",
-										justifyContent: "center",
-										position: "relative",
+										position: "absolute",
+										top: 12,
+										right: 12,
+										backgroundColor: getUrgencyColor(cause.urgency),
+										color: "white",
+										fontWeight: 600,
 									}}
+								/>
+								<Target size={48} color={getUrgencyColor(cause.urgency)} />
+							</Box>
+							<CardContent>
+								<Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+									{cause.title}
+								</Typography>
+								<Typography
+									variant="body2"
+									color="text.secondary"
+									sx={{ mb: 1 }}
 								>
-									<Chip
-										label={`${cause.urgency} Priority`}
-										size="small"
+									{cause.organization}
+								</Typography>
+								<Typography variant="body2" sx={{ mb: 2 }}>
+									{cause.description}
+								</Typography>
+								<Box sx={{ mb: 2 }}>
+									<Box
 										sx={{
-											position: "absolute",
-											top: 12,
-											right: 12,
-											backgroundColor: getUrgencyColor(cause.urgency),
-											color: "white",
-											fontWeight: 600,
+											display: "flex",
+											justifyContent: "space-between",
+											mb: 1,
 										}}
-									/>
-									<Target size={48} color={getUrgencyColor(cause.urgency)} />
-								</Box>
-								<CardContent>
-									<Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-										{cause.title}
-									</Typography>
-									<Typography
-										variant="body2"
-										color="text.secondary"
-										sx={{ mb: 1 }}
 									>
-										{cause.organization}
-									</Typography>
-									<Typography variant="body2" sx={{ mb: 2 }}>
-										{cause.description}
-									</Typography>
-									<Box sx={{ mb: 2 }}>
-										<Box
-											sx={{
-												display: "flex",
-												justifyContent: "space-between",
-												mb: 1,
-											}}
-										>
-											<Typography variant="body2" color="text.secondary">
-												Progress
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(cause.raised)} /{" "}
-												{formatCurrency(cause.goal)}
-											</Typography>
-										</Box>
-										<LinearProgress
-											variant="determinate"
-											value={(cause.raised / cause.goal) * 100}
-											sx={{
-												height: 8,
-												borderRadius: 4,
-												backgroundColor: "#f0f0f0",
-												"& .MuiLinearProgress-bar": {
-													backgroundColor: getUrgencyColor(cause.urgency),
-												},
-											}}
-										/>
+										<Typography variant="body2" color="text.secondary">
+											Progress
+										</Typography>
+										<Typography variant="body2" sx={{ fontWeight: 600 }}>
+											{formatCurrency(cause.raised)} /{" "}
+											{formatCurrency(cause.goal)}
+										</Typography>
 									</Box>
-									<Button
-										variant="contained"
-										fullWidth
-										onClick={() => router.push(`/dashboard/donate/${cause.id}`)}
+									<LinearProgress
+										variant="determinate"
+										value={(cause.raised / cause.goal) * 100}
 										sx={{
-											backgroundColor: "#287068",
-											"&:hover": {
-												backgroundColor: "#1f5a52",
+											height: 8,
+											borderRadius: 4,
+											backgroundColor: "#f0f0f0",
+											"& .MuiLinearProgress-bar": {
+												backgroundColor: getUrgencyColor(cause.urgency),
 											},
 										}}
-									>
-										Donate Now
-									</Button>
-								</CardContent>
-							</Card>
-						</Grid>
+									/>
+								</Box>
+								<Button
+									variant="contained"
+									fullWidth
+									onClick={() => router.push(`/dashboard/donate/${cause.id}`)}
+									sx={{
+										backgroundColor: "#287068",
+										"&:hover": {
+											backgroundColor: "#1f5a52",
+										},
+									}}
+								>
+									Donate Now
+								</Button>
+							</CardContent>
+						</Card>
 					))}
-				</Grid>
+				</Box>
 			</Box>
 
 			{/* Recent Activity */}

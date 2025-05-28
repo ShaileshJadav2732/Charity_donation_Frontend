@@ -2,12 +2,9 @@
 
 import OrganizationDonations from "@/components/pendingDonation/PendingDonation";
 import { useGetCurrentOrganizationQuery } from "@/store/api/organizationApi";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 
 const Page = () => {
-	const { token } = useSelector((state: RootState) => state.auth);
-	const { data, isLoading, isError, error } = useGetCurrentOrganizationQuery();
+	const { data, isLoading, isError } = useGetCurrentOrganizationQuery();
 
 	if (isLoading) {
 		return <div>Loading...</div>;

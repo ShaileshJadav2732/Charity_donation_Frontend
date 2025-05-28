@@ -109,7 +109,7 @@ const AdminDashboard: React.FC = () => {
 
 			{/* Statistics Grid */}
 			<Grid container spacing={3} mb={4}>
-				<Grid item xs={12} sm={6} md={3}>
+				<Grid Griitem xs={12} sm={6} md={3}>
 					<StatCard
 						title="Total Users"
 						value={stats?.users.totalUsers || 0}
@@ -150,21 +150,6 @@ const AdminDashboard: React.FC = () => {
 						Platform Feedback Overview
 					</Typography>
 					<Grid container spacing={3}>
-						<Grid item xs={12} md={4}>
-							<Box textAlign="center">
-								<Typography variant="h4" gutterBottom>
-									{stats?.feedback.averageRating.toFixed(1) || 0}
-								</Typography>
-								<Rating
-									value={stats?.feedback.averageRating || 0}
-									precision={0.1}
-									readOnly
-								/>
-								<Typography variant="subtitle2" color="text.secondary">
-									Average Rating ({stats?.feedback.totalFeedback || 0} reviews)
-								</Typography>
-							</Box>
-						</Grid>
 						<Grid item xs={12} md={8}>
 							{[5, 4, 3, 2, 1].map((rating) => (
 								<Box
@@ -219,9 +204,11 @@ const AdminDashboard: React.FC = () => {
 											<Chip label="Donation" color="success" size="small" />
 										</TableCell>
 										<TableCell>
-											{`${donation.donor.firstName} ${donation.donor.lastName
-												} donated $${donation.amount.toLocaleString()} to ${donation.organization.name
-												}`}
+											{`${donation.donor.firstName} ${
+												donation.donor.lastName
+											} donated $${donation.amount.toLocaleString()} to ${
+												donation.organization.name
+											}`}
 										</TableCell>
 										<TableCell>
 											{formatDistanceToNow(new Date(donation.createdAt), {

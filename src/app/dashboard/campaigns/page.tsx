@@ -31,7 +31,6 @@ import {
 	DialogContentText,
 	DialogTitle,
 	FormControl,
-	Grid,
 	InputLabel,
 	LinearProgress,
 	MenuItem,
@@ -107,7 +106,7 @@ const CampaignsPage = () => {
 		useDeleteCampaignMutation();
 
 	// Process campaigns data - Fixed to handle the data structure properly
-	const campaigns: Campaign[] = data?.data || [];
+	const campaigns: Campaign[] = data?.campaigns || [];
 
 	const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
 		const matchesSearch = campaign.title
@@ -123,12 +122,10 @@ const CampaignsPage = () => {
 	const handleCreateCampaign = () => router.push("/dashboard/campaigns/create");
 
 	const handleEditCampaign = (id: string) => {
-		console.log("Edit campaign with ID:", id);
 		router.push(`/dashboard/campaigns/${id}/edit`);
 	};
 
 	const handleViewCampaign = (id: string) => {
-		console.log("View campaign with ID:", id);
 		router.push(`/dashboard/campaigns/${id}`);
 	};
 
@@ -143,8 +140,10 @@ const CampaignsPage = () => {
 				await deleteCampaign(selectedCampaignId).unwrap();
 				refetch();
 				setDeleteDialogOpen(false);
-			} catch (err: any) {
-				setDeleteError(err.message || "Failed to delete campaign");
+			} catch (err: unknown) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Failed to delete campaign";
+				setDeleteError(errorMessage);
 			}
 		}
 	};
@@ -195,8 +194,10 @@ const CampaignsPage = () => {
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 							size="small"
-							InputProps={{
-								startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+							slotProps={{
+								input: {
+									startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+								},
 							}}
 							sx={{ flexGrow: 1 }}
 						/>
@@ -253,18 +254,28 @@ const CampaignsPage = () => {
 						</Button>
 					</Paper>
 				) : (
-					<Grid container spacing={2}>
+					<Box
+						sx={{
+							display: "grid",
+							gridTemplateColumns: {
+								xs: "1fr",
+								sm: "repeat(2, 1fr)",
+								md: "repeat(3, 1fr)",
+							},
+							gap: 2,
+						}}
+					>
 						{filteredCampaigns.map((campaign) => {
 							const progress = getProgressPercentage(
 								campaign.totalRaisedAmount,
 								campaign.totalTargetAmount
 							);
 							const daysLeft = getDaysLeft(campaign.endDate);
-							// Make sure we're using _id here, which is what's in the data
-							const campaignId = campaign._id;
+							// Use the correct id property from the Campaign type
+							const campaignId = campaign.id;
 
 							return (
-								<Grid item xs={12} sm={6} md={4} key={campaignId}>
+								<Box key={campaignId}>
 									<Card
 										sx={{
 											height: "100%",
@@ -320,8 +331,15 @@ const CampaignsPage = () => {
 											</Box>
 
 											{/* Raised vs Goal */}
-											<Grid container spacing={1} sx={{ mb: 1 }}>
-												<Grid item xs={6}>
+											<Box
+												sx={{
+													display: "grid",
+													gridTemplateColumns: "1fr 1fr",
+													gap: 1,
+													mb: 1,
+												}}
+											>
+												<Box>
 													<Typography variant="body2" color="text.secondary">
 														Raised
 													</Typography>
@@ -332,24 +350,16 @@ const CampaignsPage = () => {
 													>
 														${campaign.totalRaisedAmount.toLocaleString()}
 													</Typography>
-												</Grid>
-												<Grid item xs={6}>
-													<Typography
-														variant="body2"
-														color="text.secondary"
-														align="right"
-													>
+												</Box>
+												<Box sx={{ textAlign: "right" }}>
+													<Typography variant="body2" color="text.secondary">
 														Goal
 													</Typography>
-													<Typography
-														variant="body2"
-														fontWeight="bold"
-														align="right"
-													>
+													<Typography variant="body2" fontWeight="bold">
 														${campaign.totalTargetAmount.toLocaleString()}
 													</Typography>
-												</Grid>
-											</Grid>
+												</Box>
+											</Box>
 
 											{/* Metadata */}
 											<Box display="flex" justifyContent="space-between" mt={1}>
@@ -370,7 +380,7 @@ const CampaignsPage = () => {
 														sx={{ mr: 0.5 }}
 													/>
 													<Typography variant="body2" color="text.secondary">
-														{campaign.totalSupporters || 0} supporters
+														{campaign.donorCount || 0} supporters
 													</Typography>
 												</Box>
 											</Box>
@@ -403,10 +413,10 @@ const CampaignsPage = () => {
 											</Button>
 										</CardActions>
 									</Card>
-								</Grid>
+								</Box>
 							);
 						})}
-					</Grid>
+					</Box>
 				)}
 			</Box>
 

@@ -65,7 +65,7 @@ export const notificationApi = createApi({
 				success: response.success,
 				notifications: response.notifications.map((n) => ({
 					...n,
-					id: n._id,
+					id: n.id,
 				})),
 			}),
 		}),

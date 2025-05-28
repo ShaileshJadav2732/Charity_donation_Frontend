@@ -1,12 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
 import { Donation } from "@/types/donation";
-import { useCheckFeedbackExistsQuery } from "@/store/api/feedbackApi";
-import { FaCalendarAlt, FaHeart, FaDownload, FaImage, FaFilePdf, FaComments, FaCheckCircle, FaClock, FaExclamationTriangle } from "react-icons/fa";
+import React from "react";
+
 import { getReceiptImageUrl } from "@/utils/url";
 import { toast } from "react-hot-toast";
-import FeedbackPromptModal from "@/components/feedback/FeedbackPromptModal";
+import {
+	FaCalendarAlt,
+	FaCheckCircle,
+	FaClock,
+	FaDownload,
+	FaExclamationTriangle,
+	FaFilePdf,
+	FaImage,
+} from "react-icons/fa";
 
 interface EnhancedDonationCardProps {
 	donation: Donation;
@@ -15,16 +22,8 @@ interface EnhancedDonationCardProps {
 
 const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 	donation,
-	onFeedbackSubmitted,
 }) => {
-	const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-
 	// Check if feedback already exists for this donation
-	const { data: feedbackCheck } = useCheckFeedbackExistsQuery({
-		organizationId: donation.organization._id,
-		causeId: donation.cause._id,
-		campaignId: donation.campaign?._id,
-	});
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
@@ -67,21 +66,6 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 		}
 	};
 
-	const canLeaveFeedback = () => {
-		return (
-			donation.status === "CONFIRMED" && 
-			!feedbackCheck?.exists
-		);
-	};
-
-	const handleFeedbackSubmitted = () => {
-		setShowFeedbackModal(false);
-		if (onFeedbackSubmitted) {
-			onFeedbackSubmitted();
-		}
-		toast.success("Thank you for your feedback!");
-	};
-
 	return (
 		<>
 			<div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden">
@@ -96,7 +80,11 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 								{donation.organization?.name}
 							</p>
 						</div>
-						<div className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(donation.status)}`}>
+						<div
+							className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(
+								donation.status
+							)}`}
+						>
 							{getStatusIcon(donation.status)}
 							{donation.status}
 						</div>
@@ -137,7 +125,9 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 						<div className="flex items-center gap-2">
 							{donation.receiptImage && (
 								<button
-									onClick={() => handleReceiptDownload(donation.receiptImage!, "photo")}
+									onClick={() =>
+										handleReceiptDownload(donation.receiptImage!, "photo")
+									}
 									className="inline-flex items-center px-3 py-2 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
 									title="View donation photo"
 								>
@@ -147,7 +137,9 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 							)}
 							{donation.pdfReceiptUrl && (
 								<button
-									onClick={() => handleReceiptDownload(donation.pdfReceiptUrl!, "pdf")}
+									onClick={() =>
+										handleReceiptDownload(donation.pdfReceiptUrl!, "pdf")
+									}
 									className="inline-flex items-center px-3 py-2 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
 									title="Download PDF receipt"
 								>
@@ -156,25 +148,6 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 								</button>
 							)}
 						</div>
-
-						{/* Feedback Button */}
-						{canLeaveFeedback() && (
-							<button
-								onClick={() => setShowFeedbackModal(true)}
-								className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg hover:from-teal-700 hover:to-teal-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 shadow-sm"
-							>
-								<FaComments className="h-4 w-4 mr-2" />
-								Leave Feedback
-							</button>
-						)}
-
-						{/* Feedback Already Given Indicator */}
-						{donation.status === "CONFIRMED" && feedbackCheck?.exists && (
-							<div className="inline-flex items-center px-3 py-2 text-xs font-medium bg-green-100 text-green-800 rounded-lg">
-								<FaHeart className="h-3 w-3 mr-1" />
-								Feedback Given
-							</div>
-						)}
 					</div>
 
 					{/* Status Message */}
@@ -185,16 +158,6 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 					)}
 				</div>
 			</div>
-
-			{/* Feedback Modal */}
-			<FeedbackPromptModal
-				donation={donation}
-				isOpen={showFeedbackModal}
-				onClose={() => setShowFeedbackModal(false)}
-				onSubmit={handleFeedbackSubmitted}
-				onSkip={() => setShowFeedbackModal(false)}
-				onLater={() => setShowFeedbackModal(false)}
-			/>
 		</>
 	);
 };

@@ -22,6 +22,11 @@ import {
 	FaMedal,
 } from "react-icons/fa";
 import { format } from "date-fns";
+import { DonationStats } from "@/types/donation";
+import {
+	DonorProfile as TypesDonorProfile,
+	OrganizationProfile as TypesOrganizationProfile,
+} from "@/types";
 
 export default function ProfileDashboard() {
 	const [isEditing, setIsEditing] = useState(false);
@@ -53,18 +58,24 @@ export default function ProfileDashboard() {
 		: [];
 
 	// Use donor stats data for the profile
-	const donorStats = {
+	const donorStats: DonationStats = {
 		totalDonated:
-			donorStatsData?.data && "totalDonated" in donorStatsData.data
-				? (donorStatsData.data as any).totalDonated || 0
+			donorStatsData?.data &&
+			typeof donorStatsData.data === "object" &&
+			"totalDonated" in donorStatsData.data
+				? (donorStatsData.data as unknown as DonationStats).totalDonated || 0
 				: 0,
 		totalCauses:
-			donorStatsData?.data && "totalCauses" in donorStatsData.data
-				? (donorStatsData.data as any).totalCauses || 0
+			donorStatsData?.data &&
+			typeof donorStatsData.data === "object" &&
+			"totalCauses" in donorStatsData.data
+				? (donorStatsData.data as unknown as DonationStats).totalCauses || 0
 				: 0,
 		averageDonation:
-			donorStatsData?.data && "averageDonation" in donorStatsData.data
-				? (donorStatsData.data as any).averageDonation || 0
+			donorStatsData?.data &&
+			typeof donorStatsData.data === "object" &&
+			"averageDonation" in donorStatsData.data
+				? (donorStatsData.data as unknown as DonationStats).averageDonation || 0
 				: 0,
 	};
 
@@ -180,8 +191,8 @@ export default function ProfileDashboard() {
 							<div className="h-32 w-32 rounded-full border-4 border-white overflow-hidden bg-white">
 								<Image
 									src={
-										(isDonor && donorProfile?.profileImage) ||
-										orgProfile?.logo ||
+										(isDonor && donorProfile?.avatar) ||
+										orgProfile?.avatar ||
 										profile.avatar ||
 										"/shailesh.jpg"
 									}
@@ -764,7 +775,9 @@ export default function ProfileDashboard() {
 			{/* Edit Profile Modal */}
 			{isEditing && profile && (
 				<EditProfileForm
-					profile={profile as any} // Using any as a workaround for type compatibility
+					profile={
+						profile as unknown as TypesDonorProfile | TypesOrganizationProfile
+					}
 					isDonor={isDonor}
 					onClose={() => setIsEditing(false)}
 				/>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { FiUser, FiPhone, FiMapPin, FiInfo } from "react-icons/fi";
+import { User, Phone, MapPin, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCompleteDonorProfileMutation } from "@/store/api/profileApi";
 import { parseError } from "@/types";
@@ -28,11 +28,25 @@ export default function DonorProfileForm() {
 
 	const validateForm = () => {
 		const newErrors: { [key: string]: string } = {};
-		if (!formData.firstName.trim())
+
+		if (!formData.firstName.trim()) {
 			newErrors.firstName = "First name is required";
-		if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
-		if (formData.phoneNumber && !/^\+?\d{10,15}$/.test(formData.phoneNumber))
-			newErrors.phoneNumber = "Invalid phone number";
+		}
+
+		if (!formData.lastName.trim()) {
+			newErrors.lastName = "Last name is required";
+		}
+
+		if (formData.phoneNumber && formData.phoneNumber.trim()) {
+			// More flexible phone number validation
+			const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+			const cleanPhone = formData.phoneNumber.replace(/[\s\-\(\)]/g, "");
+			if (!phoneRegex.test(cleanPhone) || cleanPhone.length < 10) {
+				newErrors.phoneNumber =
+					"Please enter a valid phone number (10-15 digits)";
+			}
+		}
+
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
@@ -51,25 +65,18 @@ export default function DonorProfileForm() {
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		console.log("DonorProfileForm: Submitting form", formData);
 
 		if (!validateForm()) {
-			console.log("DonorProfileForm: Validation failed", errors);
 			toast.error("Please fix the errors in the form.");
 			return;
 		}
 
 		try {
-			console.log("DonorProfileForm: Calling completeDonorProfile mutation");
-			await completeDonorProfile({
-				...formData,
-				profileCompleted: true,
-			}).unwrap();
-			console.log("DonorProfileForm: Profile update successful");
+			await completeDonorProfile(formData).unwrap();
+
 			toast.success("Profile completed successfully!");
 			router.push("/dashboard/home");
 		} catch (error) {
-			console.error("DonorProfileForm: Profile update error:", error);
 			const parsedError = parseError(error);
 			toast.error(parsedError.message || "Failed to complete profile.");
 		}
@@ -101,7 +108,7 @@ export default function DonorProfileForm() {
 				</label>
 				<div className="mt-1 relative">
 					<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-						<FiUser className="h-5 w-5 text-gray-400" aria-hidden="true" />
+						<User className="h-5 w-5 text-gray-400" aria-hidden="true" />
 					</div>
 					<input
 						id="firstName"
@@ -132,7 +139,7 @@ export default function DonorProfileForm() {
 				</label>
 				<div className="mt-1 relative">
 					<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-						<FiUser className="h-5 w-5 text-gray-400" aria-hidden="true" />
+						<User className="h-5 w-5 text-gray-400" aria-hidden="true" />
 					</div>
 					<input
 						id="lastName"
@@ -163,7 +170,7 @@ export default function DonorProfileForm() {
 				</label>
 				<div className="mt-1 relative">
 					<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-						<FiPhone className="h-5 w-5 text-gray-400" aria-hidden="true" />
+						<Phone className="h-5 w-5 text-gray-400" aria-hidden="true" />
 					</div>
 					<input
 						id="phoneNumber"
@@ -193,7 +200,7 @@ export default function DonorProfileForm() {
 				</label>
 				<div className="mt-1 relative">
 					<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-						<FiMapPin className="h-5 w-5 text-gray-400" aria-hidden="true" />
+						<MapPin className="h-5 w-5 text-gray-400" aria-hidden="true" />
 					</div>
 					<input
 						id="address"
@@ -276,7 +283,7 @@ export default function DonorProfileForm() {
 				</label>
 				<div className="mt-1 relative">
 					<div className="absolute top-3 left-3 pointer-events-none">
-						<FiInfo className="h-5 w-5 text-gray-400" aria-hidden="true" />
+						<Info className="h-5 w-5 text-gray-400" aria-hidden="true" />
 					</div>
 					<textarea
 						id="bio"

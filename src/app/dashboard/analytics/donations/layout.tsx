@@ -23,7 +23,6 @@ export default function DonationAnalyticsLayout({
 	children,
 }: DonationAnalyticsLayoutProps) {
 	const pathname = usePathname();
-	console.log("Current pathname:", pathname);
 
 	const donationTypes = [
 		{
@@ -86,7 +85,9 @@ export default function DonationAnalyticsLayout({
 								key={item.type}
 								href={`/dashboard/analytics/donations/${item.type}`}
 								className={`flex items-center px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap ${
-									pathname?.includes(`/dashboard/analytics/donations/${item.type}`)
+									pathname?.includes(
+										`/dashboard/analytics/donations/${item.type}`
+									)
 										? "bg-teal-100 text-teal-700"
 										: "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
 								}`}

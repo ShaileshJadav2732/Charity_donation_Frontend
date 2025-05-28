@@ -36,7 +36,7 @@ export interface DonationFormData {
 	donor: string; // Optional if backend uses auth token
 	organization: string;
 	cause: string;
-	type: string;
+	type: DonationType;
 	amount?: number;
 	description: string;
 	quantity?: number;
@@ -46,20 +46,23 @@ export interface DonationFormData {
 	isPickup: boolean;
 	contactPhone: string;
 	contactEmail: string;
-	pickupAddress?: {
-		street: string;
-		city: string;
-		state: string;
-		zipCode: string;
-		country: string;
-	};
-	dropoffAddress?: {
-		street: string;
-		city: string;
-		state: string;
-		zipCode: string;
-		country: string;
-	};
+	pickupAddress?: Address;
+	dropoffAddress?: Address;
+}
+
+// Enhanced form values interface for ImprovedDonationForm
+export interface ImprovedDonationFormValues {
+	type: DonationType;
+	amount: string | number;
+	description: string;
+	quantity: number;
+	unit: string;
+	scheduledDate: string;
+	scheduledTime: string;
+	isPickup: boolean;
+	contactPhone: string;
+	contactEmail: string;
+	pickupAddress: Address;
 }
 
 export interface DonationStats {

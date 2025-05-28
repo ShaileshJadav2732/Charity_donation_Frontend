@@ -14,6 +14,7 @@ import {
 	Box,
 	CircularProgress,
 	Alert,
+	SelectChangeEvent,
 } from "@mui/material";
 import {
 	useGetOrganizationCampaignsQuery,
@@ -41,7 +42,6 @@ const AddCauseToCampaignButton: React.FC<AddCauseToCampaignButtonProps> = ({
 	const { data: campaignsData, isLoading: isLoadingCampaigns } =
 		useGetOrganizationCampaignsQuery({
 			organizationId: user?.id || "",
-			status: "active",
 		});
 
 	// Add cause to campaign mutation
@@ -57,7 +57,7 @@ const AddCauseToCampaignButton: React.FC<AddCauseToCampaignButtonProps> = ({
 		setSelectedCampaignId("");
 	};
 
-	const handleCampaignChange = (event: any) => {
+	const handleCampaignChange = (event: SelectChangeEvent<string>) => {
 		setSelectedCampaignId(event.target.value);
 	};
 
@@ -79,9 +79,12 @@ const AddCauseToCampaignButton: React.FC<AddCauseToCampaignButtonProps> = ({
 			if (onSuccess) {
 				onSuccess();
 			}
-		} catch (error) {
-			console.error("Failed to add cause to campaign:", error);
-			toast.error("Failed to add cause to campaign. Please try again.");
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Failed to add cause to campaign. Please try again.";
+			toast.error(errorMessage);
 		}
 	};
 
@@ -114,8 +117,8 @@ const AddCauseToCampaignButton: React.FC<AddCauseToCampaignButtonProps> = ({
 						) : !campaignsData?.campaigns ||
 						  campaignsData.campaigns.length === 0 ? (
 							<Alert severity="warning" sx={{ my: 2 }}>
-								You don't have any active campaigns. Please create an active
-								campaign first.
+								You don&apos;t have any active campaigns. Please create an
+								active campaign first.
 							</Alert>
 						) : (
 							<FormControl fullWidth sx={{ mt: 2 }}>
@@ -133,9 +136,11 @@ const AddCauseToCampaignButton: React.FC<AddCauseToCampaignButtonProps> = ({
 										<em>Select a campaign</em>
 									</MenuItem>
 									{campaignsData.campaigns
-										.filter((campaign) => campaign.status === "active")
+										.filter(
+											(campaign) => (campaign.status as string) === "active"
+										)
 										.map((campaign) => (
-											<MenuItem key={campaign._id} value={campaign._id}>
+											<MenuItem key={campaign.id} value={campaign.id}>
 												{campaign.title}
 											</MenuItem>
 										))}

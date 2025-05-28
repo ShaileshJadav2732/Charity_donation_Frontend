@@ -1,6 +1,13 @@
 // Export all types from other files
 export * from "./errors";
 export * from "./user";
+export * from "./donation";
+export * from "./forms";
+export * from "./payment";
+export * from "./analytics";
+export * from "./cause";
+export * from "./profile";
+export * from "./campaigns";
 
 // User types
 export interface User {
