@@ -110,8 +110,16 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
 	const paymentElementOptions = {
 		layout: "tabs" as const,
-		fields: { billingDetails: "auto" as const },
+		fields: {
+			billingDetails: 'auto' as const
+		},
 		terms: { card: "auto" as const },
+		defaultValues: {
+			billingDetails: {
+				email: donationData.contactEmail || '',
+				phone: donationData.contactPhone || ''
+			}
+		}
 	};
 
 	return (
@@ -127,7 +135,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
 				<Box sx={{ mb: 2, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
 					<Typography variant="body2" color="text.secondary">
-						Donation Amount: <strong>₹{amount.toFixed(2)}</strong>
+						Donation Amount: <strong>${amount.toFixed(2)}</strong>
 					</Typography>
 				</Box>
 
@@ -161,7 +169,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 								<span>Processing Payment...</span>
 							</Box>
 						) : (
-							`Complete Donation - ₹${amount.toFixed(2)}`
+							`Complete Donation - $${amount.toFixed(2)}`
 						)}
 					</Button>
 

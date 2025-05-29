@@ -3,6 +3,7 @@ import { RootState } from "../store";
 
 export interface CreatePaymentIntentRequest {
 	amount: number;
+	currency: string;
 	cause: string;
 	organization: string;
 	campaign?: string;
@@ -43,6 +44,7 @@ export const paymentApi = createApi({
 			if (token) {
 				headers.set("authorization", `Bearer ${token}`);
 			}
+			headers.set("Content-Type", "application/json");
 			return headers;
 		},
 	}),
@@ -55,7 +57,13 @@ export const paymentApi = createApi({
 			query: (data) => ({
 				url: "/payments/create-payment-intent",
 				method: "POST",
-				body: data,
+				body: JSON.stringify({
+					...data,
+					currency: 'usd'
+				}),
+				headers: {
+					"Content-Type": "application/json",
+				},
 			}),
 		}),
 		confirmPayment: builder.mutation<
@@ -65,7 +73,10 @@ export const paymentApi = createApi({
 			query: (data) => ({
 				url: "/payments/confirm-payment",
 				method: "POST",
-				body: data,
+				body: JSON.stringify(data),
+				headers: {
+					"Content-Type": "application/json",
+				},
 			}),
 			invalidatesTags: ["Payment"],
 		}),
