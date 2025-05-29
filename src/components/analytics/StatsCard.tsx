@@ -41,7 +41,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
 	};
 
 	const getTrendIcon = () => {
-		if (!trend) return null;
+		if (!trend) return undefined;
 
 		if (trend.value === 0) {
 			return <Minus size={16} />;

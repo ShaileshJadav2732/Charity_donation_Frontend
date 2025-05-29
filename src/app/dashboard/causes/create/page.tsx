@@ -24,6 +24,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { DonationType } from "@/types/donation";
 import { toast } from "react-hot-toast";
+import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
 // Removed campaign-related imports as causes are now created independently
 
 interface FormData {
@@ -99,11 +100,12 @@ const CreateCausePage = () => {
 		title: "",
 		description: "",
 		targetAmount: "",
-		imageUrl: "https://placehold.co/600x400?text=Cause",
+		imageUrl: "",
 		tags: [],
 		acceptanceType: "money",
 		donationItems: [],
 	});
+	const [imagePublicId, setImagePublicId] = useState<string>("");
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
@@ -147,6 +149,14 @@ const CreateCausePage = () => {
 		}));
 	};
 
+	const handleImageUpload = (imageUrl: string, publicId: string) => {
+		setFormData((prev) => ({
+			...prev,
+			imageUrl,
+		}));
+		setImagePublicId(publicId);
+	};
+
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
@@ -154,6 +164,13 @@ const CreateCausePage = () => {
 			// Make sure we have an organization ID
 			if (!user || !user.id) {
 				console.error("No organization ID found");
+				toast.error("Organization ID not found. Please try logging in again.");
+				return;
+			}
+
+			// Validate required fields
+			if (!formData.imageUrl) {
+				toast.error("Please upload an image for your cause.");
 				return;
 			}
 
@@ -278,14 +295,11 @@ const CreateCausePage = () => {
 							}}
 						/>
 
-						<TextField
-							fullWidth
-							label="Image URL"
-							name="imageUrl"
-							value={formData.imageUrl}
-							onChange={handleChange}
-							required
-							helperText="Enter the URL of the cause image"
+						<CloudinaryImageUpload
+							onImageUpload={handleImageUpload}
+							currentImageUrl={formData.imageUrl}
+							label="Cause Image"
+							helperText="Upload an image for your cause (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
 						/>
 
 						<FormControl fullWidth>

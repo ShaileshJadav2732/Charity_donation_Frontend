@@ -447,15 +447,41 @@ const CausesPage = () => {
 								<Box
 									sx={{
 										height: 180,
-										background: `linear-gradient(45deg, ${urgencyColor}20, ${urgencyColor}40)`,
-										display: "flex",
-										alignItems: "center",
-										justifyContent: "center",
 										position: "relative",
 										borderTopLeftRadius: 3,
 										borderTopRightRadius: 3,
+										overflow: "hidden",
 									}}
 								>
+									{cause.imageUrl ? (
+										<Box
+											component="img"
+											src={cause.imageUrl}
+											alt={cause.title}
+											sx={{
+												width: "100%",
+												height: "100%",
+												objectFit: "cover",
+											}}
+										/>
+									) : (
+										<Box
+											sx={{
+												height: "100%",
+												background: `linear-gradient(45deg, ${urgencyColor}20, ${urgencyColor}40)`,
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
+											}}
+										>
+											<DonationIcon
+												sx={{
+													fontSize: 48,
+													color: urgencyColor,
+												}}
+											/>
+										</Box>
+									)}
 									<Chip
 										label={`${urgency} Priority`}
 										size="small"
@@ -467,12 +493,7 @@ const CausesPage = () => {
 											color: "white",
 											fontWeight: 600,
 											fontSize: "0.75rem",
-										}}
-									/>
-									<DonationIcon
-										sx={{
-											fontSize: 48,
-											color: urgencyColor,
+											zIndex: 2,
 										}}
 									/>
 								</Box>

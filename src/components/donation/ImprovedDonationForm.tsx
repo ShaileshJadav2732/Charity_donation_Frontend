@@ -57,6 +57,20 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 	const [paymentCompleted, setPaymentCompleted] = useState(false);
 	const customColor = "#287068";
 
+	// Get accepted donation types from cause
+	const acceptedDonationTypes = cause?.cause?.acceptedDonationTypes || [
+		DonationType.MONEY,
+	];
+	const canDonateMoney = acceptedDonationTypes.includes(DonationType.MONEY);
+	const canDonateItems = acceptedDonationTypes.some(
+		(type) => type !== DonationType.MONEY
+	);
+
+	// Filter available item types based on cause acceptance
+	const availableItemTypes = acceptedDonationTypes.filter(
+		(type) => type !== DonationType.MONEY
+	);
+
 	const steps = [
 		"Donation Type",
 		"Details",
@@ -86,48 +100,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				country: "",
 			},
 		},
-		validationSchema: Yup.object({
-			amount: isMonetary
-				? Yup.number()
-						.required("Amount is required")
-						.min(1, "Amount must be at least $1")
-				: Yup.number(),
-			description: Yup.string()
-				.required("Description is required")
-				.min(10, "Please provide more details"),
-			quantity: !isMonetary
-				? Yup.number()
-						.required("Quantity is required")
-						.min(1, "Quantity must be at least 1")
-				: Yup.number(),
-			unit: !isMonetary
-				? Yup.string().required("Unit is required")
-				: Yup.string(),
-			scheduledDate: !isMonetary
-				? Yup.string().required("Scheduled date is required")
-				: Yup.string(),
-			scheduledTime: !isMonetary
-				? Yup.string().required("Scheduled time is required")
-				: Yup.string(),
-			contactPhone: Yup.string().required("Phone number is required"),
-			contactEmail: Yup.string()
-				.email("Invalid email")
-				.required("Email is required"),
-			pickupAddress: !isMonetary
-				? Yup.object().when("isPickup", {
-						is: true,
-						then: (schema) =>
-							schema.shape({
-								street: Yup.string().required("Street address is required"),
-								city: Yup.string().required("City is required"),
-								state: Yup.string().required("State is required"),
-								zipCode: Yup.string().required("ZIP code is required"),
-								country: Yup.string().required("Country is required"),
-							}),
-						otherwise: (schema) => schema.notRequired(),
-				  })
-				: Yup.object(),
-		}),
+
 		onSubmit: async (values) => {
 			if (isMonetary && !paymentCompleted) {
 				if (
@@ -236,7 +209,9 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 		setIsMonetary(isMonetaryDonation);
 		formik.setFieldValue(
 			"type",
-			isMonetaryDonation ? DonationType.MONEY : DonationType.FOOD
+			isMonetaryDonation
+				? DonationType.MONEY
+				: availableItemTypes[0] || DonationType.OTHER
 		);
 		formik.setFieldValue("isPickup", !isMonetaryDonation);
 	};
@@ -261,64 +236,84 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 									<Box
 										sx={{ display: "flex", flexDirection: "column", gap: 2 }}
 									>
-										<Paper
-											elevation={isMonetary ? 3 : 1}
-											sx={{
-												p: 3,
-												cursor: "pointer",
-												border: `1px solid ${
-													isMonetary ? customColor : "#e0e0e0"
-												}`,
-												borderRadius: 2,
-											}}
-											onClick={() =>
-												handleDonationTypeChange({ target: { value: "MONEY" } })
-											}
-										>
-											<FormControlLabel
-												value="MONEY"
-												control={<Radio sx={{ color: customColor }} />}
-												label={
-													<Box>
-														<Typography variant="h6" sx={{ fontWeight: 600 }}>
-															Monetary Donation
-														</Typography>
-														<Typography variant="body2" color="text.secondary">
-															Make a secure online donation.
-														</Typography>
-													</Box>
+										{canDonateMoney && (
+											<Paper
+												elevation={isMonetary ? 3 : 1}
+												sx={{
+													p: 3,
+													cursor: "pointer",
+													border: `1px solid ${
+														isMonetary ? customColor : "#e0e0e0"
+													}`,
+													borderRadius: 2,
+												}}
+												onClick={() =>
+													handleDonationTypeChange({
+														target: { value: "MONEY" },
+													})
 												}
-											/>
-										</Paper>
-										<Paper
-											elevation={!isMonetary ? 3 : 1}
-											sx={{
-												p: 3,
-												cursor: "pointer",
-												border: `1px solid ${
-													!isMonetary ? customColor : "#e0e0e0"
-												}`,
-												borderRadius: 2,
-											}}
-											onClick={() =>
-												handleDonationTypeChange({ target: { value: "ITEMS" } })
-											}
-										>
-											<FormControlLabel
-												value="ITEMS"
-												control={<Radio sx={{ color: customColor }} />}
-												label={
-													<Box>
-														<Typography variant="h6" sx={{ fontWeight: 600 }}>
-															Item Donation
-														</Typography>
-														<Typography variant="body2" color="text.secondary">
-															Donate physical items needed by the cause.
-														</Typography>
-													</Box>
+											>
+												<FormControlLabel
+													value="MONEY"
+													control={<Radio sx={{ color: customColor }} />}
+													label={
+														<Box>
+															<Typography variant="h6" sx={{ fontWeight: 600 }}>
+																Monetary Donation
+															</Typography>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Make a secure online donation.
+															</Typography>
+														</Box>
+													}
+												/>
+											</Paper>
+										)}
+										{canDonateItems && (
+											<Paper
+												elevation={!isMonetary ? 3 : 1}
+												sx={{
+													p: 3,
+													cursor: "pointer",
+													border: `1px solid ${
+														!isMonetary ? customColor : "#e0e0e0"
+													}`,
+													borderRadius: 2,
+												}}
+												onClick={() =>
+													handleDonationTypeChange({
+														target: { value: "ITEMS" },
+													})
 												}
-											/>
-										</Paper>
+											>
+												<FormControlLabel
+													value="ITEMS"
+													control={<Radio sx={{ color: customColor }} />}
+													label={
+														<Box>
+															<Typography variant="h6" sx={{ fontWeight: 600 }}>
+																Item Donation
+															</Typography>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Donate items:{" "}
+																{availableItemTypes.join(", ").toLowerCase()}
+															</Typography>
+														</Box>
+													}
+												/>
+											</Paper>
+										)}
+										{!canDonateMoney && !canDonateItems && (
+											<Alert severity="warning">
+												This cause is not currently accepting donations.
+											</Alert>
+										)}
 									</Box>
 								</RadioGroup>
 							</FormControl>
@@ -375,41 +370,68 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 									/>
 								</Box>
 							) : (
-								<Box
-									sx={{
-										display: "flex",
-										gap: 2,
-										flexDirection: { xs: "column", md: "row" },
-									}}
-								>
-									<Box sx={{ flex: 1 }}>
-										<TextField
-											fullWidth
-											label="Quantity"
-											name="quantity"
-											type="number"
-											value={formik.values.quantity}
-											onChange={formik.handleChange}
-											error={
-												formik.touched.quantity &&
-												Boolean(formik.errors.quantity)
-											}
-											helperText={
-												formik.touched.quantity && formik.errors.quantity
-											}
-										/>
+								<Box>
+									<Box
+										sx={{
+											display: "flex",
+											gap: 2,
+											flexDirection: { xs: "column", md: "row" },
+											mb: 3,
+										}}
+									>
+										<Box sx={{ flex: 1 }}>
+											<TextField
+												fullWidth
+												label="Quantity"
+												name="quantity"
+												type="number"
+												value={formik.values.quantity}
+												onChange={formik.handleChange}
+												error={
+													formik.touched.quantity &&
+													Boolean(formik.errors.quantity)
+												}
+												helperText={
+													formik.touched.quantity && formik.errors.quantity
+												}
+											/>
+										</Box>
+										<Box sx={{ flex: 1 }}>
+											<TextField
+												fullWidth
+												label="Unit (e.g., kg, items, boxes)"
+												name="unit"
+												value={formik.values.unit}
+												onChange={formik.handleChange}
+												error={
+													formik.touched.unit && Boolean(formik.errors.unit)
+												}
+												helperText={formik.touched.unit && formik.errors.unit}
+											/>
+										</Box>
 									</Box>
-									<Box sx={{ flex: 1 }}>
-										<TextField
-											fullWidth
-											label="Unit (e.g., kg, items, boxes)"
-											name="unit"
-											value={formik.values.unit}
-											onChange={formik.handleChange}
-											error={formik.touched.unit && Boolean(formik.errors.unit)}
-											helperText={formik.touched.unit && formik.errors.unit}
-										/>
-									</Box>
+									{availableItemTypes.length > 1 && (
+										<Box sx={{ mb: 3 }}>
+											<Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+												Item Type
+											</Typography>
+											<FormControl fullWidth>
+												<Select
+													value={formik.values.type}
+													onChange={(e) =>
+														formik.setFieldValue("type", e.target.value)
+													}
+													displayEmpty
+												>
+													{availableItemTypes.map((type) => (
+														<MenuItem key={type} value={type}>
+															{type.charAt(0) + type.slice(1).toLowerCase()}
+														</MenuItem>
+													))}
+												</Select>
+											</FormControl>
+										</Box>
+									)}
 								</Box>
 							)}
 							<TextField

@@ -62,11 +62,6 @@ function SelectRoleContent() {
 				console.log("Using pending Google user:", userInfo);
 			} else {
 				const firebaseUser = auth.currentUser;
-				console.log(
-					"Current Firebase user:",
-					firebaseUser?.uid,
-					firebaseUser?.email
-				);
 
 				if (!firebaseUser) {
 					console.error("No Firebase user signed in");

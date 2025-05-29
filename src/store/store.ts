@@ -5,10 +5,12 @@ import authReducer from "./slices/authSlice";
 import apiSlice from "./api/apiSlice";
 import { profileApi } from "./api/profileApi";
 import { campaignApi } from "./api/campaignApi";
+import { uploadApi } from "./api/uploadApi";
 import { causeApi } from "./api/causeApi";
 import { dashboardApi } from "./api/dashboardApi";
 import { organizationApi } from "./api/organizationApi";
 import { paymentApi } from "./api/paymentApi";
+import { notificationApi } from "./api/notificationApi";
 
 // Configure Redux store
 export const store = configureStore({
@@ -16,11 +18,13 @@ export const store = configureStore({
 		[apiSlice.reducerPath]: apiSlice.reducer,
 		[profileApi.reducerPath]: profileApi.reducer,
 		[campaignApi.reducerPath]: campaignApi.reducer,
+		[uploadApi.reducerPath]: uploadApi.reducer,
 		[causeApi.reducerPath]: causeApi.reducer,
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
 
 		[organizationApi.reducerPath]: organizationApi.reducer,
 		[paymentApi.reducerPath]: paymentApi.reducer,
+		[notificationApi.reducerPath]: notificationApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
@@ -30,9 +34,10 @@ export const store = configureStore({
 			.concat(campaignApi.middleware)
 			.concat(causeApi.middleware)
 			.concat(dashboardApi.middleware)
-
+			.concat(uploadApi.middleware)
 			.concat(organizationApi.middleware)
-			.concat(paymentApi.middleware),
+			.concat(paymentApi.middleware)
+			.concat(notificationApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });
 

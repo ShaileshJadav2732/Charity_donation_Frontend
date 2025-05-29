@@ -37,6 +37,7 @@ import {
 	Chair as FurnitureIcon,
 	Home as HouseholdIcon,
 	Category as OtherIcon,
+	GpsFixed as Target,
 } from "@mui/icons-material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -124,33 +125,38 @@ const CausesPage = () => {
 	}
 
 	return (
-		<Box sx={{ backgroundColor: "#f5f7fa", minHeight: "100vh" }}>
-			{/* Header */}
-			<Paper
-				elevation={0}
-				sx={{
-					p: 2,
-					mb: 2,
-					borderRadius: 0,
-					backgroundImage: "linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%)",
-					color: "white",
-				}}
-			>
-				<Typography variant="h5" fontWeight="bold" gutterBottom>
+		<Box sx={{ p: 3, maxWidth: "1200px", mx: "auto" }}>
+			{/* Header Section */}
+			<Box sx={{ mb: 4 }}>
+				<Typography
+					variant="h4"
+					sx={{ fontWeight: "bold", color: "#1a1a1a", mb: 1 }}
+				>
 					Your Causes
 				</Typography>
-				<Typography variant="subtitle2">Manage all your causes</Typography>
-			</Paper>
+				<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
+					Create and manage causes to organize your fundraising efforts
+					effectively.
+				</Typography>
+			</Box>
 
 			{/* Content */}
-			<Box sx={{ p: 2 }}>
+			<Box>
 				{/* Search and Create Bar */}
-				<Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+				<Paper
+					elevation={0}
+					sx={{
+						p: 3,
+						mb: 4,
+						borderRadius: 3,
+						border: "1px solid #e0e0e0",
+					}}
+				>
 					<Stack
 						direction={{ xs: "column", sm: "row" }}
 						justifyContent="space-between"
 						alignItems={{ xs: "stretch", sm: "center" }}
-						spacing={1}
+						spacing={2}
 					>
 						<TextField
 							placeholder="Search causes..."
@@ -158,18 +164,32 @@ const CausesPage = () => {
 							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 								setSearchTerm(e.target.value)
 							}
-							size="small"
+							size="medium"
 							InputProps={{
 								startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
 							}}
-							sx={{ flexGrow: 1 }}
+							sx={{
+								flexGrow: 1,
+								"& .MuiOutlinedInput-root": {
+									borderRadius: 2,
+								},
+							}}
 						/>
 						<Button
 							variant="contained"
-							color="primary"
 							startIcon={<AddIcon />}
 							onClick={() => setCreateCauseDialogOpen(true)}
-							size="small"
+							sx={{
+								backgroundColor: "#287068",
+								color: "white",
+								fontWeight: 600,
+								px: 3,
+								py: 1.5,
+								borderRadius: 2,
+								"&:hover": {
+									backgroundColor: "#1f5a52",
+								},
+							}}
 						>
 							Create Cause
 						</Button>
@@ -181,12 +201,20 @@ const CausesPage = () => {
 					!error &&
 					filteredCauses &&
 					filteredCauses.length > 0 && (
-						<Alert severity="info" sx={{ mb: 3 }}>
-							<Typography variant="subtitle2" fontWeight="medium">
+						<Alert
+							severity="info"
+							sx={{
+								mb: 4,
+								borderRadius: 2,
+								border: "1px solid #e3f2fd",
+								backgroundColor: "#f8faff",
+							}}
+						>
+							<Typography variant="subtitle2" fontWeight="600" sx={{ mb: 1 }}>
 								Important: Causes must be added to active campaigns to be
 								visible to donors
 							</Typography>
-							<Typography variant="body2">
+							<Typography variant="body2" color="text.secondary">
 								After creating a cause, make sure to add it to an active
 								campaign from the cause detail page. Donors can only see causes
 								that are part of active campaigns.
@@ -196,15 +224,53 @@ const CausesPage = () => {
 
 				{/* Causes List */}
 				{isLoading ? (
-					<Box display="flex" justifyContent="center" p={4}>
-						<CircularProgress />
+					<Box display="flex" justifyContent="center" p={6}>
+						<CircularProgress sx={{ color: "#287068" }} />
 					</Box>
 				) : error ? (
-					<Alert severity="error">Failed to load causes</Alert>
-				) : filteredCauses?.length === 0 ? (
-					<Alert severity="info">
-						No causes found. Create your first cause!
+					<Alert
+						severity="error"
+						sx={{
+							borderRadius: 2,
+							border: "1px solid #ffebee",
+							backgroundColor: "#fef7f7",
+						}}
+					>
+						Failed to load causes
 					</Alert>
+				) : filteredCauses?.length === 0 ? (
+					<Paper
+						sx={{
+							p: 6,
+							textAlign: "center",
+							borderRadius: 3,
+							border: "1px solid #e0e0e0",
+							backgroundColor: "#fafafa",
+						}}
+					>
+						<Target size={48} color="#ccc" style={{ marginBottom: 16 }} />
+						<Typography variant="h6" color="text.secondary" gutterBottom>
+							No causes found
+						</Typography>
+						<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+							{searchTerm
+								? "Try adjusting your search terms"
+								: "Create your first cause to get started!"}
+						</Typography>
+						{!searchTerm && (
+							<Button
+								variant="contained"
+								startIcon={<AddIcon />}
+								onClick={() => setCreateCauseDialogOpen(true)}
+								sx={{
+									backgroundColor: "#287068",
+									"&:hover": { backgroundColor: "#1f5a52" },
+								}}
+							>
+								Create Your First Cause
+							</Button>
+						)}
+					</Paper>
 				) : (
 					<Box
 						sx={{
@@ -228,6 +294,27 @@ const CausesPage = () => {
 								cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
 							const DonationIcon = DonationTypeIcons[primaryDonationType];
 
+							// Calculate urgency based on progress
+							let urgency = "low";
+							if (progress < 30) {
+								urgency = "high";
+							} else if (progress < 70) {
+								urgency = "medium";
+							}
+
+							const getUrgencyColor = (urgency: string) => {
+								switch (urgency) {
+									case "high":
+										return "#ef4444";
+									case "medium":
+										return "#f59e0b";
+									case "low":
+										return "#10b981";
+									default:
+										return "#287068";
+								}
+							};
+
 							return (
 								<Box key={cause.id}>
 									<Card
@@ -235,30 +322,95 @@ const CausesPage = () => {
 											height: "100%",
 											display: "flex",
 											flexDirection: "column",
-											borderRadius: 2,
-											boxShadow: 3,
-											transition: "transform 0.3s ease, box-shadow 0.3s ease",
+											borderRadius: 3,
+											border: "1px solid #e0e0e0",
+											boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+											transition: "all 0.2s ease",
 											"&:hover": {
-												transform: "translateY(-2px)",
-												boxShadow: 6,
+												transform: "translateY(-4px)",
+												boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
 											},
 										}}
 									>
-										<CardContent sx={{ flexGrow: 1 }}>
-											<Box
-												display="flex"
-												justifyContent="space-between"
-												alignItems="flex-start"
-												mb={2}
-											>
-												<Typography
-													variant="h6"
-													gutterBottom
-													sx={{ fontWeight: 600 }}
+										{/* Header with image or icon */}
+										<Box
+											sx={{
+												height: 120,
+												position: "relative",
+												overflow: "hidden",
+											}}
+										>
+											{cause.imageUrl ? (
+												<Box
+													component="img"
+													src={cause.imageUrl}
+													alt={cause.title}
+													sx={{
+														width: "100%",
+														height: "100%",
+														objectFit: "cover",
+													}}
+												/>
+											) : (
+												<Box
+													sx={{
+														height: "100%",
+														background: `linear-gradient(45deg, ${getUrgencyColor(
+															urgency
+														)}20, ${getUrgencyColor(urgency)}40)`,
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "center",
+													}}
 												>
-													{cause.title}
-												</Typography>
+													<DonationIcon
+														sx={{
+															fontSize: "3rem",
+															color: getUrgencyColor(urgency),
+															opacity: 0.8,
+														}}
+													/>
+												</Box>
+											)}
+											<Box
+												sx={{
+													position: "absolute",
+													top: 12,
+													right: 12,
+												}}
+											>
+												<Chip
+													label={
+														acceptanceType === "money"
+															? "Funding"
+															: acceptanceType === "items"
+															? "Items"
+															: "Mixed"
+													}
+													size="small"
+													sx={{
+														backgroundColor: getUrgencyColor(urgency),
+														color: "white",
+														fontWeight: 600,
+														fontSize: "0.7rem",
+														zIndex: 2,
+													}}
+												/>
 											</Box>
+										</Box>
+
+										<CardContent sx={{ flexGrow: 1, p: 3 }}>
+											<Typography
+												variant="h6"
+												sx={{
+													fontWeight: 600,
+													mb: 1,
+													minHeight: 48,
+													color: "#1a1a1a",
+												}}
+											>
+												{cause.title}
+											</Typography>
 											<Typography
 												variant="body2"
 												color="text.secondary"
@@ -266,102 +418,88 @@ const CausesPage = () => {
 													overflow: "hidden",
 													textOverflow: "ellipsis",
 													display: "-webkit-box",
-													WebkitLineClamp: 3,
+													WebkitLineClamp: 2,
 													WebkitBoxOrient: "vertical",
 													mb: 2,
 													lineHeight: 1.4,
+													minHeight: 40,
 												}}
 											>
 												{cause.description}
 											</Typography>
 
-											{/* Donation Type & Progress Section */}
-											<Box sx={{ mb: 2 }}>
-												<Box
-													display="flex"
-													justifyContent="space-between"
-													alignItems="center"
-													mb={1}
-												>
-													<Box display="flex" alignItems="center" gap={1}>
-														<DonationIcon
-															sx={{ fontSize: "1.2rem", color: "#2f8077" }}
-														/>
-														<Typography
-															variant="body2"
-															color="text.secondary"
-															sx={{ fontWeight: 500 }}
-														>
-															{acceptanceType === "money"
-																? "Funding Progress"
-																: acceptanceType === "items"
-																? "Item Collection"
-																: "Mixed Donations"}
+											{/* Progress Section */}
+											{acceptanceType !== "items" && (
+												<Box sx={{ mb: 2 }}>
+													<Box
+														sx={{
+															display: "flex",
+															justifyContent: "space-between",
+															mb: 1,
+														}}
+													>
+														<Typography variant="body2" color="text.secondary">
+															Progress
 														</Typography>
-													</Box>
-													{acceptanceType !== "items" && (
 														<Typography
 															variant="body2"
-															color="primary.main"
 															sx={{ fontWeight: 600 }}
 														>
-															{progress}%
+															{progress.toFixed(1)}%
 														</Typography>
-													)}
-												</Box>
-
-												{acceptanceType !== "items" && (
+													</Box>
 													<LinearProgress
 														variant="determinate"
 														value={progress}
 														sx={{
 															height: 8,
 															borderRadius: 4,
-															backgroundColor: "grey.200",
+															backgroundColor: "#f0f0f0",
 															"& .MuiLinearProgress-bar": {
-																background:
-																	"linear-gradient(to right, #2f8077, #4ade80)",
+																backgroundColor: getUrgencyColor(urgency),
 																borderRadius: 4,
 															},
 														}}
 													/>
-												)}
-											</Box>
+												</Box>
+											)}
 
 											{/* Target Information Section */}
 											<Box sx={{ mb: 2 }}>
 												{acceptanceType === "money" ? (
-													<>
-														<Box
-															display="flex"
-															justifyContent="space-between"
-															alignItems="center"
-															mb={0.5}
-														>
-															<Typography
-																variant="body2"
-																sx={{ fontWeight: 600, color: "success.main" }}
-															>
-																${cause.raisedAmount.toLocaleString()}
-															</Typography>
+													<Box
+														sx={{
+															display: "flex",
+															justifyContent: "space-between",
+															alignItems: "center",
+														}}
+													>
+														<Box>
 															<Typography
 																variant="body2"
 																color="text.secondary"
 															>
-																of ${cause.targetAmount.toLocaleString()}
+																Raised
+															</Typography>
+															<Typography
+																variant="h6"
+																sx={{ fontWeight: 600, color: "#287068" }}
+															>
+																₹{cause.raisedAmount.toLocaleString()}
 															</Typography>
 														</Box>
-														<Typography
-															variant="caption"
-															color="text.secondary"
-														>
-															{cause.targetAmount - cause.raisedAmount > 0
-																? `$${(
-																		cause.targetAmount - cause.raisedAmount
-																  ).toLocaleString()} remaining`
-																: "Target achieved!"}
-														</Typography>
-													</>
+														<Box sx={{ textAlign: "right" }}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Goal
+															</Typography>
+															<Typography variant="h6" sx={{ fontWeight: 600 }}>
+																₹{cause.targetAmount.toLocaleString()}
+															</Typography>
+														</Box>
+													</Box>
 												) : acceptanceType === "items" ? (
 													<>
 														<Typography
@@ -375,7 +513,7 @@ const CausesPage = () => {
 														cause.donationItems.length > 0 ? (
 															<Box display="flex" gap={0.5} flexWrap="wrap">
 																{cause.donationItems
-																	.slice(0, 3)
+																	.slice(0, 2)
 																	.map((item, index) => (
 																		<Chip
 																			key={index}
@@ -386,15 +524,15 @@ const CausesPage = () => {
 																				borderRadius: 1,
 																				fontSize: "0.7rem",
 																				height: 22,
-																				borderColor: "primary.main",
-																				color: "primary.main",
+																				borderColor: getUrgencyColor(urgency),
+																				color: getUrgencyColor(urgency),
 																			}}
 																		/>
 																	))}
-																{cause.donationItems.length > 3 && (
+																{cause.donationItems.length > 2 && (
 																	<Chip
 																		label={`+${
-																			cause.donationItems.length - 3
+																			cause.donationItems.length - 2
 																		} more`}
 																		size="small"
 																		variant="outlined"
@@ -402,6 +540,8 @@ const CausesPage = () => {
 																			borderRadius: 1,
 																			fontSize: "0.7rem",
 																			height: 22,
+																			borderColor: getUrgencyColor(urgency),
+																			color: getUrgencyColor(urgency),
 																		}}
 																	/>
 																)}
@@ -416,130 +556,108 @@ const CausesPage = () => {
 														)}
 													</>
 												) : (
-													<>
-														<Box
-															display="flex"
-															justifyContent="space-between"
-															alignItems="center"
-															mb={0.5}
-														>
-															<Typography
-																variant="body2"
-																sx={{ fontWeight: 600, color: "success.main" }}
-															>
-																${cause.raisedAmount.toLocaleString()}
-															</Typography>
+													<Box
+														sx={{
+															display: "flex",
+															justifyContent: "space-between",
+															alignItems: "center",
+														}}
+													>
+														<Box>
 															<Typography
 																variant="body2"
 																color="text.secondary"
 															>
-																of ${cause.targetAmount.toLocaleString()}
+																Raised
+															</Typography>
+															<Typography
+																variant="h6"
+																sx={{ fontWeight: 600, color: "#287068" }}
+															>
+																₹{cause.raisedAmount.toLocaleString()}
 															</Typography>
 														</Box>
-														<Typography
-															variant="caption"
-															color="text.secondary"
-															sx={{ display: "block", mb: 1 }}
-														>
-															{cause.targetAmount - cause.raisedAmount > 0
-																? `$${(
-																		cause.targetAmount - cause.raisedAmount
-																  ).toLocaleString()} remaining`
-																: "Funding target achieved!"}
-														</Typography>
-														{cause.donationItems &&
-															cause.donationItems.length > 0 && (
-																<>
-																	<Typography
-																		variant="caption"
-																		color="text.secondary"
-																		sx={{
-																			fontWeight: 500,
-																			display: "block",
-																			mb: 0.5,
-																		}}
-																	>
-																		Also accepting items:
-																	</Typography>
-																	<Box display="flex" gap={0.5} flexWrap="wrap">
-																		{cause.donationItems
-																			.slice(0, 2)
-																			.map((item, index) => (
-																				<Chip
-																					key={index}
-																					label={item}
-																					size="small"
-																					variant="outlined"
-																					sx={{
-																						borderRadius: 1,
-																						fontSize: "0.65rem",
-																						height: 20,
-																					}}
-																				/>
-																			))}
-																		{cause.donationItems.length > 2 && (
-																			<Chip
-																				label={`+${
-																					cause.donationItems.length - 2
-																				}`}
-																				size="small"
-																				variant="outlined"
-																				sx={{
-																					borderRadius: 1,
-																					fontSize: "0.65rem",
-																					height: 20,
-																				}}
-																			/>
-																		)}
-																	</Box>
-																</>
-															)}
-													</>
+														<Box sx={{ textAlign: "right" }}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Goal + Items
+															</Typography>
+															<Typography variant="h6" sx={{ fontWeight: 600 }}>
+																₹{cause.targetAmount.toLocaleString()}
+															</Typography>
+														</Box>
+													</Box>
 												)}
 											</Box>
 
 											{/* Tags Section */}
 											{cause.tags && cause.tags.length > 0 && (
-												<Box display="flex" gap={0.5} mt={1} flexWrap="wrap">
-													{cause.tags.map((tag) => (
-														<Chip
-															key={tag}
-															label={tag}
-															size="small"
-															variant="outlined"
-															sx={{
-																borderRadius: 1,
-																fontSize: "0.75rem",
-																height: 24,
-															}}
-														/>
-													))}
+												<Box sx={{ mb: 2 }}>
+													<Box display="flex" gap={0.5} flexWrap="wrap">
+														{cause.tags.slice(0, 2).map((tag, index) => (
+															<Chip
+																key={index}
+																label={tag}
+																size="small"
+																variant="filled"
+																sx={{
+																	backgroundColor: `${getUrgencyColor(
+																		urgency
+																	)}20`,
+																	color: getUrgencyColor(urgency),
+																	borderRadius: 1,
+																	fontSize: "0.7rem",
+																	height: 22,
+																	fontWeight: 500,
+																}}
+															/>
+														))}
+														{cause.tags.length > 2 && (
+															<Chip
+																label={`+${cause.tags.length - 2}`}
+																size="small"
+																variant="outlined"
+																sx={{
+																	borderRadius: 1,
+																	fontSize: "0.7rem",
+																	height: 22,
+																	borderColor: getUrgencyColor(urgency),
+																	color: getUrgencyColor(urgency),
+																}}
+															/>
+														)}
+													</Box>
 												</Box>
 											)}
 										</CardContent>
-										<CardActions sx={{ justifyContent: "flex-end", pt: 0 }}>
-											<IconButton
+										<CardActions
+											sx={{ justifyContent: "space-between", p: 3, pt: 0 }}
+										>
+											<Button
+												variant="outlined"
 												size="small"
 												onClick={() => handleEditCause(cause.id)}
 												sx={{
-													color: "primary.main",
+													borderColor: "#287068",
+													color: "#287068",
 													"&:hover": {
-														backgroundColor: "primary.light",
+														backgroundColor: "#287068",
 														color: "white",
 													},
 												}}
 											>
-												<EditIcon />
-											</IconButton>
+												Edit
+											</Button>
 											<IconButton
 												size="small"
 												onClick={() => handleDeleteCause(cause.id)}
 												disabled={isDeleting}
 												sx={{
-													color: "error.main",
+													color: "#ef4444",
 													"&:hover": {
-														backgroundColor: "error.light",
-														color: "white",
+														backgroundColor: "#fef2f2",
 													},
 												}}
 											>
@@ -558,20 +676,35 @@ const CausesPage = () => {
 			<Dialog
 				open={createCauseDialogOpen}
 				onClose={handleCloseCreateCauseDialog}
+				maxWidth="sm"
+				fullWidth
+				PaperProps={{
+					sx: {
+						borderRadius: 3,
+						p: 1,
+					},
+				}}
 			>
-				<DialogTitle>Create New Cause</DialogTitle>
+				<DialogTitle sx={{ fontWeight: 600, color: "#1a1a1a" }}>
+					Create New Cause
+				</DialogTitle>
 				<DialogContent>
-					<DialogContentText>
+					<DialogContentText sx={{ color: "#666", lineHeight: 1.6 }}>
 						Creating a cause helps you organize your campaigns by theme or area
 						of focus. Would you like to create a new cause now?
 					</DialogContentText>
 				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleCloseCreateCauseDialog}>Cancel</Button>
+				<DialogActions sx={{ p: 3, pt: 1 }}>
+					<Button onClick={handleCloseCreateCauseDialog} sx={{ color: "#666" }}>
+						Cancel
+					</Button>
 					<Button
 						onClick={handleConfirmCreateCause}
-						color="primary"
 						variant="contained"
+						sx={{
+							backgroundColor: "#287068",
+							"&:hover": { backgroundColor: "#1f5a52" },
+						}}
 					>
 						Create Cause
 					</Button>

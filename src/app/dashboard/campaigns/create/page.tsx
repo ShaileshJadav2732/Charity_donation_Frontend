@@ -4,14 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Box,
-	Button,
-	TextField,
 	Typography,
-	Paper,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 	Alert,
 	Chip,
 	List,
@@ -26,8 +19,12 @@ import {
 	IconButton,
 	Divider,
 	CircularProgress,
+	FormControl,
+	InputLabel,
+	Select,
+	MenuItem,
+	FormGroup,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
 import { DatePicker } from "@mui/x-date-pickers";
 import { useCreateCampaignMutation } from "@/store/api/campaignApi";
 import {
@@ -37,6 +34,7 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { DonationType } from "@/types/donation";
 import { Cause, CreateCauseBody } from "@/types/cause";
 import {
@@ -45,6 +43,12 @@ import {
 	Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { SelectChangeEvent } from "@mui/material/Select";
+import { motion } from "framer-motion";
+import { toast } from "react-hot-toast";
+import FormContainer from "@/components/ui/FormContainer";
+import FormInput from "@/components/ui/FormInput";
+import FormButton from "@/components/ui/FormButton";
+import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
 
 interface FormData {
 	title: string;
@@ -78,21 +82,6 @@ const DONATION_TYPES = [
 	{ value: DonationType.OTHER, label: "Other" },
 ];
 
-const SUGGESTED_TAGS = [
-	"Education",
-	"Healthcare",
-	"Environment",
-	"Children",
-	"Animals",
-	"Elderly",
-	"Poverty",
-	"Disaster",
-	"Water",
-	"Food",
-	"Shelter",
-	"Community",
-];
-
 const CreateCampaignPage = () => {
 	const router = useRouter();
 	const { user } = useSelector((state: RootState) => state.auth);
@@ -110,6 +99,9 @@ const CreateCampaignPage = () => {
 	} = useGetCausesQuery({
 		organizationId: user?.id,
 	});
+
+	// Theme color for consistency
+	const customColor = "#287068";
 
 	// Campaign creation form
 	const [formData, setFormData] = useState<FormData>({
@@ -148,8 +140,6 @@ const CreateCampaignPage = () => {
 		}
 	}, [formData.selectedCauses, causesData]);
 
-	// const [error, setError] = useState<string | null>(null); // Unused
-
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
 	) => {
@@ -184,18 +174,6 @@ const CreateCampaignPage = () => {
 		}
 	};
 
-	const handleTagToggle = (tag: string) => {
-		setCauseFormData((prev) => {
-			const newTags = prev.tags.includes(tag)
-				? prev.tags.filter((t) => t !== tag)
-				: [...prev.tags, tag];
-			return {
-				...prev,
-				tags: newTags,
-			};
-		});
-	};
-
 	const handleOpenCreateCauseModal = () => {
 		setIsCreateCauseModalOpen(true);
 	};
@@ -213,6 +191,40 @@ const CreateCampaignPage = () => {
 
 	const handleDateChange =
 		(field: "startDate" | "endDate") => (date: Dayjs | null) => {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
+
+			if (date) {
+				const selectedDate = date.toDate();
+				selectedDate.setHours(0, 0, 0, 0);
+
+				// Prevent past date selection
+				if (selectedDate < today) {
+					toast.error("Cannot select a date in the past");
+					return;
+				}
+
+				// Validate startDate is not after endDate
+				if (field === "startDate" && formData.endDate) {
+					const endDate = formData.endDate.toDate();
+					endDate.setHours(0, 0, 0, 0);
+					if (selectedDate > endDate) {
+						toast.error("Start date cannot be after end date");
+						return;
+					}
+				}
+
+				// Validate endDate is not before startDate
+				if (field === "endDate" && formData.startDate) {
+					const startDate = formData.startDate.toDate();
+					startDate.setHours(0, 0, 0, 0);
+					if (selectedDate < startDate) {
+						toast.error("End date cannot be before start date");
+						return;
+					}
+				}
+			}
+
 			setFormData((prev) => ({
 				...prev,
 				[field]: date,
@@ -250,6 +262,7 @@ const CreateCampaignPage = () => {
 		try {
 			if (!user || !user.id) {
 				console.error("No organization ID found");
+				toast.error("Organization ID is required");
 				return;
 			}
 
@@ -257,20 +270,15 @@ const CreateCampaignPage = () => {
 			const payload: CreateCauseBody = {
 				title: causeFormData.title,
 				description: causeFormData.description,
-				targetAmount: parseFloat(causeFormData.targetAmount),
+				targetAmount: parseFloat(causeFormData.targetAmount) || 0,
 				imageUrl: causeFormData.imageUrl,
 				tags: causeFormData.tags,
 				organizationId: user.id,
 			};
 
-			// Validate the payload
-			if (
-				!payload.title ||
-				!payload.description ||
-				isNaN(payload.targetAmount) ||
-				payload.targetAmount <= 0
-			) {
-				alert("Please fill all required fields with valid values");
+			// Validate only the title
+			if (!payload.title) {
+				toast.error("Cause title is required");
 				return;
 			}
 
@@ -278,10 +286,10 @@ const CreateCampaignPage = () => {
 			const response = await createCause(payload).unwrap();
 
 			// Add the newly created cause to selected causes
-			if (response.data && response.data.cause && response.data.cause.id) {
+			if (response.cause && response.cause.id) {
 				setFormData((prev) => ({
 					...prev,
-					selectedCauses: [...prev.selectedCauses, response.data.cause.id],
+					selectedCauses: [...prev.selectedCauses, response.cause.id],
 				}));
 
 				// Refresh the causes list
@@ -289,27 +297,54 @@ const CreateCampaignPage = () => {
 
 				// Close the modal
 				handleCloseCreateCauseModal();
+				toast.success("Cause created successfully!");
 			}
 		} catch (error) {
 			console.error("Failed to create cause:", error);
+			toast.error("Failed to create cause. Please try again.");
 		}
+	};
+
+	// Image upload handler
+	const handleImageUpload = (imageUrl: string) => {
+		setFormData((prev) => ({
+			...prev,
+			imageUrl,
+		}));
 	};
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
+		// Date validation
 		if (!formData.startDate || !formData.endDate) {
-			console.error("Start date and end date are required");
+			toast.error("Start date and end date are required");
 			return;
 		}
 
+		const now = dayjs();
+		const startDate = dayjs(formData.startDate);
+		const endDate = dayjs(formData.endDate);
+
+		if (startDate.isBefore(now, "day")) {
+			toast.error("Start date cannot be in the past");
+			return;
+		}
+
+		if (endDate.isBefore(startDate)) {
+			toast.error("End date must be after start date");
+			return;
+		}
+
+		// Donation types validation
 		if (formData.acceptedDonationTypes.length === 0) {
-			console.error("At least one donation type is required");
+			toast.error("At least one donation type is required");
 			return;
 		}
 
-		if (formData.selectedCauses.length === 0) {
-			console.error("At least one cause is required");
+		// Image validation
+		if (!formData.imageUrl) {
+			toast.error("Please upload an image for your campaign");
 			return;
 		}
 
@@ -328,7 +363,7 @@ const CreateCampaignPage = () => {
 				startDate: formData.startDate.toISOString(),
 				endDate: formData.endDate.toISOString(),
 				status: formData.status,
-				totalTargetAmount: parseFloat(formData.totalTargetAmount),
+				totalTargetAmount: parseFloat(formData.totalTargetAmount) || 0,
 				imageUrl:
 					formData.imageUrl || "https://placehold.co/600x400?text=Campaign",
 				organizations,
@@ -341,14 +376,13 @@ const CreateCampaignPage = () => {
 			const response = await createCampaign(payload).unwrap();
 			console.log("Campaign created:", response);
 
-			if (response.success) {
-				router.push("/dashboard/campaigns");
-			}
+			toast.success("Campaign created successfully!");
+			router.push("/dashboard/campaigns");
 		} catch (err) {
 			console.error("Failed to create campaign:", err);
-			// setError(
-			// 	"Failed to create campaign. Please check the form and try again."
-			// );
+			toast.error(
+				"Failed to create campaign. Please check the form and try again."
+			);
 		}
 	};
 
@@ -413,24 +447,29 @@ const CreateCampaignPage = () => {
 	};
 
 	return (
-		<Box p={4}>
-			<Paper elevation={3} sx={{ p: 4, maxWidth: 800, mx: "auto" }}>
-				<Typography variant="h4" gutterBottom>
-					Create New Campaign
-				</Typography>
-
+		<motion.div
+			initial={{ opacity: 0, y: 20 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.5 }}
+		>
+			<FormContainer
+				title="Create New Campaign"
+				subtitle="Set up a new fundraising campaign for your organization"
+				maxWidth={900}
+			>
 				<form onSubmit={handleSubmit}>
 					<Box display="grid" gap={3}>
-						<TextField
+						<FormInput
 							fullWidth
 							label="Campaign Title"
 							name="title"
 							value={formData.title}
 							onChange={handleChange}
 							required
+							placeholder="Enter a compelling campaign title"
 						/>
 
-						<TextField
+						<FormInput
 							fullWidth
 							label="Description"
 							name="description"
@@ -439,6 +478,7 @@ const CreateCampaignPage = () => {
 							multiline
 							rows={4}
 							required
+							placeholder="Describe your campaign goals and impact"
 						/>
 
 						<Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
@@ -450,6 +490,16 @@ const CreateCampaignPage = () => {
 									textField: {
 										required: true,
 										fullWidth: true,
+										sx: {
+											"& .MuiOutlinedInput-root": {
+												borderRadius: 2,
+												"&.Mui-focused": {
+													"& .MuiOutlinedInput-notchedOutline": {
+														borderColor: customColor,
+													},
+												},
+											},
+										},
 									},
 								}}
 							/>
@@ -462,22 +512,41 @@ const CreateCampaignPage = () => {
 									textField: {
 										required: true,
 										fullWidth: true,
+										sx: {
+											"& .MuiOutlinedInput-root": {
+												borderRadius: 2,
+												"&.Mui-focused": {
+													"& .MuiOutlinedInput-notchedOutline": {
+														borderColor: customColor,
+													},
+												},
+											},
+										},
 									},
 								}}
 							/>
 						</Box>
 
-						<TextField
-							fullWidth
-							label="Image URL"
-							name="imageUrl"
-							value={formData.imageUrl}
-							onChange={handleChange}
-							required
-							helperText="Enter the URL of the campaign image"
+						<CloudinaryImageUpload
+							onImageUpload={handleImageUpload}
+							currentImageUrl={formData.imageUrl}
+							label="Campaign Image"
+							helperText="Upload an image for your campaign (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
 						/>
 
-						<FormControl fullWidth>
+						<FormControl
+							fullWidth
+							sx={{
+								"& .MuiOutlinedInput-root": {
+									borderRadius: 2,
+									"&.Mui-focused": {
+										"& .MuiOutlinedInput-notchedOutline": {
+											borderColor: customColor,
+										},
+									},
+								},
+							}}
+						>
 							<InputLabel>Status</InputLabel>
 							<Select
 								name="status"
@@ -491,8 +560,20 @@ const CreateCampaignPage = () => {
 							</Select>
 						</FormControl>
 
-						<Box>
-							<Typography variant="subtitle1" gutterBottom>
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.3, delay: 0.1 }}
+						>
+							<Typography
+								variant="subtitle1"
+								gutterBottom
+								sx={{
+									fontWeight: 600,
+									color: customColor,
+									mb: 2,
+								}}
+							>
 								Accepted Donation Types
 							</Typography>
 							<Box display="flex" gap={1} flexWrap="wrap">
@@ -501,11 +582,23 @@ const CreateCampaignPage = () => {
 										key={type.value}
 										label={type.label}
 										onClick={() => handleDonationTypeChange(type.value)}
-										color={
-											formData.acceptedDonationTypes.includes(type.value)
-												? "primary"
-												: "default"
-										}
+										sx={{
+											backgroundColor: formData.acceptedDonationTypes.includes(
+												type.value
+											)
+												? customColor
+												: "transparent",
+											color: formData.acceptedDonationTypes.includes(type.value)
+												? "white"
+												: customColor,
+											borderColor: customColor,
+											"&:hover": {
+												backgroundColor:
+													formData.acceptedDonationTypes.includes(type.value)
+														? customColor
+														: `${customColor}20`,
+											},
+										}}
 										variant={
 											formData.acceptedDonationTypes.includes(type.value)
 												? "filled"
@@ -514,18 +607,30 @@ const CreateCampaignPage = () => {
 									/>
 								))}
 							</Box>
-						</Box>
+						</motion.div>
 
-						<Box>
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.3, delay: 0.2 }}
+						>
 							<Box
 								display="flex"
 								justifyContent="space-between"
 								alignItems="center"
-								mb={1}
+								mb={2}
 							>
-								<Typography variant="subtitle1">Select Causes</Typography>
+								<Typography
+									variant="subtitle1"
+									sx={{
+										fontWeight: 600,
+										color: customColor,
+									}}
+								>
+									Select Causes
+								</Typography>
 								<Box>
-									<Button
+									<FormButton
 										variant="outlined"
 										startIcon={<RefreshIcon />}
 										onClick={() => refetchCauses()}
@@ -533,29 +638,31 @@ const CreateCampaignPage = () => {
 										sx={{ mr: 1 }}
 									>
 										Refresh
-									</Button>
-									<Button
-										variant="contained"
+									</FormButton>
+									<FormButton
+										variant="primary"
 										startIcon={<AddIcon />}
 										onClick={handleOpenCreateCauseModal}
 										size="small"
 									>
 										Create New Cause
-									</Button>
+									</FormButton>
 								</Box>
 							</Box>
 							{renderCausesSection()}
-						</Box>
+						</motion.div>
 
-						<TextField
+						<FormInput
 							fullWidth
 							label="Total Target Amount"
 							name="totalTargetAmount"
 							type="number"
 							value={formData.totalTargetAmount}
-							InputProps={{
-								readOnly: formData.selectedCauses.length > 0,
-								startAdornment: <span>$</span>,
+							slotProps={{
+								input: {
+									readOnly: formData.selectedCauses.length > 0,
+									startAdornment: <span>$</span>,
+								},
 							}}
 							helperText={
 								formData.selectedCauses.length > 0
@@ -570,27 +677,31 @@ const CreateCampaignPage = () => {
 							</Alert>
 						)}
 
-						<Box display="flex" gap={2} justifyContent="flex-end">
-							<Button
+						<Box display="flex" gap={2} justifyContent="flex-end" mt={4}>
+							<FormButton
 								variant="outlined"
 								onClick={() => router.push("/dashboard/campaigns")}
 							>
 								Cancel
-							</Button>
-							<Button
+							</FormButton>
+							<FormButton
 								type="submit"
-								variant="contained"
-								color="primary"
-								disabled={
-									isCreatingCampaign || formData.selectedCauses.length === 0
-								}
+								variant="primary"
+								loading={isCreatingCampaign}
+								loadingText="Creating Campaign..."
+								sx={{
+									backgroundColor: customColor,
+									"&:hover": {
+										backgroundColor: `${customColor}dd`,
+									},
+								}}
 							>
-								{isCreatingCampaign ? "Creating..." : "Create Campaign"}
-							</Button>
+								Create Campaign
+							</FormButton>
 						</Box>
 					</Box>
 				</form>
-			</Paper>
+			</FormContainer>
 
 			{/* Create New Cause Modal */}
 			<Dialog
@@ -598,6 +709,11 @@ const CreateCampaignPage = () => {
 				onClose={handleCloseCreateCauseModal}
 				maxWidth="md"
 				fullWidth
+				sx={{
+					"& .MuiDialog-paper": {
+						borderRadius: 3,
+					},
+				}}
 			>
 				<DialogTitle>
 					<Box
@@ -605,8 +721,25 @@ const CreateCampaignPage = () => {
 						justifyContent="space-between"
 						alignItems="center"
 					>
-						<Typography variant="h6">Create New Cause</Typography>
-						<IconButton onClick={handleCloseCreateCauseModal} size="small">
+						<Typography
+							variant="h6"
+							sx={{
+								fontWeight: 600,
+								color: customColor,
+							}}
+						>
+							Create New Cause
+						</Typography>
+						<IconButton
+							onClick={handleCloseCreateCauseModal}
+							size="small"
+							sx={{
+								color: customColor,
+								"&:hover": {
+									backgroundColor: `${customColor}20`,
+								},
+							}}
+						>
 							<CloseIcon />
 						</IconButton>
 					</Box>
@@ -614,34 +747,38 @@ const CreateCampaignPage = () => {
 				<Divider />
 
 				<form onSubmit={handleCreateCause}>
-					<DialogContent>
-						<Grid container spacing={3}>
-							<Grid item xs={12}>
-								<TextField
-									fullWidth
-									label="Cause Title"
-									name="title"
-									value={causeFormData.title}
-									onChange={handleCauseFormChange}
-									required
-								/>
-							</Grid>
+					<DialogContent sx={{ pt: 3 }}>
+						<Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+							<FormInput
+								fullWidth
+								label="Cause Title"
+								name="title"
+								value={causeFormData.title}
+								onChange={handleCauseFormChange}
+								required
+								placeholder="Enter a descriptive cause title"
+							/>
 
-							<Grid item xs={12}>
-								<TextField
-									fullWidth
-									label="Description"
-									name="description"
-									value={causeFormData.description}
-									onChange={handleCauseFormChange}
-									multiline
-									rows={3}
-									required
-								/>
-							</Grid>
+							<FormInput
+								fullWidth
+								label="Description"
+								name="description"
+								value={causeFormData.description}
+								onChange={handleCauseFormChange}
+								multiline
+								rows={3}
+								required
+								placeholder="Describe the cause and its impact"
+							/>
 
-							<Grid item xs={12} sm={6}>
-								<TextField
+							<Box
+								sx={{
+									display: "flex",
+									gap: 2,
+									flexDirection: { xs: "column", sm: "row" },
+								}}
+							>
+								<FormInput
 									fullWidth
 									label="Target Amount"
 									name="targetAmount"
@@ -649,68 +786,98 @@ const CreateCampaignPage = () => {
 									value={causeFormData.targetAmount}
 									onChange={handleCauseFormChange}
 									required
-									InputProps={{
-										startAdornment: <span>$</span>,
+									slotProps={{
+										input: {
+											startAdornment: <span>$</span>,
+										},
 									}}
+									placeholder="0"
 								/>
-							</Grid>
 
-							<Grid item xs={12} sm={6}>
-								<TextField
+								<FormInput
 									fullWidth
 									label="Image URL"
 									name="imageUrl"
 									value={causeFormData.imageUrl}
 									onChange={handleCauseFormChange}
 									required
+									placeholder="https://example.com/cause-image.jpg"
 								/>
-							</Grid>
+							</Box>
 
-							<Grid item xs={12}>
-								<Typography variant="subtitle2" gutterBottom>
-									Tags
+							<Box>
+								<Typography
+									variant="subtitle2"
+									gutterBottom
+									sx={{
+										fontWeight: 600,
+										color: customColor,
+										mb: 2,
+									}}
+								>
+									Accepted Donation Types
 								</Typography>
-								<Box display="flex" gap={1} flexWrap="wrap">
-									{SUGGESTED_TAGS.map((tag) => (
-										<Chip
-											key={tag}
-											label={tag}
-											onClick={() => handleTagToggle(tag)}
-											color={
-												causeFormData.tags.includes(tag) ? "primary" : "default"
+								<FormGroup>
+									{Object.values(DonationType).map((type) => (
+										<FormControlLabel
+											key={type}
+											control={
+												<Checkbox
+													checked={causeFormData.tags.includes(type)}
+													onChange={(e) => {
+														if (e.target.checked) {
+															setCauseFormData((prev) => ({
+																...prev,
+																tags: [...prev.tags, type],
+															}));
+														} else {
+															setCauseFormData((prev) => ({
+																...prev,
+																tags: prev.tags.filter((tag) => tag !== type),
+															}));
+														}
+													}}
+												/>
 											}
-											variant={
-												causeFormData.tags.includes(tag) ? "filled" : "outlined"
-											}
-											size="small"
+											label={type.charAt(0) + type.slice(1).toLowerCase()}
 										/>
 									))}
-								</Box>
-							</Grid>
+								</FormGroup>
+							</Box>
 
 							{causeError && (
-								<Grid item xs={12}>
-									<Alert severity="error">
-										Failed to create cause. Please try again.
-									</Alert>
-								</Grid>
+								<Alert severity="error">
+									Failed to create cause. Please try again.
+								</Alert>
 							)}
-						</Grid>
+						</Box>
 					</DialogContent>
 
 					<DialogActions sx={{ px: 3, pb: 3 }}>
-						<Button onClick={handleCloseCreateCauseModal}>Cancel</Button>
-						<Button
-							type="submit"
-							variant="contained"
-							disabled={isCreatingCause}
+						<FormButton
+							variant="outlined"
+							onClick={handleCloseCreateCauseModal}
 						>
-							{isCreatingCause ? "Creating..." : "Create "}
-						</Button>
+							Cancel
+						</FormButton>
+						<FormButton
+							type="submit"
+							variant="primary"
+							loading={isCreatingCause}
+							loadingText="Creating..."
+							sx={{
+								backgroundColor: customColor,
+								"&:hover": {
+									backgroundColor: `${customColor}dd`,
+								},
+							}}
+						>
+							Create Cause
+						</FormButton>
 					</DialogActions>
 				</form>
 			</Dialog>
-		</Box>
+		</motion.div>
 	);
 };
 

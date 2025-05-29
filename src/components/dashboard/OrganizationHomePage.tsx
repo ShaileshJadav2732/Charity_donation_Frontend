@@ -52,7 +52,11 @@ const OrganizationHomePage: React.FC = () => {
 	// Get organization ID from the current organization data
 	const organizationId = organizationData?.organization?._id;
 
-	const { data: causesData } = useGetOrganizationCausesQuery(
+	const {
+		data: causesData,
+		isLoading: causesLoading,
+		error: causesError,
+	} = useGetOrganizationCausesQuery(
 		{
 			organizationId: organizationId || "",
 			limit: 6,
@@ -62,6 +66,12 @@ const OrganizationHomePage: React.FC = () => {
 			skip: !organizationId, // Skip the query if organizationId is not available
 		}
 	);
+
+	// Debug logging
+	console.log("Organization ID:", organizationId);
+	console.log("Causes Data:", causesData);
+	console.log("Causes Loading:", causesLoading);
+	console.log("Causes Error:", causesError);
 	const router = useRouter();
 
 	// Process analytics data

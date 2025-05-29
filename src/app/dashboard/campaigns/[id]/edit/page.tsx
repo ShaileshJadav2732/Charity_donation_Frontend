@@ -34,6 +34,8 @@ import dayjs, { Dayjs } from "dayjs";
 import { DonationType } from "@/types/donation";
 import { ArrowBack as BackIcon } from "@mui/icons-material";
 import { useGetOrganizationCausesQuery } from "@/store/api/causeApi";
+import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
+import { toast } from "react-hot-toast";
 
 interface FormData {
 	title: string;
@@ -114,6 +116,9 @@ export default function EditCampaignPage({
 		causes: [],
 	});
 
+	// Image upload state
+	const [imagePublicId, setImagePublicId] = useState<string>("");
+
 	// Initialize form with campaign data when it loads
 	useEffect(() => {
 		if (campaignData?.data?.campaign) {
@@ -154,7 +159,9 @@ export default function EditCampaignPage({
 	};
 
 	const handleSelectChange = (
-		e: React.ChangeEvent<HTMLInputElement> | (Event & { target: { value: string; name: string } })
+		e:
+			| React.ChangeEvent<HTMLInputElement>
+			| (Event & { target: { value: string; name: string } })
 	) => {
 		const { name, value } = e.target;
 		if (name) {
@@ -197,16 +204,46 @@ export default function EditCampaignPage({
 		});
 	};
 
+	// Image upload handler
+	const handleImageUpload = (imageUrl: string, publicId: string) => {
+		setFormData((prev) => ({
+			...prev,
+			imageUrl,
+		}));
+		setImagePublicId(publicId);
+	};
+
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
+		// Date validation
 		if (!formData.startDate || !formData.endDate) {
-			alert("Start date and end date are required");
+			toast.error("Start date and end date are required");
+			return;
+		}
+
+		const now = dayjs();
+		const startDate = dayjs(formData.startDate);
+		const endDate = dayjs(formData.endDate);
+
+		if (startDate.isBefore(now, "day")) {
+			toast.error("Start date cannot be in the past");
+			return;
+		}
+
+		if (endDate.isBefore(startDate)) {
+			toast.error("End date must be after start date");
 			return;
 		}
 
 		if (formData.acceptedDonationTypes.length === 0) {
-			alert("At least one donation type is required");
+			toast.error("At least one donation type is required");
+			return;
+		}
+
+		// Image validation
+		if (!formData.imageUrl) {
+			toast.error("Please upload an image for your campaign");
 			return;
 		}
 
@@ -341,14 +378,11 @@ export default function EditCampaignPage({
 								}}
 							/>
 
-							<TextField
-								fullWidth
-								label="Image URL"
-								name="imageUrl"
-								value={formData.imageUrl}
-								onChange={handleChange}
-								required
-								helperText="Enter the URL of the campaign image"
+							<CloudinaryImageUpload
+								onImageUpload={handleImageUpload}
+								currentImageUrl={formData.imageUrl}
+								label="Campaign Image"
+								helperText="Upload an image for your campaign (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
 							/>
 
 							<FormControl fullWidth>

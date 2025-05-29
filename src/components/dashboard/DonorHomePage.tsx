@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { useGetDonorStatsQuery } from "@/store/api/donationApi";
+import { useGetDonorDonationsQuery } from "@/store/api/donationApi";
 import { useGetActiveCampaignCausesQuery } from "@/store/api/causeApi";
 import { useRouter } from "next/navigation";
 import { Cause } from "@/types/cause";
@@ -33,6 +33,10 @@ interface DonationData {
 	amount?: number;
 	status: string;
 	createdAt: string;
+	type: string;
+	description: string;
+	quantity?: number;
+	unit?: string;
 	cause?: {
 		title: string;
 		_id?: string;
@@ -45,37 +49,34 @@ interface DonationData {
 
 const DonorHomePage: React.FC = () => {
 	const { user } = useSelector((state: RootState) => state.auth);
-	const { data: statsData } = useGetDonorStatsQuery();
+	const { data: donationsData } = useGetDonorDonationsQuery({
+		page: 1,
+		limit: 100, // Get more donations to calculate stats
+	});
 	const { data: causesData } = useGetActiveCampaignCausesQuery({
 		limit: 6,
 		page: 1,
 	});
 	const router = useRouter();
 
-	// Use real stats data - handle the actual API response structure
+	// Use real donations data - handle the actual API response structure
+	const donations = donationsData?.data || [];
 	const stats = {
-		totalDonations: statsData?.data?.length || 0,
-		totalAmount: Array.isArray(statsData?.data)
-			? statsData.data.reduce(
-					(sum: number, donation: DonationData) => sum + (donation.amount || 0),
+		totalDonations: donations.length || 0,
+		totalAmount: Array.isArray(donations)
+			? donations.reduce(
+					(sum: number, donation: any) => sum + (donation.amount || 0),
 					0
 			  )
 			: 0,
-		causesSupported: Array.isArray(statsData?.data)
-			? new Set(
-					statsData.data.map((d: DonationData) => d.cause?._id).filter(Boolean)
-			  ).size
+		causesSupported: Array.isArray(donations)
+			? new Set(donations.map((d: any) => d.cause?._id).filter(Boolean)).size
 			: 0,
-		organizationsSupported: Array.isArray(statsData?.data)
-			? new Set(
-					statsData.data
-						.map((d: DonationData) => d.organization?._id)
-						.filter(Boolean)
-			  ).size
+		organizationsSupported: Array.isArray(donations)
+			? new Set(donations.map((d: any) => d.organization?._id).filter(Boolean))
+					.size
 			: 0,
-		recentDonations: Array.isArray(statsData?.data)
-			? statsData.data.slice(0, 5)
-			: [],
+		recentDonations: Array.isArray(donations) ? donations.slice(0, 5) : [],
 	};
 
 	// Use real causes data
@@ -146,9 +147,8 @@ const DonorHomePage: React.FC = () => {
 				>
 					{getGreeting()},{" "}
 					{(user as { firstName?: string; email?: string })?.firstName ||
-						user?.email?.split("@")[0] ||
-						"Friend"}
-					! 👋
+						user?.email?.split("@")[0]}
+					!
 				</Typography>
 				<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
 					Thank you for making a difference. Your generosity is changing lives.
@@ -493,7 +493,7 @@ const DonorHomePage: React.FC = () => {
 						<CardContent sx={{ p: 0 }}>
 							{stats.recentDonations
 								.slice(0, 5)
-								.map((donation: DonationData, index: number) => (
+								.map((donation: any, index: number) => (
 									<Box key={donation._id || index}>
 										<Box
 											sx={{

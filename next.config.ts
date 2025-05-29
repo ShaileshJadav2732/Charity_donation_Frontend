@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
 			"firebasestorage.googleapis.com",
 			"st2.depositphotos.com",
 			"localhost",
+			"res.cloudinary.com",
+			"cloudinary.com",
 		],
 	},
 	reactStrictMode: true,

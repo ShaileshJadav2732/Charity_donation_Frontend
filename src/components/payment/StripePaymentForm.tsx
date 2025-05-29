@@ -16,7 +16,6 @@ import {
 	useStripe,
 } from "@stripe/react-stripe-js";
 import React, { useEffect, useState } from "react";
-
 import { StripePaymentFormProps } from "@/types/payment";
 
 const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
@@ -34,13 +33,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 	const [confirmPayment] = useConfirmPaymentMutation();
 
 	useEffect(() => {
-		if (!stripe) {
-			return;
-		}
-
-		if (!clientSecret) {
-			return;
-		}
+		if (!stripe || !clientSecret) return;
 
 		stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
 			switch (paymentIntent?.status) {
@@ -50,9 +43,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 				case "processing":
 					setMessage("Your payment is processing.");
 					break;
-				case "requires_payment_method":
-					setMessage("Your payment was not successful, please try again.");
-					break;
+
 				default:
 					setMessage("Something went wrong.");
 					break;
@@ -75,9 +66,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 		}
 
 		setIsLoading(true);
-		setMessage("");
 
-		// Submit form data for validation
 		const { error: submitError } = await elements.submit();
 		if (submitError) {
 			setMessage(submitError.message || "Please complete the payment form.");
@@ -85,13 +74,12 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 			return;
 		}
 
-		// Confirm payment with Stripe
 		const { error: stripeError } = await stripe.confirmPayment({
 			elements,
 			confirmParams: {
 				return_url: `${window.location.origin}/dashboard/donor/donations`,
 			},
-			redirect: "if_required", // It redirects only if needed
+			redirect: "if_required",
 		});
 
 		if (stripeError) {
@@ -103,13 +91,11 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 			return;
 		}
 
-		// Backend confirmation (only happens if there's no redirect)
 		try {
 			const result = await confirmPayment({
 				paymentIntentId,
 				donationData,
 			}).unwrap();
-
 			setMessage("Payment succeeded! Your donation has been processed.");
 			onSuccess?.(result.data);
 		} catch (err: any) {
@@ -124,12 +110,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
 	const paymentElementOptions = {
 		layout: "tabs" as const,
-		fields: {
-			billingDetails: "auto" as const,
-		},
-		terms: {
-			card: "auto" as const,
-		},
+		fields: { billingDetails: "auto" as const },
+		terms: { card: "auto" as const },
 	};
 
 	return (
@@ -138,7 +120,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 				<Typography
 					variant="h6"
 					gutterBottom
-					sx={{ color: "#287068", fontWeight: 600 }}
+					sx={{ color: "#287068", fontWeight: 600, mb: 2 }}
 				>
 					Complete Your Donation
 				</Typography>
@@ -162,7 +144,6 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
 					<Button
 						disabled={isLoading || !stripe || !elements}
-						id="submit"
 						type="submit"
 						variant="contained"
 						fullWidth
@@ -170,12 +151,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 							mt: 2,
 							py: 1.5,
 							bgcolor: "#287068",
-							"&:hover": {
-								bgcolor: "#1f5a52",
-							},
-							"&:disabled": {
-								bgcolor: "grey.300",
-							},
+							"&:hover": { bgcolor: "#1f5a52" },
+							"&:disabled": { bgcolor: "grey.300" },
 						}}
 					>
 						{isLoading ? (

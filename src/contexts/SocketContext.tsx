@@ -27,7 +27,7 @@ interface SocketContextType {
 	isConnected: boolean;
 	notifications: Notification[];
 	unreadCount: number;
-	markNotificationAsRead: (notificationId: string) => void;
+	markNotificationAsRead: (id: string) => void;
 	clearNotifications: () => void;
 }
 
@@ -35,160 +35,113 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 export const useSocket = () => {
 	const context = useContext(SocketContext);
-	if (context === undefined) {
+	if (!context)
 		throw new Error("useSocket must be used within a SocketProvider");
-	}
 	return context;
 };
 
-interface SocketProviderProps {
-	children: React.ReactNode;
-}
-
-export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
+export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
+	children,
+}) => {
+	const { token, user } = useSelector((state: RootState) => state.auth);
 	const [socket, setSocket] = useState<Socket | null>(null);
 	const [isConnected, setIsConnected] = useState(false);
 	const [notifications, setNotifications] = useState<Notification[]>([]);
-	const { token, user } = useSelector((state: RootState) => state.auth);
 
-	// Sort notifications by creation date (newest first) and calculate unread count
+	const unreadCount = notifications.filter((n) => !n.isRead).length;
 	const sortedNotifications = [...notifications].sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
 	);
-	const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-	// Initialize socket connection
 	useEffect(() => {
-		if (token && user) {
-			const socketUrl =
-				process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
-				"http://localhost:8080";
-			console.log("Connecting to Socket.IO server:", socketUrl);
-			console.log("Using token:", token ? "Token present" : "No token");
-
-			const newSocket = io(socketUrl, {
-				auth: {
-					token: token,
-				},
-				transports: ["websocket", "polling"],
-				forceNew: true,
-				reconnection: true,
-				timeout: 20000,
-			});
-
-			// Connection event handlers
-			newSocket.on("connect", () => {
-				console.log("Connected to server");
-				setIsConnected(true);
-			});
-
-			newSocket.on("disconnect", (reason) => {
-				console.log("Disconnected from server. Reason:", reason);
-				setIsConnected(false);
-
-				if (reason === "io server disconnect") {
-					// Server disconnected the socket, reconnect manually
-					newSocket.connect();
-				}
-			});
-
-			newSocket.on("connect_error", (error) => {
-				console.error("Socket connection error:", error);
-				console.error("Error message:", error.message);
-				console.error("Error type:", error.type);
-				setIsConnected(false);
-
-				// Show user-friendly error message
-				toast.error(`Connection failed: ${error.message}`, {
-					duration: 5000,
-					position: "top-right",
-				});
-			});
-
-			newSocket.on("reconnect", (attemptNumber) => {
-				console.log("Reconnected to server after", attemptNumber, "attempts");
-				setIsConnected(true);
-			});
-
-			newSocket.on("reconnect_error", (error) => {
-				console.error("Reconnection error:", error);
-			});
-
-			// Notification event handlers
-			newSocket.on("notification:new", (notification: Notification) => {
-				console.log("New notification received:", notification);
-
-				// Add to notifications list
-				setNotifications((prev) => [notification, ...prev]);
-
-				// Show toast notification
-				toast.success(notification.title, {
-					duration: 4000,
-					position: "top-right",
-					style: {
-						background: "#10B981",
-						color: "white",
-					},
-					icon: "🔔",
-				});
-			});
-
-			newSocket.on("notification:read", (data: { notificationId: string }) => {
-				console.log("Notification marked as read:", data.notificationId);
-				setNotifications((prev) =>
-					prev.map((n) =>
-						n.id === data.notificationId ? { ...n, isRead: true } : n
-					)
-				);
-			});
-
-			setSocket(newSocket);
-
-			// Cleanup on unmount
-			return () => {
-				newSocket.close();
-			};
-		} else {
-			// If no token/user, disconnect socket
-			if (socket) {
-				socket.close();
-				setSocket(null);
-				setIsConnected(false);
-				setNotifications([]);
-			}
+		if (!token || !user) {
+			socket?.close();
+			setSocket(null);
+			setIsConnected(false);
+			setNotifications([]);
+			return;
 		}
+
+		const socketUrl =
+			process.env.NEXT_PUBLIC_SOCKET_URL ||
+			process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+			"http://localhost:8080";
+
+		const newSocket = io(socketUrl, {
+			auth: { token },
+			transports: ["websocket"],
+			reconnection: true,
+		});
+
+		newSocket.on("connect", () => {
+			setIsConnected(true);
+			toast.dismiss();
+		});
+
+		newSocket.on("disconnect", () => {
+			setIsConnected(false);
+			toast.error("Disconnected from notifications", { position: "top-right" });
+		});
+
+		newSocket.on("connect_error", (err) => {
+			setIsConnected(false);
+			const msg = err.message.includes("timeout")
+				? "Connection timeout"
+				: err.message.includes("Authentication")
+				? "Authentication failed"
+				: "Connection failed";
+			toast.error(msg, { position: "top-right" });
+		});
+
+		newSocket.on("reconnect", () =>
+			toast.success("Reconnected", { icon: "🔄", position: "top-right" })
+		);
+
+		newSocket.on("notification:new", (notification: Notification) => {
+			setNotifications((prev) => [notification, ...prev]);
+			toast.success(notification.title, {
+				icon: "🔔",
+				position: "top-right",
+				style: { background: "#10B981", color: "white" },
+			});
+		});
+
+		newSocket.on("notification:read", ({ notificationId }) => {
+			setNotifications((prev) =>
+				prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+			);
+		});
+
+		setSocket(newSocket);
+		return () => newSocket.close();
 	}, [token, user]);
 
-	// Mark notification as read
 	const markNotificationAsRead = useCallback(
-		(notificationId: string) => {
+		(id: string) => {
 			if (socket) {
-				socket.emit("notification:read", notificationId);
+				socket.emit("notification:read", id);
 				setNotifications((prev) =>
-					prev.map((n) =>
-						n.id === notificationId ? { ...n, isRead: true } : n
-					)
+					prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
 				);
 			}
 		},
 		[socket]
 	);
 
-	// Clear all notifications
-	const clearNotifications = useCallback(() => {
-		setNotifications([]);
-	}, []);
-
-	const value: SocketContextType = {
-		socket,
-		isConnected,
-		notifications: sortedNotifications,
-		unreadCount,
-		markNotificationAsRead,
-		clearNotifications,
-	};
+	const clearNotifications = useCallback(() => setNotifications([]), []);
 
 	return (
-		<SocketContext.Provider value={value}>{children}</SocketContext.Provider>
+		<SocketContext.Provider
+			value={{
+				socket,
+				isConnected,
+				notifications: sortedNotifications,
+				unreadCount,
+				markNotificationAsRead,
+				clearNotifications,
+			}}
+		>
+			{children}
+		</SocketContext.Provider>
 	);
 };

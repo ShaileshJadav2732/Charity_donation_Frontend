@@ -34,6 +34,15 @@ export const campaignApi = createApi({
 				method: "GET",
 				params,
 			}),
+			transformResponse: (response: any) => {
+				// Transform backend response to match frontend expectations
+				return {
+					campaigns: response.data || [],
+					total: response.pagination?.total || 0,
+					page: response.pagination?.page || 1,
+					limit: response.pagination?.limit || 10,
+				};
+			},
 			providesTags: ["Campaign"],
 		}),
 
@@ -42,6 +51,12 @@ export const campaignApi = createApi({
 				url: `/campaigns/${id}`,
 				method: "GET",
 			}),
+			transformResponse: (response: any) => {
+				// Transform backend response to match frontend expectations
+				return {
+					campaign: response.data || null,
+				};
+			},
 			providesTags: (_result, _error, id) => [{ type: "Campaign", id }],
 		}),
 
@@ -54,6 +69,15 @@ export const campaignApi = createApi({
 				method: "GET",
 				params,
 			}),
+			transformResponse: (response: any) => {
+				// Transform backend response to match frontend expectations
+				return {
+					campaigns: response.data || [],
+					total: response.pagination?.total || 0,
+					page: response.pagination?.page || 1,
+					limit: response.pagination?.limit || 10,
+				};
+			},
 			providesTags: ["Campaign"],
 		}),
 
@@ -67,6 +91,12 @@ export const campaignApi = createApi({
 					url: "/campaigns",
 					method: "POST",
 					body,
+				};
+			},
+			transformResponse: (response: any) => {
+				// Transform backend response to match frontend expectations
+				return {
+					campaign: response.data || null,
 				};
 			},
 			invalidatesTags: ["Campaign"],
@@ -86,6 +116,12 @@ export const campaignApi = createApi({
 					url: `/campaigns/${id}`,
 					method: "PATCH",
 					body,
+				};
+			},
+			transformResponse: (response: any) => {
+				// Transform backend response to match frontend expectations
+				return {
+					campaign: response.data || null,
 				};
 			},
 			invalidatesTags: (result, error, { id }) => {
@@ -113,6 +149,12 @@ export const campaignApi = createApi({
 				method: "POST",
 				body: { causeId },
 			}),
+			transformResponse: (response: any) => {
+				// Transform backend response to match frontend expectations
+				return {
+					campaign: response.data || null,
+				};
+			},
 			invalidatesTags: (_result, _error, { campaignId }) => [
 				{ type: "Campaign", id: campaignId },
 				"Cause",

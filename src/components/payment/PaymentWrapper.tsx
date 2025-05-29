@@ -8,8 +8,6 @@ import StripePaymentForm from "./StripePaymentForm";
 import { useCreatePaymentIntentMutation } from "@/store/api/paymentApi";
 import { PaymentWrapperProps } from "@/types/payment";
 
-// Interface is now imported from types/payment.ts
-
 const PaymentWrapper: React.FC<PaymentWrapperProps> = ({
 	donationData,
 	onSuccess,
@@ -20,60 +18,32 @@ const PaymentWrapper: React.FC<PaymentWrapperProps> = ({
 	const [createPaymentIntent, { isLoading }] = useCreatePaymentIntentMutation();
 
 	useEffect(() => {
-		// Create PaymentIntent as soon as the component loads
 		const initializePayment = async () => {
 			try {
-				// Validate required fields before sending
-				console.log("=== PAYMENT WRAPPER INITIALIZATION ===");
-				console.log(
-					"PaymentWrapper - Full donation data:",
-					JSON.stringify(donationData, null, 2)
-				);
-
 				if (!donationData.amount || donationData.amount <= 0) {
-					console.error(
-						"VALIDATION ERROR: Invalid amount:",
-						donationData.amount
-					);
 					onError("Amount is required and must be greater than 0");
 					return;
 				}
 
 				if (!donationData.cause) {
-					console.error(
-						"VALIDATION ERROR: Missing cause ID:",
-						donationData.cause
-					);
 					onError("Cause ID is required");
 					return;
 				}
 
 				if (!donationData.organization) {
-					console.error(
-						"VALIDATION ERROR: Missing organization ID:",
-						donationData.organization
-					);
 					onError("Organization ID is required");
 					return;
 				}
 
 				if (!donationData.description) {
-					console.error(
-						"VALIDATION ERROR: Missing description:",
-						donationData.description
-					);
 					onError("Description is required");
 					return;
 				}
 
-				console.log("All validations passed, creating payment intent...");
 				const result = await createPaymentIntent(donationData).unwrap();
-				console.log("Payment intent created successfully:", result);
 				setClientSecret(result.clientSecret);
 				setPaymentIntentId(result.paymentIntentId);
 			} catch (err: unknown) {
-				console.error("ERROR creating payment intent:", err);
-				console.error("Full error object:", JSON.stringify(err, null, 2));
 				const errorMessage =
 					(err as { data?: { message?: string } })?.data?.message ||
 					"Failed to initialize payment";

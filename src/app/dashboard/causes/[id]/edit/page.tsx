@@ -27,6 +27,8 @@ import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
+import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
+import { toast } from "react-hot-toast";
 
 interface Cause {
 	id: string;
@@ -35,7 +37,7 @@ interface Cause {
 	targetAmount: number;
 	imageUrl: string;
 	tags: string[];
-	acceptanceType?: 'money' | 'items' | 'both';
+	acceptanceType?: "money" | "items" | "both";
 	donationItems?: string[];
 	acceptedDonationTypes?: DonationType[];
 }
@@ -72,8 +74,12 @@ export const UpdateCauseForm = () => {
 	const router = useRouter();
 	const [tags, setTags] = useState<string[]>([]);
 	const [tagInput, setTagInput] = useState("");
-	const [acceptanceType, setAcceptanceType] = useState<'money' | 'items' | 'both'>('money');
+	const [acceptanceType, setAcceptanceType] = useState<
+		"money" | "items" | "both"
+	>("money");
 	const [donationItems, setDonationItems] = useState<string[]>([]);
+	const [imageUrl, setImageUrl] = useState<string>("");
+	const [imagePublicId, setImagePublicId] = useState<string>("");
 
 	const { data: causesResponse } = useGetCauseByIdQuery(id || "");
 	const [updateCause, { isLoading: isUpdating }] = useUpdateCauseMutation();
@@ -82,42 +88,56 @@ export const UpdateCauseForm = () => {
 	useEffect(() => {
 		if (causesResponse?.cause) {
 			setTags(causesResponse.cause.tags || []);
+			setImageUrl(causesResponse.cause.imageUrl || "");
 
 			// Set acceptance type based on cause data
 			if (causesResponse.cause.acceptanceType) {
 				setAcceptanceType(causesResponse.cause.acceptanceType);
 			} else if (causesResponse.cause.acceptedDonationTypes) {
 				// If no acceptanceType but has acceptedDonationTypes, infer from them
-				const hasMoneyType = causesResponse.cause.acceptedDonationTypes.includes(DonationType.MONEY);
+				const hasMoneyType =
+					causesResponse.cause.acceptedDonationTypes.includes(
+						DonationType.MONEY
+					);
 				const hasItemTypes = causesResponse.cause.acceptedDonationTypes.some(
-					type => type !== DonationType.MONEY
+					(type) => type !== DonationType.MONEY
 				);
 
 				if (hasMoneyType && hasItemTypes) {
-					setAcceptanceType('both');
+					setAcceptanceType("both");
 				} else if (hasMoneyType) {
-					setAcceptanceType('money');
+					setAcceptanceType("money");
 				} else if (hasItemTypes) {
-					setAcceptanceType('items');
+					setAcceptanceType("items");
 				}
 			}
 
 			// Set donation items if available
-			if (causesResponse.cause.donationItems && causesResponse.cause.donationItems.length > 0) {
+			if (
+				causesResponse.cause.donationItems &&
+				causesResponse.cause.donationItems.length > 0
+			) {
 				setDonationItems(causesResponse.cause.donationItems);
 			} else if (causesResponse.cause.acceptedDonationTypes) {
 				// If no donationItems but has acceptedDonationTypes, map them to items
 				const itemTypes = causesResponse.cause.acceptedDonationTypes
-					.filter(type => type !== DonationType.MONEY)
-					.map(type => {
+					.filter((type) => type !== DonationType.MONEY)
+					.map((type) => {
 						switch (type) {
-							case DonationType.CLOTHES: return "Clothes";
-							case DonationType.BOOKS: return "Books";
-							case DonationType.TOYS: return "Toys";
-							case DonationType.FOOD: return "Food";
-							case DonationType.FURNITURE: return "Furniture";
-							case DonationType.HOUSEHOLD: return "Household Items";
-							default: return type.charAt(0) + type.slice(1).toLowerCase();
+							case DonationType.CLOTHES:
+								return "Clothes";
+							case DonationType.BOOKS:
+								return "Books";
+							case DonationType.TOYS:
+								return "Toys";
+							case DonationType.FOOD:
+								return "Food";
+							case DonationType.FURNITURE:
+								return "Furniture";
+							case DonationType.HOUSEHOLD:
+								return "Household Items";
+							default:
+								return type.charAt(0) + type.slice(1).toLowerCase();
 						}
 					});
 				setDonationItems(itemTypes);
@@ -148,10 +168,10 @@ export const UpdateCauseForm = () => {
 	};
 
 	const handleAcceptanceTypeChange = (event: SelectChangeEvent<string>) => {
-		const value = event.target.value as 'money' | 'items' | 'both';
+		const value = event.target.value as "money" | "items" | "both";
 		setAcceptanceType(value);
 		// Reset donation items if changing to money-only
-		if (value === 'money') {
+		if (value === "money") {
 			setDonationItems([]);
 		}
 	};
@@ -161,34 +181,39 @@ export const UpdateCauseForm = () => {
 		setDonationItems(value);
 	};
 
+	const handleImageUpload = (newImageUrl: string, publicId: string) => {
+		setImageUrl(newImageUrl);
+		setImagePublicId(publicId);
+	};
+
 	const handleSubmit = async (values: UpdateCauseBody) => {
 		try {
 			// Convert donation items to DonationType enum values
 			const acceptedDonationTypes: DonationType[] = [];
 
-			if (acceptanceType === 'money' || acceptanceType === 'both') {
+			if (acceptanceType === "money" || acceptanceType === "both") {
 				acceptedDonationTypes.push(DonationType.MONEY);
 			}
 
-			if (acceptanceType === 'items' || acceptanceType === 'both') {
-				donationItems.forEach(item => {
+			if (acceptanceType === "items" || acceptanceType === "both") {
+				donationItems.forEach((item) => {
 					switch (item.toUpperCase()) {
-						case 'CLOTHES':
+						case "CLOTHES":
 							acceptedDonationTypes.push(DonationType.CLOTHES);
 							break;
-						case 'BOOKS':
+						case "BOOKS":
 							acceptedDonationTypes.push(DonationType.BOOKS);
 							break;
-						case 'TOYS':
+						case "TOYS":
 							acceptedDonationTypes.push(DonationType.TOYS);
 							break;
-						case 'FOOD':
+						case "FOOD":
 							acceptedDonationTypes.push(DonationType.FOOD);
 							break;
-						case 'FURNITURE':
+						case "FURNITURE":
 							acceptedDonationTypes.push(DonationType.FURNITURE);
 							break;
-						case 'HOUSEHOLD ITEMS':
+						case "HOUSEHOLD ITEMS":
 							acceptedDonationTypes.push(DonationType.HOUSEHOLD);
 							break;
 						default:
@@ -200,10 +225,11 @@ export const UpdateCauseForm = () => {
 
 			const body = {
 				...values,
+				imageUrl: imageUrl || values.imageUrl,
 				tags,
 				acceptanceType,
-				donationItems: acceptanceType !== 'money' ? donationItems : [],
-				acceptedDonationTypes
+				donationItems: acceptanceType !== "money" ? donationItems : [],
+				acceptedDonationTypes,
 			};
 
 			await updateCause({ id, body }).unwrap();
@@ -266,21 +292,20 @@ export const UpdateCauseForm = () => {
 								/>
 							</Grid>
 
-							<Grid item xs={12} md={6}>
-								<Field
-									as={TextField}
-									fullWidth
-									name="imageUrl"
-									label="Image URL"
-									variant="outlined"
-									error={touched.imageUrl && !!errors.imageUrl}
-									helperText={<ErrorMessage name="imageUrl" />}
+							<Grid item xs={12}>
+								<CloudinaryImageUpload
+									onImageUpload={handleImageUpload}
+									currentImageUrl={imageUrl}
+									label="Cause Image"
+									helperText="Upload a new image for your cause (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
 								/>
 							</Grid>
 
 							<Grid item xs={12}>
 								<FormControl fullWidth>
-									<InputLabel id="acceptance-type-label">Acceptance Type</InputLabel>
+									<InputLabel id="acceptance-type-label">
+										Acceptance Type
+									</InputLabel>
 									<Select
 										labelId="acceptance-type-label"
 										id="acceptance-type"
@@ -295,10 +320,12 @@ export const UpdateCauseForm = () => {
 								</FormControl>
 							</Grid>
 
-							{acceptanceType !== 'money' && (
+							{acceptanceType !== "money" && (
 								<Grid item xs={12}>
 									<FormControl fullWidth>
-										<InputLabel id="donation-items-label">Donation Items</InputLabel>
+										<InputLabel id="donation-items-label">
+											Donation Items
+										</InputLabel>
 										<Select
 											labelId="donation-items-label"
 											id="donation-items"
@@ -306,11 +333,13 @@ export const UpdateCauseForm = () => {
 											value={donationItems}
 											onChange={handleDonationItemsChange}
 											input={<OutlinedInput label="Donation Items" />}
-											renderValue={(selected) => selected.join(', ')}
+											renderValue={(selected) => selected.join(", ")}
 										>
 											{DONATION_ITEMS.map((item) => (
 												<MenuItem key={item} value={item}>
-													<Checkbox checked={donationItems.indexOf(item) > -1} />
+													<Checkbox
+														checked={donationItems.indexOf(item) > -1}
+													/>
 													<ListItemText primary={item} />
 												</MenuItem>
 											))}

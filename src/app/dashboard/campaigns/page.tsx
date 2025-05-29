@@ -286,9 +286,16 @@ const CampaignsPage = () => {
 										{/* Campaign Image */}
 										<CardMedia
 											component="img"
-											height="140"
-											image={campaign.imageUrl || "/campaign-placeholder.jpg"}
+											height="200"
+											image={
+												campaign.imageUrl ||
+												"https://placehold.co/600x400?text=Campaign"
+											}
 											alt={campaign.title}
+											sx={{
+												objectFit: "cover",
+												backgroundColor: "#f5f5f5",
+											}}
 										/>
 
 										{/* Status Chip */}
