@@ -69,10 +69,9 @@ const CausesPage = () => {
 	>("all");
 	const [page, setPage] = useState(1);
 
-	// Query parameters for filters
+	// Query parameters for filters (remove search from API call)
 	const filterParams = {
 		page,
-		search: searchTerm,
 		donationType:
 			selectedDonationType !== "all" ? selectedDonationType : undefined,
 		tags: selectedTag ? [selectedTag] : undefined,
@@ -97,7 +96,6 @@ const CausesPage = () => {
 		skip: user?.role !== "donor",
 	});
 
-	console.log("activeCampaignCausesData", activeCampaignCausesData);
 	// Determine which data to use based on user role
 	const causesData =
 		user?.role === "organization"
@@ -107,6 +105,16 @@ const CausesPage = () => {
 		user?.role === "organization" ? isLoadingOrgCauses : isLoadingActiveCauses;
 	const error =
 		user?.role === "organization" ? orgCausesError : activeCausesError;
+
+	// Client-side filtering for search (similar to organization page)
+	const filteredCauses = causesData?.causes?.filter(
+		(cause: Cause) =>
+			cause.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			cause.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			cause.tags?.some((tag) =>
+				tag?.toLowerCase().includes(searchTerm.toLowerCase())
+			)
+	);
 
 	const handleViewCause = (id: string) => {
 		router.push(`/dashboard/causes/${id}`);
@@ -119,11 +127,6 @@ const CausesPage = () => {
 
 	const handleTagSelect = (tag: string) => {
 		setSelectedTag(tag === selectedTag ? "" : tag);
-		setPage(1);
-	};
-
-	const handleSearch = (e: React.FormEvent) => {
-		e.preventDefault();
 		setPage(1);
 	};
 
@@ -155,43 +158,41 @@ const CausesPage = () => {
 			<Box mb={4}>
 				<Box display="flex" flexWrap="wrap" gap={3}>
 					<Box flexGrow={1} minWidth={{ xs: "100%", md: 400 }}>
-						<form onSubmit={handleSearch}>
-							<TextField
-								fullWidth
-								placeholder="Search causes..."
-								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								InputProps={{
-									startAdornment: (
-										<InputAdornment position="start">
-											<SearchIcon sx={{ color: "#287068" }} />
-										</InputAdornment>
-									),
-									sx: {
-										backgroundColor: "white",
-										borderRadius: 3,
-										"& .MuiOutlinedInput-root": {
-											"& fieldset": {
-												borderColor: "#e0e0e0",
-												borderWidth: 2,
-											},
-											"&:hover fieldset": {
-												borderColor: "#287068",
-											},
-											"&.Mui-focused fieldset": {
-												borderColor: "#287068",
-											},
-										},
+						<TextField
+							fullWidth
+							placeholder="Search causes by title, description, or tags..."
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchIcon sx={{ color: "#287068" }} />
+									</InputAdornment>
+								),
+								sx: {
+									backgroundColor: "white",
+									borderRadius: 3,
+								},
+							}}
+							sx={{
+								boxShadow: "0 2px 8px rgba(40, 112, 104, 0.1)",
+								"& .MuiInputBase-input": {
+									py: 1.5,
+								},
+								"& .MuiOutlinedInput-root": {
+									"& fieldset": {
+										borderColor: "#e0e0e0",
+										borderWidth: 2,
 									},
-								}}
-								sx={{
-									boxShadow: "0 2px 8px rgba(40, 112, 104, 0.1)",
-									"& .MuiInputBase-input": {
-										py: 1.5,
+									"&:hover fieldset": {
+										borderColor: "#287068",
 									},
-								}}
-							/>
-						</form>
+									"&.Mui-focused fieldset": {
+										borderColor: "#287068",
+									},
+								},
+							}}
+						/>
 					</Box>
 					<Box width={{ xs: "100%", md: 200 }}>
 						<Button
@@ -375,7 +376,7 @@ const CausesPage = () => {
 				>
 					Failed to load causes. Please try again later.
 				</Alert>
-			) : causesData?.causes.length === 0 ? (
+			) : filteredCauses?.length === 0 ? (
 				<Alert
 					severity="info"
 					sx={{
@@ -400,7 +401,7 @@ const CausesPage = () => {
 						gap: 3,
 					}}
 				>
-					{causesData?.causes.map((cause: Cause) => {
+					{filteredCauses?.map((cause: Cause) => {
 						const progress = Math.min(
 							100,
 							Math.round((cause.raisedAmount / cause.targetAmount) * 100)
@@ -646,8 +647,8 @@ const CausesPage = () => {
 				</Box>
 			)}
 
-			{/* Pagination */}
-			{causesData && causesData.totalPages > 1 && (
+			{/* Pagination - Update to use filteredCauses */}
+			{causesData && causesData.totalPages > 1 && !searchTerm && (
 				<Box display="flex" justifyContent="center" mt={5} gap={3}>
 					<Button
 						disabled={page === 1}

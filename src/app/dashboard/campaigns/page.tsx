@@ -13,7 +13,6 @@ import {
 	Edit as EditIcon,
 	Groups as GroupsIcon,
 	Search as SearchIcon,
-	Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import {
 	Alert,
@@ -125,10 +124,6 @@ const CampaignsPage = () => {
 		router.push(`/dashboard/campaigns/${id}/edit`);
 	};
 
-	const handleViewCampaign = (id: string) => {
-		router.push(`/dashboard/campaigns/${id}`);
-	};
-
 	const handleDeleteClick = (id: string) => {
 		setSelectedCampaignId(id);
 		setDeleteDialogOpen(true);
@@ -147,16 +142,6 @@ const CampaignsPage = () => {
 			}
 		}
 	};
-
-	if (!user || user.role !== "organization") {
-		return (
-			<Box p={2}>
-				<Alert severity="error">
-					Access Denied. Only organizations can view campaigns.
-				</Alert>
-			</Box>
-		);
-	}
 
 	return (
 		<Box sx={{ backgroundColor: "#f5f7fa", minHeight: "100vh" }}>
@@ -308,7 +293,7 @@ const CampaignsPage = () => {
 													bottom: 0,
 													backgroundColor: "rgba(0, 0, 0, 0.1)",
 													zIndex: 1,
-												}
+												},
 											}}
 										/>
 
@@ -409,13 +394,6 @@ const CampaignsPage = () => {
 
 										{/* Actions */}
 										<CardActions sx={{ justifyContent: "space-between" }}>
-											<Button
-												size="small"
-												startIcon={<VisibilityIcon />}
-												onClick={() => handleViewCampaign(campaignId)}
-											>
-												View
-											</Button>
 											<Button
 												size="small"
 												startIcon={<EditIcon />}

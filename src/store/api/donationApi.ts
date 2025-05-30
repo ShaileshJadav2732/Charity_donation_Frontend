@@ -1,7 +1,7 @@
 import {
 	ApiResponse,
-	Donation,
 	DonationFormData,
+	DonationQueryParams,
 	DonationResponse,
 	DonorDonationsResponse,
 	UpdateDonationStatusRequest,
@@ -11,34 +11,23 @@ import apiSlice from "./apiSlice";
 
 export const donationApi = apiSlice.injectEndpoints({
 	endpoints: (builder) => ({
-		createDonation: builder.mutation<
-			{ success: boolean; message: string; data: Donation },
-			DonationFormData
-		>({
-			query: (data) => {
-				console.log("Creating donation with data:", data);
-				return {
-					url: "/donations",
-					method: "POST",
-					body: data,
-				};
-			},
-			transformErrorResponse: (response: any) => {
-				console.error("Donation creation error response:", response);
-				if (response.status === 401) {
-					console.error("Authentication failed - user not authenticated");
-				}
-				return response;
-			},
+		createDonation: builder.mutation<void, DonationFormData>({
+			query: (data) => ({
+				url: "/donations",
+				method: "POST",
+				body: data,
+			}),
 		}),
-		getDonationById: builder.query<Donation, string>({
+		getDonations: builder.query<DonationFormData[], void>({
+			query: () => "/donations",
+		}),
+		getDonationById: builder.query<DonationFormData, string>({
 			query: (id) => `/donations/${id}`,
 		}),
-
 		// Get donations for a specific organization
 		getOrganizationDonations: builder.query<
 			DonationResponse,
-			{ organizationId: string; params?: Record<string, unknown> }
+			{ organizationId: string; params?: Record<string, any> }
 		>({
 			query: ({ organizationId, params }) => ({
 				url: `/donations/organization/${organizationId}`,
@@ -61,17 +50,64 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "GET",
 			}),
 		}),
-		getItemDonationAnalytics: builder.query<ApiResponse<unknown>, void>({
+		getItemDonationAnalytics: builder.query<ApiResponse<any>, void>({
 			query: () => ({
 				url: "/donations/items/analytics",
 				method: "GET",
 			}),
+			transformResponse: (response: ApiResponse<any>) => {
+				console.log("Item donation analytics response:", response);
+				return response;
+			},
+			transformErrorResponse: (error) => {
+				console.error("Error fetching item donation analytics:", error);
+				return error;
+			},
 		}),
-		getItemDonationTypeAnalytics: builder.query<ApiResponse<unknown>, string>({
+		getItemDonationTypeAnalytics: builder.query<ApiResponse<any>, string>({
 			query: (type) => ({
 				url: `/donations/items/${type}/analytics`,
 				method: "GET",
 			}),
+			transformResponse: (response: ApiResponse<any>) => {
+				console.log(
+					`Item donation analytics for type ${response.data?.type}:`,
+					response
+				);
+				return response;
+			},
+			transformErrorResponse: (error, meta) => {
+				console.error(
+					`Error fetching item donation analytics for type ${meta?.arg}:`,
+					error
+				);
+				return error;
+			},
+		}),
+
+		findOrganizationPendingDonations: builder.query<
+			DonationResponse,
+			DonationQueryParams
+		>({
+			query: ({
+				organizationId,
+				status = "PENDING",
+				page = 1,
+				limit = 10,
+			}) => ({
+				url: `/donations/organization/${organizationId}`,
+				params: { status, page, limit },
+			}),
+			providesTags: (result) =>
+				result
+					? [
+							...result.data.map(({ _id }) => ({
+								type: "Donations" as const,
+								id: _id,
+							})),
+							{ type: "Donations", id: "LIST" },
+					  ]
+					: [{ type: "Donations", id: "LIST" }],
 		}),
 
 		updateDonationStatus: builder.mutation<
@@ -83,7 +119,7 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "PATCH",
 				body: { status },
 			}),
-			invalidatesTags: ["Donations"],
+			invalidatesTags: ["Donations"], // Invalidate cache to refresh donation list
 		}),
 
 		// Mark donation as received with photo upload
@@ -91,46 +127,35 @@ export const donationApi = apiSlice.injectEndpoints({
 			UpdateDonationStatusResponse,
 			{ donationId: string; photo: File }
 		>({
-			queryFn: async ({ donationId, photo }, { getState }) => {
-				try {
-					// Create a new FormData instance
-					const formData = new FormData();
-					formData.append("photo", photo);
+			query: ({ donationId, photo }) => {
+				// Create a new FormData instance
+				const formData = new FormData();
 
-					console.log("Sending photo:", photo.name, photo.type, photo.size);
+				// Append the photo with the correct field name
+				formData.set("photo", photo);
 
-					// Get the token from state
-					const state = getState() as { auth: { token: string | null } };
-					const token = state.auth.token;
+				console.log("Sending photo:", photo.name, photo.type, photo.size);
 
-					// Create headers manually
-					const headers: HeadersInit = {};
-					if (token) {
-						headers["Authorization"] = `Bearer ${token}`;
-					}
-					// Don't set Content-Type - let the browser set it for FormData
-
-					const response = await fetch(
-						`${
-							process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
-						}/donations/${donationId}/received`,
-						{
-							method: "PATCH",
-							headers,
-							body: formData,
-						}
-					);
-
-					if (!response.ok) {
-						const errorData = await response.json();
-						return { error: errorData };
-					}
-
-					const data = await response.json();
-					return { data };
-				} catch {
-					return { error: { message: "Network error occurred" } };
-				}
+				return {
+					url: `/donations/${donationId}/received`,
+					method: "PATCH",
+					// Don't set Content-Type header, let the browser set it with the boundary
+					headers: {
+						// Remove Content-Type to let browser set it with boundary
+					},
+					body: formData,
+					formData: true,
+				};
+			},
+			// Add transformErrorResponse to better handle errors
+			transformErrorResponse: (response: { status: number; data: any }) => {
+				console.log("Error response from API:", response);
+				// Return a more structured error object
+				return {
+					status: response.status,
+					message: response.data?.message || "Unknown error occurred",
+					data: response.data || {},
+				};
 			},
 			invalidatesTags: ["Donations"],
 		}),
@@ -146,96 +171,21 @@ export const donationApi = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Donations"],
 		}),
-
-		// Mark donation as confirmed with receipt upload (for organizations)
-		markDonationAsConfirmed: builder.mutation<
-			{
-				success: boolean;
-				message: string;
-				receiptUrl: string;
-				emailStatus: string;
-				notificationStatus: string;
-				pdfReceiptUrl?: string;
-			},
-			{ donationId: string; receiptFile: File }
-		>({
-			queryFn: async ({ donationId, receiptFile }, { getState }) => {
-				try {
-					// Create a new FormData instance
-					const formData = new FormData();
-					formData.append("receipt", receiptFile);
-
-					console.log(
-						"Sending receipt:",
-						receiptFile.name,
-						receiptFile.type,
-						receiptFile.size
-					);
-
-					// Get the token from state
-					const state = getState() as { auth: { token: string | null } };
-					const token = state.auth.token;
-
-					// Create headers manually
-					const headers: HeadersInit = {};
-					if (token) {
-						headers["Authorization"] = `Bearer ${token}`;
-					}
-					// Don't set Content-Type - let the browser set it for FormData
-
-					// Create an AbortController for timeout
-					const controller = new AbortController();
-					const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-					const response = await fetch(
-						`${
-							process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
-						}/donations/${donationId}/confirmed`,
-						{
-							method: "PATCH",
-							headers,
-							body: formData,
-							signal: controller.signal,
-						}
-					);
-
-					clearTimeout(timeoutId);
-
-					if (!response.ok) {
-						const errorData = await response.json();
-						console.error("API Error Response:", errorData);
-						return { error: errorData };
-					}
-
-					const data = await response.json();
-					console.log("API Success Response:", data);
-					return { data };
-				} catch (error) {
-					console.error("Network/Fetch Error:", error);
-					if (error instanceof Error && error.name === "AbortError") {
-						return {
-							error: { message: "Request timed out. Please try again." },
-						};
-					}
-					return { error: { message: "Network error occurred" } };
-				}
-			},
-			invalidatesTags: ["Donations"],
-		}),
 	}),
 	overrideExisting: true,
 });
 
 export const {
 	useCreateDonationMutation,
+	useGetDonationsQuery,
 	useGetDonationByIdQuery,
 	useGetOrganizationDonationsQuery,
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
 	useGetItemDonationAnalyticsQuery,
 	useGetItemDonationTypeAnalyticsQuery,
+	useFindOrganizationPendingDonationsQuery,
 	useUpdateDonationStatusMutation,
 	useMarkDonationAsReceivedMutation,
 	useConfirmDonationReceiptMutation,
-	useMarkDonationAsConfirmedMutation,
 } = donationApi;

@@ -2,14 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import { use } from "react";
 export default function ItemDonationTypeRedirect({
 	params,
 }: {
-	params: { type: string };
+	params: Promise<{ type: string }>;
 }) {
 	const router = useRouter();
-	const { type } = params;
+	const { type } = use(params);
 
 	useEffect(() => {
 		// Redirect to the new analytics route with the type parameter

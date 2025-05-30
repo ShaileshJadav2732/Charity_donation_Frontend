@@ -1,53 +1,52 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
+	useDeleteCauseMutation,
+	useGetCausesQuery,
+} from "@/store/api/causeApi";
+import { RootState } from "@/store/store";
+import { Cause } from "@/types/cause";
+import { DonationType } from "@/types/donation";
+import {
+	Add as AddIcon,
+	Bloodtype as BloodIcon,
+	MenuBook as BooksIcon,
+	Checkroom as ClothesIcon,
+	Delete as DeleteIcon,
+	Restaurant as FoodIcon,
+	Chair as FurnitureIcon,
+	Home as HouseholdIcon,
+	AttachMoney as MoneyIcon,
+	Category as OtherIcon,
+	Search as SearchIcon,
+	GpsFixed as Target,
+	Toys as ToysIcon,
+} from "@mui/icons-material";
+import {
+	Alert,
 	Box,
 	Button,
 	Card,
-	CardContent,
 	CardActions,
-	Typography,
+	CardContent,
 	Chip,
-	TextField,
-	Alert,
 	CircularProgress,
-	Paper,
-	Stack,
-	IconButton,
 	Dialog,
-	DialogTitle,
+	DialogActions,
 	DialogContent,
 	DialogContentText,
-	DialogActions,
+	DialogTitle,
+	IconButton,
 	LinearProgress,
+	Paper,
+	Stack,
+	TextField,
+	Typography,
 } from "@mui/material";
-import {
-	Add as AddIcon,
-	Edit as EditIcon,
-	Delete as DeleteIcon,
-	Search as SearchIcon,
-	AttachMoney as MoneyIcon,
-	Checkroom as ClothesIcon,
-	Bloodtype as BloodIcon,
-	Restaurant as FoodIcon,
-	Toys as ToysIcon,
-	MenuBook as BooksIcon,
-	Chair as FurnitureIcon,
-	Home as HouseholdIcon,
-	Category as OtherIcon,
-	GpsFixed as Target,
-} from "@mui/icons-material";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import {
-	useGetCausesQuery,
-	useDeleteCauseMutation,
-} from "@/store/api/causeApi";
-import { Cause } from "@/types/cause";
-import { DonationType } from "@/types/donation";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { toast } from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 const DonationTypeIcons = {
 	[DonationType.MONEY]: MoneyIcon,
@@ -77,8 +76,13 @@ const CausesPage = () => {
 
 	const [deleteCause] = useDeleteCauseMutation();
 
-	const filteredCauses = causesData?.causes?.filter((cause: Cause) =>
-		cause.title.toLowerCase().includes(searchTerm.toLowerCase())
+	const filteredCauses = causesData?.causes?.filter(
+		(cause: Cause) =>
+			cause.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			cause.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			cause.tags?.some((tag) =>
+				tag?.toLowerCase().includes(searchTerm.toLowerCase())
+			)
 	);
 
 	const handleCreateCause = () => {
@@ -248,7 +252,7 @@ const CausesPage = () => {
 							backgroundColor: "#fafafa",
 						}}
 					>
-						<Target size={48} color="#ccc" style={{ marginBottom: 16 }} />
+						<Target sx={{ fontSize: 48, color: "#ccc", mb: 2 }} />
 						<Typography variant="h6" color="text.secondary" gutterBottom>
 							No causes found
 						</Typography>

@@ -92,9 +92,9 @@ const DONATION_ITEMS = Object.keys(DONATION_ITEMS_MAP);
 const CreateCausePage = () => {
 	const router = useRouter();
 	const { user } = useSelector((state: RootState) => state.auth);
-	const [createCause, { isLoading, error }] = useCreateCauseMutation();
 
-	// Removed campaign-related hooks as causes are now created independently
+	// Add the missing API hook
+	const [createCause, { isLoading }] = useCreateCauseMutation();
 
 	const [formData, setFormData] = useState<FormData>({
 		title: "",
@@ -105,7 +105,6 @@ const CreateCausePage = () => {
 		acceptanceType: "money",
 		donationItems: [],
 	});
-	const [imagePublicId, setImagePublicId] = useState<string>("");
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
@@ -149,12 +148,11 @@ const CreateCausePage = () => {
 		}));
 	};
 
-	const handleImageUpload = (imageUrl: string, publicId: string) => {
+	const handleImageUpload = (imageUrl: string) => {
 		setFormData((prev) => ({
 			...prev,
 			imageUrl,
 		}));
-		setImagePublicId(publicId);
 	};
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -163,7 +161,6 @@ const CreateCausePage = () => {
 		try {
 			// Make sure we have an organization ID
 			if (!user || !user.id) {
-				console.error("No organization ID found");
 				toast.error("Organization ID not found. Please try logging in again.");
 				return;
 			}
@@ -174,54 +171,44 @@ const CreateCausePage = () => {
 				return;
 			}
 
-			const payload = {
+			// Validate target amount for money and both acceptance types
+			if (formData.acceptanceType !== "items") {
+				if (!formData.targetAmount || parseFloat(formData.targetAmount) <= 0) {
+					toast.error("Please enter a valid target amount greater than 0.");
+					return;
+				}
+			}
+
+			// Validate donation items for items and both acceptance types
+			if (formData.acceptanceType !== "money") {
+				if (!formData.donationItems || formData.donationItems.length === 0) {
+					toast.error("Please select at least one donation item.");
+					return;
+				}
+			}
+
+			// Prepare the cause data
+			const causeData = {
 				title: formData.title,
 				description: formData.description,
-				targetAmount: parseFloat(formData.targetAmount),
+				targetAmount:
+					formData.acceptanceType !== "items"
+						? parseFloat(formData.targetAmount)
+						: 0,
 				imageUrl: formData.imageUrl,
 				tags: formData.tags,
-				organizationId: user.id,
 				acceptanceType: formData.acceptanceType,
 				donationItems:
 					formData.acceptanceType !== "money" ? formData.donationItems : [],
-				// Convert accepted donation types based on acceptanceType
-				acceptedDonationTypes:
-					formData.acceptanceType === "money"
-						? [DonationType.MONEY]
-						: formData.acceptanceType === "items"
-						? [
-								...new Set(
-									formData.donationItems.map(
-										(item) => DONATION_ITEMS_MAP[item] || DonationType.OTHER
-									)
-								),
-						  ]
-						: [
-								DonationType.MONEY,
-								...new Set(
-									formData.donationItems.map(
-										(item) => DONATION_ITEMS_MAP[item] || DonationType.OTHER
-									)
-								),
-						  ],
+				organizationId: user.id,
 			};
 
-			console.log("Creating cause with payload:", payload);
-
-			// Create the cause
-			const response = await createCause(payload).unwrap();
-			console.log("Cause created successfully:", response);
-
-			// Show success message
+			await createCause(causeData).unwrap();
 			toast.success(
 				"Cause created successfully! You can add it to campaigns later from the causes page or campaign management."
 			);
-
-			// Navigate back to causes page
 			router.push("/dashboard/causes");
 		} catch (apiError: unknown) {
-			console.error("API Error:", apiError);
-			// Try to extract detailed error message
 			const errorMessage =
 				typeof apiError === "object" &&
 				apiError !== null &&
@@ -282,18 +269,38 @@ const CreateCausePage = () => {
 							required
 						/>
 
-						<TextField
-							fullWidth
-							label="Target Amount"
-							name="targetAmount"
-							type="number"
-							value={formData.targetAmount}
-							onChange={handleChange}
-							required
-							InputProps={{
-								startAdornment: <span>$</span>,
-							}}
-						/>
+						{/* Target Amount - only show for money or both acceptance types */}
+						{formData.acceptanceType !== "items" && (
+							<TextField
+								fullWidth
+								label="Target Amount"
+								name="targetAmount"
+								type="number"
+								value={formData.targetAmount}
+								onChange={handleChange}
+								required
+								slotProps={{
+									input: {
+										startAdornment: <span>₹</span>,
+									},
+								}}
+								helperText="Set a monetary target for this cause"
+							/>
+						)}
+
+						{/* Optional target for items-only causes */}
+						{formData.acceptanceType === "items" && (
+							<TextField
+								fullWidth
+								label="Target Description (Optional)"
+								name="targetAmount"
+								type="text"
+								value={formData.targetAmount}
+								onChange={handleChange}
+								placeholder="e.g., 100 units of food, 50 books, etc."
+								helperText="Describe your target goal for item donations (optional)"
+							/>
+						)}
 
 						<CloudinaryImageUpload
 							onImageUpload={handleImageUpload}
@@ -390,12 +397,6 @@ const CreateCausePage = () => {
 								))}
 							</Box>
 						</Box>
-
-						{error && (
-							<Alert severity="error">
-								Failed to create cause. Please try again.
-							</Alert>
-						)}
 
 						<Box display="flex" gap={2} justifyContent="flex-end">
 							<Button

@@ -21,7 +21,6 @@ export const store = configureStore({
 		[uploadApi.reducerPath]: uploadApi.reducer,
 		[causeApi.reducerPath]: causeApi.reducer,
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
-
 		[organizationApi.reducerPath]: organizationApi.reducer,
 		[paymentApi.reducerPath]: paymentApi.reducer,
 		[notificationApi.reducerPath]: notificationApi.reducer,

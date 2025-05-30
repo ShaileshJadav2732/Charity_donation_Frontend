@@ -125,12 +125,6 @@ export default function DonationAnalyticsPage() {
 
 	const { donationsByType = [], monthlyTrend = [], topCauses = [] } = analytics;
 
-	console.log("Donation analytics:", {
-		donationsByType,
-		monthlyTrend,
-		topCauses,
-	});
-
 	return (
 		<div className="max-w-7xl mx-auto">
 			<div className="mt-8 space-y-6">

@@ -3,8 +3,6 @@
 import { Donation } from "@/types/donation";
 import React from "react";
 
-import { getReceiptImageUrl } from "@/utils/url";
-import { toast } from "react-hot-toast";
 import {
 	FaCalendarAlt,
 	FaCheckCircle,
@@ -52,17 +50,6 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 				return <FaExclamationTriangle className="h-4 w-4" />;
 			default:
 				return <FaClock className="h-4 w-4" />;
-		}
-	};
-
-	const handleReceiptDownload = (url: string, type: "photo" | "pdf") => {
-		try {
-			window.open(getReceiptImageUrl(url), "_blank");
-			toast.success(
-				`${type === "pdf" ? "PDF receipt" : "Photo"} opened successfully`
-			);
-		} catch {
-			toast.error(`Failed to open ${type === "pdf" ? "PDF receipt" : "photo"}`);
 		}
 	};
 
@@ -125,9 +112,6 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 						<div className="flex items-center gap-2">
 							{donation.receiptImage && (
 								<button
-									onClick={() =>
-										handleReceiptDownload(donation.receiptImage!, "photo")
-									}
 									className="inline-flex items-center px-3 py-2 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
 									title="View donation photo"
 								>
@@ -137,9 +121,6 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 							)}
 							{donation.pdfReceiptUrl && (
 								<button
-									onClick={() =>
-										handleReceiptDownload(donation.pdfReceiptUrl!, "pdf")
-									}
 									className="inline-flex items-center px-3 py-2 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
 									title="Download PDF receipt"
 								>

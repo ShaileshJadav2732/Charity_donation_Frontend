@@ -59,7 +59,7 @@ export const paymentApi = createApi({
 				method: "POST",
 				body: JSON.stringify({
 					...data,
-					currency: 'usd'
+					// Remove currency override - let backend handle it
 				}),
 				headers: {
 					"Content-Type": "application/json",

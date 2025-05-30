@@ -1,5 +1,12 @@
 "use client";
 
+import { DonationType } from "@/types/donation";
+import {
+	CauseWithDetails,
+	FormSubmissionHandler,
+	ImprovedDonationFormValues,
+	SelectChangeEvent,
+} from "@/types/forms";
 import {
 	ArrowBack,
 	ArrowForward,
@@ -18,9 +25,11 @@ import {
 	Divider,
 	FormControl,
 	FormControlLabel,
+	MenuItem,
 	Paper,
 	Radio,
 	RadioGroup,
+	Select,
 	Step,
 	StepLabel,
 	Stepper,
@@ -29,16 +38,8 @@ import {
 } from "@mui/material";
 import { useFormik } from "formik";
 import React, { useState } from "react";
-import * as Yup from "yup";
-import PaymentWrapper from "../payment/PaymentWrapper";
 import { toast } from "react-hot-toast";
-import {
-	CauseWithDetails,
-	ImprovedDonationFormValues,
-	FormSubmissionHandler,
-	SelectChangeEvent,
-} from "@/types/forms";
-import { DonationType } from "@/types/donation";
+import PaymentWrapper from "../payment/PaymentWrapper";
 
 interface ImprovedDonationFormProps {
 	cause: CauseWithDetails;
@@ -62,13 +63,13 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 		DonationType.MONEY,
 	];
 	const canDonateMoney = acceptedDonationTypes.includes(DonationType.MONEY);
-	const canDonateItems = acceptedDonationTypes.some(
-		(type) => type !== DonationType.MONEY
+	const canDonateItems: boolean = acceptedDonationTypes.some(
+		(type: DonationType) => type !== DonationType.MONEY
 	);
 
 	// Filter available item types based on cause acceptance
-	const availableItemTypes = acceptedDonationTypes.filter(
-		(type) => type !== DonationType.MONEY
+	const availableItemTypes: DonationType[] = acceptedDonationTypes.filter(
+		(type: DonationType) => type !== DonationType.MONEY
 	);
 
 	const steps = [
@@ -105,11 +106,16 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 			if (isMonetary && !paymentCompleted) {
 				if (
 					!values.amount ||
+					Number(values.amount) < 50 ||
 					!values.description ||
 					!values.contactPhone ||
 					!values.contactEmail
 				) {
-					toast.error("Please fill in all required fields");
+					if (Number(values.amount) < 50) {
+						toast.error("Minimum donation amount is ₹50");
+					} else {
+						toast.error("Please fill in all required fields");
+					}
 					return;
 				}
 				setShowPayment(true);
@@ -160,7 +166,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				if (isMonetary) {
 					return (
 						formik.values.amount &&
-						Number(formik.values.amount) > 0 &&
+						Number(formik.values.amount) >= 50 &&
 						formik.values.description
 					);
 				} else {
@@ -341,10 +347,10 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 									<Box
 										sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}
 									>
-										{[10, 25, 50, 100, 250, 500].map((amount) => (
+										{[50, 100, 250, 500, 1000, 2500].map((amount) => (
 											<Chip
 												key={amount}
-												label={`$${amount}`}
+												label={`₹${amount}`}
 												onClick={() => formik.setFieldValue("amount", amount)}
 												color={
 													Number(formik.values.amount) === amount
@@ -357,15 +363,18 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 									</Box>
 									<TextField
 										fullWidth
-										label="Custom Amount ($)"
+										label="Custom Amount (₹)"
 										name="amount"
 										type="number"
 										value={formik.values.amount}
 										onChange={formik.handleChange}
-										error={
-											formik.touched.amount && Boolean(formik.errors.amount)
+										helperText={
+											(formik.touched.amount && formik.errors.amount) ||
+											(formik.values.amount && Number(formik.values.amount) < 50
+												? "Minimum amount is ₹50"
+												: "")
 										}
-										helperText={formik.touched.amount && formik.errors.amount}
+										inputProps={{ min: 50 }}
 										sx={{ mb: 3 }}
 									/>
 								</Box>
@@ -423,7 +432,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 													}
 													displayEmpty
 												>
-													{availableItemTypes.map((type) => (
+													{availableItemTypes.map((type: DonationType) => (
 														<MenuItem key={type} value={type}>
 															{type.charAt(0) + type.slice(1).toLowerCase()}
 														</MenuItem>

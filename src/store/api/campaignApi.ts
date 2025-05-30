@@ -11,7 +11,7 @@ import { RootState } from "../store";
 export const campaignApi = createApi({
 	reducerPath: "campaignApi",
 	baseQuery: fetchBaseQuery({
-		baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+		baseUrl: process.env.NEXT_PUBLIC_API_URL,
 		prepareHeaders: (headers, { getState }) => {
 			// Get token from auth state
 			const token = (getState() as RootState).auth.token;
@@ -83,10 +83,6 @@ export const campaignApi = createApi({
 
 		createCampaign: builder.mutation<CampaignResponse, CreateCampaignBody>({
 			query: (body) => {
-				console.log(
-					"Campaign creation request payload:",
-					JSON.stringify(body, null, 2)
-				);
 				return {
 					url: "/campaigns",
 					method: "POST",
@@ -107,11 +103,6 @@ export const campaignApi = createApi({
 			{ id: string; body: UpdateCampaignBody }
 		>({
 			query: ({ id, body }) => {
-				console.log("Update campaign request:", {
-					url: `/campaigns/${id}`,
-					method: "PATCH",
-					body,
-				});
 				return {
 					url: `/campaigns/${id}`,
 					method: "PATCH",
@@ -125,8 +116,6 @@ export const campaignApi = createApi({
 				};
 			},
 			invalidatesTags: (result, error, { id }) => {
-				console.log("Update campaign result:", result);
-				console.log("Update campaign error:", error);
 				return [{ type: "Campaign", id }];
 			},
 		}),

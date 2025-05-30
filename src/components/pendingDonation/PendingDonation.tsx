@@ -114,8 +114,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			// Force refetch to update the UI
 			await refetch();
 		} catch (error: unknown) {
-			console.error("Error approving donation:", error);
-
 			let errorMessage = "Unknown error occurred";
 			if (error && typeof error === "object") {
 				if (
@@ -154,7 +152,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 				return;
 			}
 
-			console.log("Selected file:", file.name, file.type, file.size);
 			setSelectedPhoto(file);
 
 			// Create a preview URL for the selected photo
@@ -189,21 +186,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		);
 
 		try {
-			console.log("Uploading photo for donation:", selectedDonation._id);
-			console.log(
-				"Photo details:",
-				selectedPhoto.name,
-				selectedPhoto.type,
-				selectedPhoto.size
-			);
-
-			const result = await markAsReceived({
-				donationId: selectedDonation._id,
-				photo: selectedPhoto,
-			});
-
-			console.log("Upload successful:", result);
-
 			// Dismiss loading toast and show success
 			toast.dismiss(loadingToast);
 			toast.success("Donation marked as received successfully");
@@ -214,8 +196,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			// Force refetch to update the UI
 			await refetch();
 		} catch (error: unknown) {
-			console.error("Error marking donation as received:", error);
-
 			// Dismiss loading toast
 			toast.dismiss(loadingToast);
 
@@ -317,23 +297,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		);
 
 		try {
-			console.log(
-				"Starting markAsConfirmed for donation:",
-				selectedDonation._id
-			);
-			console.log(
-				"Receipt file:",
-				selectedReceipt.name,
-				selectedReceipt.type,
-				selectedReceipt.size
-			);
-
 			const result = await markAsConfirmed({
 				donationId: selectedDonation._id,
 				receiptFile: selectedReceipt,
 			}).unwrap();
-
-			console.log("markAsConfirmed successful:", result);
 
 			toast.dismiss(loadingToast);
 			toast.success("✅ Donation marked as confirmed with receipt!");
@@ -348,7 +315,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			await refetch();
 		} catch (error: unknown) {
 			toast.dismiss(loadingToast);
-			console.error("Error marking donation as confirmed:", error);
 
 			// Extract error message more safely
 			let errorMessage = "Failed to mark donation as confirmed";

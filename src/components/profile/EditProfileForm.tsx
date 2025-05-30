@@ -95,7 +95,6 @@ export default function EditProfileForm({
 				}
 			}
 		} catch (error: unknown) {
-			console.error("Profile update error:", error);
 			const errorMessage =
 				error && typeof error === "object" && "data" in error
 					? (error.data as { message?: string })?.message ||

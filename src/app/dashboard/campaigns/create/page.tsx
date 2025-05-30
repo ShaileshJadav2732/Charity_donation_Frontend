@@ -85,12 +85,9 @@ const DONATION_TYPES = [
 const CreateCampaignPage = () => {
 	const router = useRouter();
 	const { user } = useSelector((state: RootState) => state.auth);
-	const [
-		createCampaign,
-		{ isLoading: isCreatingCampaign, error: campaignError },
-	] = useCreateCampaignMutation();
 	const [createCause, { isLoading: isCreatingCause, error: causeError }] =
 		useCreateCauseMutation();
+	const [createCampaign] = useCreateCampaignMutation();
 
 	const {
 		data: causesData,
@@ -261,7 +258,6 @@ const CreateCampaignPage = () => {
 
 		try {
 			if (!user || !user.id) {
-				console.error("No organization ID found");
 				toast.error("Organization ID is required");
 				return;
 			}
@@ -299,8 +295,7 @@ const CreateCampaignPage = () => {
 				handleCloseCreateCauseModal();
 				toast.success("Cause created successfully!");
 			}
-		} catch (error) {
-			console.error("Failed to create cause:", error);
+		} catch {
 			toast.error("Failed to create cause. Please try again.");
 		}
 	};
@@ -353,33 +348,23 @@ const CreateCampaignPage = () => {
 				throw new Error("User not found");
 			}
 
-			// Ensure organizations includes the current user's ID
-			const organizations = [user.id];
-
-			// Create payload
-			const payload = {
+			const campaignData = {
 				title: formData.title,
 				description: formData.description,
 				startDate: formData.startDate.toISOString(),
 				endDate: formData.endDate.toISOString(),
+				totalTargetAmount: parseFloat(formData.totalTargetAmount),
 				status: formData.status,
-				totalTargetAmount: parseFloat(formData.totalTargetAmount) || 0,
-				imageUrl:
-					formData.imageUrl || "https://placehold.co/600x400?text=Campaign",
-				organizations,
 				acceptedDonationTypes: formData.acceptedDonationTypes,
+				imageUrl: formData.imageUrl,
 				causes: formData.selectedCauses,
+				organizations: [user.id], // Add the required organizations field
 			};
 
-			console.log("Creating campaign with payload:", payload);
-
-			const response = await createCampaign(payload).unwrap();
-			console.log("Campaign created:", response);
-
+			await createCampaign(campaignData).unwrap();
 			toast.success("Campaign created successfully!");
 			router.push("/dashboard/campaigns");
-		} catch (err) {
-			console.error("Failed to create campaign:", err);
+		} catch {
 			toast.error(
 				"Failed to create campaign. Please check the form and try again."
 			);
@@ -405,14 +390,6 @@ const CreateCampaignPage = () => {
 			);
 		}
 
-		if (!causesData || causesData.causes.length === 0) {
-			return (
-				<Alert severity="info" sx={{ mb: 2 }}>
-					You need to create causes to add to your campaign.
-				</Alert>
-			);
-		}
-
 		return (
 			<List
 				sx={{
@@ -423,7 +400,7 @@ const CreateCampaignPage = () => {
 					borderRadius: 1,
 				}}
 			>
-				{causesData.causes.map((cause: Cause) => (
+				{causesData?.causes?.map((cause: Cause) => (
 					<ListItem key={cause.id} disablePadding>
 						<FormControlLabel
 							control={
@@ -671,12 +648,6 @@ const CreateCampaignPage = () => {
 							}
 						/>
 
-						{campaignError && (
-							<Alert severity="error">
-								Failed to create campaign. Please try again.
-							</Alert>
-						)}
-
 						<Box display="flex" gap={2} justifyContent="flex-end" mt={4}>
 							<FormButton
 								variant="outlined"
@@ -687,7 +658,6 @@ const CreateCampaignPage = () => {
 							<FormButton
 								type="submit"
 								variant="primary"
-								loading={isCreatingCampaign}
 								loadingText="Creating Campaign..."
 								sx={{
 									backgroundColor: customColor,

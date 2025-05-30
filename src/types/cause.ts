@@ -68,5 +68,10 @@ export interface CauseResponse {
 		organizationName?: string;
 		createdAt: string;
 		updatedAt: string;
+		donorCount?: number;
+		acceptedDonationTypes?: DonationType[];
+		acceptanceType?: "money" | "items" | "both";
+		donationItems?: string[];
+		endDate: Date;
 	};
 }

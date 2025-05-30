@@ -167,9 +167,7 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 
 	// Debug log for campaign ID
 	useEffect(() => {
-		console.log("Campaign detail page mounted with ID:", id, typeof id);
 		if (!id || id === "undefined" || id === "[object Object]") {
-			console.error("Invalid campaign ID in campaign detail page");
 			router.push("/dashboard/campaigns");
 		}
 	}, [id, router]);
@@ -194,7 +192,6 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 	// 	{ organizationId: user?.id },
 	// 	{ skip: user?.role !== "organization" }
 	// );
-	console.log("campaignData", campaignData);
 
 	const [deleteCampaign, { isLoading: isDeleting }] =
 		useDeleteCampaignMutation();
@@ -275,44 +272,8 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 		setTabValue(newValue);
 	};
 
-	// Commented out unused functions
-	// const toggleEditMode = () => {
-	// 	setIsEditMode(!isEditMode);
-	// };
-
-	// const handleSaveChanges = async () => {
-	// 	try {
-	// 		if (!formData.startDate || !formData.endDate) {
-	// 			console.error("Start date or end date is missing");
-	// 			return;
-	// 		}
-
-	// 		const payload = {
-	// 			id,
-	// 			body: {
-	// 				title: formData.title,
-	// 				description: formData.description,
-	// 				startDate: formData.startDate.toISOString(),
-	// 				endDate: formData.endDate.toISOString(),
-	// 				status: formData.status,
-	// 				totalTargetAmount: parseFloat(formData.totalTargetAmount),
-	// 				imageUrl: formData.imageUrl,
-	// 				causes: formData.causes,
-	// 				acceptedDonationTypes: formData.acceptedDonationTypes,
-	// 			},
-	// 		};
-
-	// 		await updateCampaign(payload).unwrap();
-	// 		setIsEditMode(false);
-	// 		refetch();
-	// 	} catch (err) {
-	// 		console.error("Failed to update campaign:", err);
-	// 	}
-	// };
-
 	const handleEditCampaign = () => {
 		if (!id || id === "undefined") {
-			console.error("Invalid campaign ID");
 			return;
 		}
 		setIsEditMode(true);
@@ -327,12 +288,8 @@ function CampaignDetail({ params }: { params: { id: string } }) {
 	};
 
 	const handleDeleteCampaign = async () => {
-		try {
-			await deleteCampaign(id).unwrap();
-			router.push("/dashboard/campaigns");
-		} catch (error) {
-			console.error("Failed to delete campaign:", error);
-		}
+		await deleteCampaign(id).unwrap();
+		router.push("/dashboard/campaigns");
 	};
 
 	// Early return if ID is invalid

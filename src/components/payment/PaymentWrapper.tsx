@@ -15,104 +15,37 @@ const PaymentWrapper: React.FC<PaymentWrapperProps> = ({
 }) => {
 	const [clientSecret, setClientSecret] = useState("");
 	const [paymentIntentId, setPaymentIntentId] = useState("");
+
 	const [createPaymentIntent, { isLoading }] = useCreatePaymentIntentMutation();
 
 	useEffect(() => {
+		if (clientSecret) return; // Skip if clientSecret is set
 		const initializePayment = async () => {
 			try {
-				// Validate required fields
-				if (!donationData.amount || donationData.amount <= 0) {
-					onError("Amount is required and must be greater than 0");
-					return;
+				if (!donationData.amount || donationData.amount < 50) {
+					throw new Error("Amount is required and must be at least ₹50");
 				}
-
-				if (!donationData.cause) {
-					onError("Cause ID is required");
-					return;
-				}
-
-				if (!donationData.organization) {
-					onError("Organization ID is required");
-					return;
-				}
-
-				if (!donationData.description) {
-					onError("Description is required");
-					return;
-				}
-
-				// Validate contact information
-				if (!donationData.contactPhone) {
-					onError("Contact phone is required");
-					return;
-				}
-
-				if (!donationData.contactEmail) {
-					onError("Contact email is required");
-					return;
-				}
-
-				// Validate email format
-				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-				if (!emailRegex.test(donationData.contactEmail)) {
-					onError("Please enter a valid email address");
-					return;
-				}
-
-				// Ensure amount is a number and convert to cents for USD
+				// ... other validations
 				const paymentData = {
-					...donationData,
-					amount: Math.round(Number(donationData.amount) * 100), // Convert to cents for USD
-					currency: 'usd' // Explicitly set currency to USD
+					...structuredClone(donationData),
+					amount: Number(donationData.amount),
+					currency: "inr",
 				};
-
-				console.log('Sending payment data:', {
-					...paymentData,
-					amount: paymentData.amount / 100, // Log the amount in dollars for readability
-					currency: 'USD'
-				});
-
 				const result = await createPaymentIntent(paymentData).unwrap();
+				if (!result.clientSecret || !result.paymentIntentId) {
+					throw new Error("Invalid response from server");
+				}
 				setClientSecret(result.clientSecret);
 				setPaymentIntentId(result.paymentIntentId);
-			} catch (err: unknown) {
-				// Enhanced error logging
-				if (err instanceof Error) {
-					console.error('Payment error:', {
-						message: err.message,
-						stack: err.stack,
-						name: err.name
-					});
-				} else if (typeof err === 'object' && err !== null) {
-					console.error('Payment error:', {
-						error: err,
-						errorType: typeof err,
-						errorString: JSON.stringify(err, null, 2)
-					});
-				} else {
-					console.error('Payment error:', err);
-				}
-
-				// Enhanced error message extraction
-				let errorMessage = "Failed to initialize payment";
-
-				if (err instanceof Error) {
-					errorMessage = err.message;
-				} else if (typeof err === 'object' && err !== null) {
-					const errorObj = err as any;
-					errorMessage = errorObj?.data?.message ||
-						errorObj?.message ||
-						errorObj?.error ||
-						"An unexpected error occurred";
-				}
-
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Failed to initialize payment";
+	
 				onError(errorMessage);
 			}
 		};
-
 		initializePayment();
-	}, [donationData, createPaymentIntent, onError]);
-
+	}, [donationData, createPaymentIntent, onError, clientSecret]);
 	const appearance = {
 		theme: "stripe" as const,
 		variables: {

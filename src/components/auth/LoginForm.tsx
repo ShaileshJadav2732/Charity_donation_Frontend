@@ -78,14 +78,10 @@ const LoginForm = () => {
 		}
 
 		try {
-			console.log("LoginForm: Attempting login with email", formData.email);
 			await loginWithEmail(formData);
-			console.log(
-				"LoginForm: Login successful, relying on useAuth for redirect"
-			);
+
 			toast.success("Welcome back!");
 		} catch (error: unknown) {
-			console.error("LoginForm: Login error:", error);
 			const parsedError = parseError(error);
 			toast.error(parsedError.message || "Failed to log in");
 		}
@@ -93,7 +89,6 @@ const LoginForm = () => {
 
 	const handleGoogleLogin = async () => {
 		try {
-			console.log("LoginForm: Attempting Google login");
 			toast.loading("Signing in with Google...", { id: "google-login" });
 
 			// Check if browser supports popups
@@ -105,13 +100,10 @@ const LoginForm = () => {
 			}
 
 			await loginWithGoogle();
-			console.log(
-				"LoginForm: Google login successful, relying on useAuth for redirect"
-			);
+
 			toast.dismiss("google-login");
 			toast.success("Logged in with Google!");
 		} catch (error: unknown) {
-			console.error("LoginForm: Google login error:", error);
 			toast.dismiss("google-login");
 			const parsedError = parseError(error);
 

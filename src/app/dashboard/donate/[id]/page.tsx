@@ -51,9 +51,6 @@ export default function DonationForm() {
 						: undefined,
 			};
 
-			console.log("Sending donation payload:", payload);
-			const result = await createDonation(payload).unwrap();
-			console.log("Donation creation successful:", result);
 			toast.success("Donation created successfully!");
 
 			// Redirect to donations page after successful creation
@@ -61,11 +58,8 @@ export default function DonationForm() {
 				router.push("/dashboard/donations");
 			}, 1500);
 		} catch (error: any) {
-			console.error("Donation creation error:", error);
-
 			// Handle specific authentication errors
 			if (error?.status === 401) {
-				console.error("Authentication failed during donation creation");
 				toast.error("Authentication failed. Please log in again.");
 				router.push("/login");
 			} else if (error?.data?.message) {

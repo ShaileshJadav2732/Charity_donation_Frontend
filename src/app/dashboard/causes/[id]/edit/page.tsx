@@ -57,16 +57,22 @@ const DONATION_ITEMS = [
 	"Sports Equipment",
 ];
 
-const validationSchema = Yup.object().shape({
-	title: Yup.string().min(3, "Title must be at least 3 characters"),
-	description: Yup.string().min(
-		10,
-		"Description must be at least 10 characters"
-	),
-	targetAmount: Yup.number().min(1, "Target amount must be greater than 0"),
-	imageUrl: Yup.string().url("Must be a valid URL"),
-	tags: Yup.array().of(Yup.string()),
-});
+// Create dynamic validation schema based on acceptance type
+const createValidationSchema = (acceptanceType: string) => {
+	return Yup.object().shape({
+		title: Yup.string().min(3, "Title must be at least 3 characters"),
+		description: Yup.string().min(
+			10,
+			"Description must be at least 10 characters"
+		),
+		targetAmount:
+			acceptanceType === "items"
+				? Yup.mixed() // Allow any value for items-only causes
+				: Yup.number().min(1, "Target amount must be greater than 0"),
+		imageUrl: Yup.string().url("Must be a valid URL"),
+		tags: Yup.array().of(Yup.string()),
+	});
+};
 
 export const UpdateCauseForm = () => {
 	const params = useParams<{ id: string }>();
@@ -83,7 +89,6 @@ export const UpdateCauseForm = () => {
 
 	const { data: causesResponse } = useGetCauseByIdQuery(id || "");
 	const [updateCause, { isLoading: isUpdating }] = useUpdateCauseMutation();
-	console.log("cause respose", causesResponse);
 
 	useEffect(() => {
 		if (causesResponse?.cause) {
@@ -187,56 +192,63 @@ export const UpdateCauseForm = () => {
 	};
 
 	const handleSubmit = async (values: UpdateCauseBody) => {
-		try {
-			// Convert donation items to DonationType enum values
-			const acceptedDonationTypes: DonationType[] = [];
+		// Convert donation items to DonationType enum values
+		const acceptedDonationTypes: DonationType[] = [];
 
-			if (acceptanceType === "money" || acceptanceType === "both") {
-				acceptedDonationTypes.push(DonationType.MONEY);
-			}
-
-			if (acceptanceType === "items" || acceptanceType === "both") {
-				donationItems.forEach((item) => {
-					switch (item.toUpperCase()) {
-						case "CLOTHES":
-							acceptedDonationTypes.push(DonationType.CLOTHES);
-							break;
-						case "BOOKS":
-							acceptedDonationTypes.push(DonationType.BOOKS);
-							break;
-						case "TOYS":
-							acceptedDonationTypes.push(DonationType.TOYS);
-							break;
-						case "FOOD":
-							acceptedDonationTypes.push(DonationType.FOOD);
-							break;
-						case "FURNITURE":
-							acceptedDonationTypes.push(DonationType.FURNITURE);
-							break;
-						case "HOUSEHOLD ITEMS":
-							acceptedDonationTypes.push(DonationType.HOUSEHOLD);
-							break;
-						default:
-							acceptedDonationTypes.push(DonationType.OTHER);
-							break;
-					}
-				});
-			}
-
-			const body = {
-				...values,
-				imageUrl: imageUrl || values.imageUrl,
-				tags,
-				acceptanceType,
-				donationItems: acceptanceType !== "money" ? donationItems : [],
-				acceptedDonationTypes,
-			};
-
-			await updateCause({ id, body }).unwrap();
-			router.push(`/dashboard/causes/${id}`);
-		} catch (error) {
-			console.error("Failed to update cause:", error);
+		if (acceptanceType === "money" || acceptanceType === "both") {
+			acceptedDonationTypes.push(DonationType.MONEY);
 		}
+
+		if (acceptanceType === "items" || acceptanceType === "both") {
+			donationItems.forEach((item) => {
+				switch (item.toUpperCase()) {
+					case "CLOTHES":
+						acceptedDonationTypes.push(DonationType.CLOTHES);
+						break;
+					case "BOOKS":
+						acceptedDonationTypes.push(DonationType.BOOKS);
+						break;
+					case "TOYS":
+						acceptedDonationTypes.push(DonationType.TOYS);
+						break;
+					case "FOOD":
+						acceptedDonationTypes.push(DonationType.FOOD);
+						break;
+					case "FURNITURE":
+						acceptedDonationTypes.push(DonationType.FURNITURE);
+						break;
+					case "HOUSEHOLD ITEMS":
+						acceptedDonationTypes.push(DonationType.HOUSEHOLD);
+						break;
+					default:
+						acceptedDonationTypes.push(DonationType.OTHER);
+						break;
+				}
+			});
+		}
+
+		// Handle target amount based on acceptance type
+		let targetAmount;
+		if (acceptanceType === "items") {
+			// For items-only, use 0 as default
+			targetAmount = 0;
+		} else {
+			// For money or both, parse as number
+			targetAmount = parseFloat(values.targetAmount.toString()) || 0;
+		}
+
+		const body = {
+			...values,
+			targetAmount,
+			imageUrl: imageUrl || values.imageUrl,
+			tags,
+			acceptanceType,
+			donationItems: acceptanceType !== "money" ? donationItems : [],
+			acceptedDonationTypes,
+		};
+
+		await updateCause({ id, body }).unwrap();
+		router.push(`/dashboard/causes/${id}`);
 	};
 
 	return (
@@ -247,7 +259,7 @@ export const UpdateCauseForm = () => {
 
 			<Formik
 				initialValues={initialValues}
-				validationSchema={validationSchema}
+				validationSchema={createValidationSchema(acceptanceType)}
 				onSubmit={handleSubmit}
 			>
 				{({ errors, touched }) => (
@@ -279,18 +291,42 @@ export const UpdateCauseForm = () => {
 								/>
 							</Grid>
 
-							<Grid item xs={12} md={6}>
-								<Field
-									as={TextField}
-									fullWidth
-									name="targetAmount"
-									label="Target Amount"
-									type="number"
-									variant="outlined"
-									error={touched.targetAmount && !!errors.targetAmount}
-									helperText={<ErrorMessage name="targetAmount" />}
-								/>
-							</Grid>
+							{/* Target Amount - only show for money or both acceptance types */}
+							{acceptanceType !== "items" && (
+								<Grid item xs={12} md={6}>
+									<Field
+										as={TextField}
+										fullWidth
+										name="targetAmount"
+										label="Target Amount"
+										type="number"
+										variant="outlined"
+										error={touched.targetAmount && !!errors.targetAmount}
+										helperText={<ErrorMessage name="targetAmount" />}
+										slotProps={{
+											input: {
+												startAdornment: <span>₹</span>,
+											},
+										}}
+									/>
+								</Grid>
+							)}
+
+							{/* Optional target for items-only causes */}
+							{acceptanceType === "items" && (
+								<Grid item xs={12} md={6}>
+									<Field
+										as={TextField}
+										fullWidth
+										name="targetAmount"
+										label="Target Description (Optional)"
+										type="text"
+										variant="outlined"
+										placeholder="e.g., 100 units of food, 50 books, etc."
+										helperText="Describe your target goal for item donations (optional)"
+									/>
+								</Grid>
+							)}
 
 							<Grid item xs={12}>
 								<CloudinaryImageUpload

@@ -110,8 +110,11 @@ export const analyticsApi = apiSlice.injectEndpoints({
 			}),
 			providesTags: ["Analytics", "Dashboard"],
 		}),
-		
-		getOrganizationAnalytics: builder.query<OrganizationAnalyticsResponse, void>({
+
+		getOrganizationAnalytics: builder.query<
+			OrganizationAnalyticsResponse,
+			void
+		>({
 			query: () => ({
 				url: "/dashboard/organization",
 				method: "GET",
@@ -121,7 +124,5 @@ export const analyticsApi = apiSlice.injectEndpoints({
 	}),
 });
 
-export const {
-	useGetDonorAnalyticsQuery,
-	useGetOrganizationAnalyticsQuery,
-} = analyticsApi;
+export const { useGetDonorAnalyticsQuery, useGetOrganizationAnalyticsQuery } =
+	analyticsApi;

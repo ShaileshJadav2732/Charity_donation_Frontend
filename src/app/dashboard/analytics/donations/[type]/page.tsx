@@ -148,13 +148,6 @@ export default function DonationTypeAnalyticsPage({
 		topCauses = [],
 	} = analytics;
 
-	console.log(`Donation analytics for ${decodedType}:`, {
-		stats,
-		recentDonations,
-		monthlyTrend,
-		topCauses,
-	});
-
 	return (
 		<div className="max-w-7xl mx-auto">
 			<div className="mt-8 space-y-6">

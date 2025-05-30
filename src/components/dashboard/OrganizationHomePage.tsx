@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetOrganizationAnalyticsQuery } from "@/store/api/analyticsApi";
+import { useGetCampaignsQuery } from "@/store/api/campaignApi";
 import { useGetOrganizationCausesQuery } from "@/store/api/causeApi";
 import { useGetCurrentOrganizationQuery } from "@/store/api/organizationApi";
 import { RootState } from "@/store/store";
@@ -25,7 +26,6 @@ import {
 	Heart,
 	Megaphone,
 	Plus,
-	Star,
 	Target,
 	Users,
 } from "lucide-react";
@@ -49,14 +49,15 @@ const OrganizationHomePage: React.FC = () => {
 	const { data: organizationData } = useGetCurrentOrganizationQuery();
 	const { data: analyticsData } = useGetOrganizationAnalyticsQuery();
 
+	// Fetch campaigns data to get accurate counts
+	const { data: campaignsData } = useGetCampaignsQuery({
+		organizations: user?.id,
+	});
+
 	// Get organization ID from the current organization data
 	const organizationId = organizationData?.organization?._id;
 
-	const {
-		data: causesData,
-		isLoading: causesLoading,
-		error: causesError,
-	} = useGetOrganizationCausesQuery(
+	const { data: causesData } = useGetOrganizationCausesQuery(
 		{
 			organizationId: organizationId || "",
 			limit: 6,
@@ -67,22 +68,23 @@ const OrganizationHomePage: React.FC = () => {
 		}
 	);
 
-	// Debug logging
-	console.log("Organization ID:", organizationId);
-	console.log("Causes Data:", causesData);
-	console.log("Causes Loading:", causesLoading);
-	console.log("Causes Error:", causesError);
 	const router = useRouter();
 
-	// Process analytics data
+	// Calculate campaign stats from actual campaign data
+	const campaigns = campaignsData?.campaigns || [];
+	const activeCampaigns = campaigns.filter(
+		(campaign) => campaign.status?.toLowerCase() === "active"
+	).length;
+	const totalCampaigns = campaigns.length;
+
+	// Process analytics data with real campaign counts
 	const stats = {
 		totalRaised: analyticsData?.data?.stats?.donations?.totalAmount || 0,
 		totalDonations: analyticsData?.data?.stats?.donations?.totalDonations || 0,
 		averageDonation:
 			analyticsData?.data?.stats?.donations?.averageDonation || 0,
-		activeCampaigns:
-			analyticsData?.data?.stats?.campaigns?.activeCampaigns || 0,
-		totalCampaigns: analyticsData?.data?.stats?.campaigns?.totalCampaigns || 0,
+		activeCampaigns: activeCampaigns,
+		totalCampaigns: totalCampaigns,
 		averageRating: analyticsData?.data?.stats?.feedback?.averageRating || 0,
 		totalFeedback: analyticsData?.data?.stats?.feedback?.totalFeedback || 0,
 		totalCauses: causesData?.causes?.length || 0,
@@ -603,26 +605,7 @@ const OrganizationHomePage: React.FC = () => {
 							Total Campaigns
 						</Typography>
 					</Card>
-					<Card sx={{ p: 3, textAlign: "center" }}>
-						<Avatar
-							sx={{
-								backgroundColor: "#fff3e0",
-								color: "#f57c00",
-								width: 56,
-								height: 56,
-								mx: "auto",
-								mb: 2,
-							}}
-						>
-							<Star size={24} />
-						</Avatar>
-						<Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>
-							{stats.averageRating.toFixed(1)}
-						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Average Rating
-						</Typography>
-					</Card>
+
 					<Card sx={{ p: 3, textAlign: "center" }}>
 						<Avatar
 							sx={{

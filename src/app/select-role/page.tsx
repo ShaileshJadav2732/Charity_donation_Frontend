@@ -33,45 +33,39 @@ function SelectRoleContent() {
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 
-		console.log("Checking for pending Google user");
 		const storedUser = sessionStorage.getItem("pendingGoogleUser");
 		if (storedUser) {
 			try {
 				const parsedUser = JSON.parse(storedUser);
 				setPendingUser(parsedUser);
-				console.log("Found pending Google user:", parsedUser);
+		
 			} catch (e) {
-				console.error("Error parsing pending user:", e);
 				toast.error("Invalid user data. Please log in again.");
 				router.push("/login");
 			}
-		} else {
-			console.log("No pending Google user found");
 		}
 	}, [router]);
 
 	const handleRoleSelect = async () => {
 		setIsLoading(true);
-		console.log("Starting role selection process");
-
+	
 		try {
 			let userInfo: FirebaseUserInfo | null = null;
 
 			if (pendingUser) {
 				userInfo = pendingUser;
-				console.log("Using pending Google user:", userInfo);
+			
 			} else {
 				const firebaseUser = auth.currentUser;
 
 				if (!firebaseUser) {
-					console.error("No Firebase user signed in");
+				
 					toast.error("No user is signed in");
 					router.push("/login");
 					return;
 				}
 
-				if (!firebaseUser.email) {
-					console.error("Firebase user has no email");
+				if (!firebaseUser.email) {	
 					toast.error("User must have an email address");
 					return;
 				}
@@ -82,20 +76,11 @@ function SelectRoleContent() {
 				};
 			}
 
-			console.log(
-				"Registering user with role:",
-				role,
-				"Email:",
-				userInfo.email
-			);
-
 			const response = await register({
 				email: userInfo.email,
 				firebaseUid: userInfo.uid,
 				role,
 			}).unwrap();
-
-			console.log("Backend registration successful:", response);
 
 			dispatch(
 				setCredentials({
@@ -106,14 +91,12 @@ function SelectRoleContent() {
 
 			if (typeof window !== "undefined" && pendingUser) {
 				sessionStorage.removeItem("pendingGoogleUser");
-				console.log("Cleared pendingGoogleUser from sessionStorage");
-			}
+				
 
 			toast.success("Account created successfully!");
-			console.log("Redirecting to /complete-profile");
+		
 			router.push("/complete-profile");
 		} catch (error: unknown) {
-			console.error("Role selection error:", error);
 			const backendError = error as ApiError;
 			let errorMessage = "Failed to create account";
 

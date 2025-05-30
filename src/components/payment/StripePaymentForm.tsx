@@ -35,91 +35,159 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 	useEffect(() => {
 		if (!stripe || !clientSecret) return;
 
-		stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-			switch (paymentIntent?.status) {
-				case "succeeded":
-					setMessage("Payment succeeded!");
-					break;
-				case "processing":
-					setMessage("Your payment is processing.");
-					break;
-
-				default:
-					setMessage("Something went wrong.");
-					break;
-			}
-		});
-	}, [stripe, clientSecret]);
+		stripe
+			.retrievePaymentIntent(clientSecret)
+			.then(({ paymentIntent }) => {
+				switch (paymentIntent?.status) {
+					case "succeeded":
+						setMessage("Payment succeeded!");
+						// Call onSuccess if payment already completed
+						onSuccess?.({
+							id: paymentIntentId,
+							status: paymentIntent.status,
+							amount: amount,
+							currency: paymentIntent.currency || "inr",
+							paymentIntentId: paymentIntentId,
+							createdAt: new Date().toISOString(),
+						});
+						break;
+					case "processing":
+						setMessage("Your payment is processing.");
+						break;
+					case "requires_payment_method":
+						setMessage("Your payment was not successful, please try again.");
+						break;
+					case "canceled":
+						setMessage("Payment was canceled.");
+						break;
+					default:
+						// Payment is ready to be processed
+						setMessage(null);
+						break;
+				}
+			})
+			.catch((error) => {
+				setMessage(
+					"Unable to load payment information. Please refresh the page."
+				);
+				onError?.("Unable to load payment information.");
+			});
+	}, [stripe, clientSecret, paymentIntentId, amount, onSuccess, onError]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		if (!stripe || !elements) {
-			setMessage("Payment system not ready. Please try again.");
+			const errorMsg = "Payment system not ready. Please try again.";
+			setMessage(errorMsg);
+			onError?.(errorMsg);
 			return;
 		}
 
 		const paymentElement = elements.getElement("payment");
 		if (!paymentElement) {
-			setMessage("Payment form not loaded. Please refresh and try again.");
+			const errorMsg = "Payment form not loaded. Please refresh and try again.";
+			setMessage(errorMsg);
+			onError?.(errorMsg);
 			return;
 		}
 
 		setIsLoading(true);
-
-		const { error: submitError } = await elements.submit();
-		if (submitError) {
-			setMessage(submitError.message || "Please complete the payment form.");
-			setIsLoading(false);
-			return;
-		}
-
-		const { error: stripeError } = await stripe.confirmPayment({
-			elements,
-			confirmParams: {
-				return_url: `${window.location.origin}/dashboard/donor/donations`,
-			},
-			redirect: "if_required",
-		});
-
-		if (stripeError) {
-			const message =
-				stripeError.message || "Something went wrong during the payment.";
-			setMessage(message);
-			onError?.(message);
-			setIsLoading(false);
-			return;
-		}
+		setMessage(null);
 
 		try {
-			const result = await confirmPayment({
-				paymentIntentId,
-				donationData,
-			}).unwrap();
-			setMessage("Payment succeeded! Your donation has been processed.");
-			onSuccess?.(result.data);
-		} catch (err: any) {
-			const message =
-				err?.data?.message || "Failed to process donation after payment.";
-			setMessage(message);
-			onError?.(message);
-		}
+			// Submit the form to validate all fields
+			const { error: submitError } = await elements.submit();
+			if (submitError) {
+				setMessage(submitError.message || "Please complete the payment form.");
+				onError?.(submitError.message || "Please complete the payment form.");
+				return;
+			}
 
-		setIsLoading(false);
+			// Confirm the payment
+			const { error: stripeError, paymentIntent } = await stripe.confirmPayment(
+				{
+					elements,
+					confirmParams: {
+						return_url: `${window.location.origin}/dashboard/donor/donations`,
+					},
+					redirect: "if_required",
+				}
+			);
+
+			if (stripeError) {
+				const errorMessage =
+					stripeError.message || "Something went wrong during the payment.";
+				setMessage(errorMessage);
+				onError?.(errorMessage);
+				return;
+			}
+
+			// Handle successful payment
+			if (paymentIntent && paymentIntent.status === "succeeded") {
+				try {
+					// Try to confirm the donation on your backend
+					const result = await confirmPayment({
+						paymentIntentId,
+						donationData,
+					}).unwrap();
+
+					setMessage("Payment succeeded! Your donation has been processed.");
+					onSuccess?.(result.data);
+				} catch (apiError) {
+					// Even if API fails, payment succeeded - webhook will handle it
+					console.warn(
+						"API confirmation failed, but payment succeeded:",
+						apiError
+					);
+					setMessage("Payment succeeded! Your donation is being processed.");
+					onSuccess?.({
+						id: paymentIntentId,
+						status: paymentIntent.status,
+						amount: amount,
+						currency: paymentIntent.currency || "inr",
+						paymentIntentId: paymentIntentId,
+						createdAt: new Date().toISOString(),
+					});
+				}
+			} else if (paymentIntent && paymentIntent.status === "processing") {
+				setMessage(
+					"Your payment is being processed. You'll receive a confirmation shortly."
+				);
+				onSuccess?.({
+					id: paymentIntentId,
+					status: paymentIntent.status,
+					amount: amount,
+					currency: paymentIntent.currency || "inr",
+					paymentIntentId: paymentIntentId,
+					createdAt: new Date().toISOString(),
+				});
+			} else {
+				const errorMsg = "Payment was not completed successfully.";
+				setMessage(errorMsg);
+				onError?.(errorMsg);
+			}
+		} catch (error) {
+			const errorMsg = "An unexpected error occurred. Please try again.";
+			setMessage(errorMsg);
+			onError?.(errorMsg);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const paymentElementOptions = {
 		layout: "tabs" as const,
 		fields: {
-			billingDetails: 'auto' as const
+			billingDetails: "auto" as const,
 		},
 		terms: { card: "auto" as const },
 		defaultValues: {
 			billingDetails: {
-				email: donationData.contactEmail || '',
-				phone: donationData.contactPhone || ''
-			}
-		}
+				email: donationData.contactEmail || "",
+				phone: donationData.contactPhone || "",
+			},
+		},
 	};
 
 	return (
@@ -135,7 +203,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
 				<Box sx={{ mb: 2, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
 					<Typography variant="body2" color="text.secondary">
-						Donation Amount: <strong>${amount.toFixed(2)}</strong>
+						Donation Amount: <strong>₹{amount.toFixed(2)}</strong>
 					</Typography>
 				</Box>
 
@@ -169,7 +237,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 								<span>Processing Payment...</span>
 							</Box>
 						) : (
-							`Complete Donation - $${amount.toFixed(2)}`
+							`Complete Donation - ₹${amount.toFixed(2)}`
 						)}
 					</Button>
 
@@ -183,7 +251,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
 					{message && (
 						<Alert
-							severity={message.includes("succeeded") ? "success" : "error"}
+							severity={
+								message.includes("succeeded") || message.includes("processing")
+									? "success"
+									: message.includes("canceled")
+									? "warning"
+									: "error"
+							}
 							sx={{ mt: 2 }}
 						>
 							{message}

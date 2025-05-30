@@ -25,17 +25,19 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import {
-	useGetCampaignByIdQuery,
 	useUpdateCampaignMutation,
+	useGetCampaignByIdQuery,
 } from "@/store/api/campaignApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import dayjs, { Dayjs } from "dayjs";
 import { DonationType } from "@/types/donation";
 import { ArrowBack as BackIcon } from "@mui/icons-material";
-import { useGetOrganizationCausesQuery } from "@/store/api/causeApi";
+import { useGetCausesQuery } from "@/store/api/causeApi";
 import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
 import { toast } from "react-hot-toast";
+import { Campaign } from "@/types/campaigns";
+import { UpdateCampaignBody } from "@/types/campaings";
 
 interface FormData {
 	title: string;
@@ -61,48 +63,58 @@ const DONATION_TYPES = [
 	{ value: DonationType.OTHER, label: "Other" },
 ];
 
-export default function EditCampaignPage({
-	params,
-}: {
-	params: { id: string };
-}) {
+interface EditCampaignPageProps {
+	params: Promise<{ id: string }>;
+}
+
+const EditCampaignPage = ({ params }: EditCampaignPageProps) => {
 	const router = useRouter();
-	// Use React.use() to unwrap params
-	const { id } = params;
+	const [campaignId, setCampaignId] = useState<string>("");
 	const { user } = useSelector((state: RootState) => state.auth);
+
+	// Resolve params Promise
+	useEffect(() => {
+		params.then((resolvedParams) => {
+			setCampaignId(resolvedParams.id);
+		});
+	}, [params]);
 
 	// Enhanced validation with debugging
 	useEffect(() => {
-		console.log("Campaign edit page mounted with ID:", id);
-		if (!id || id === "undefined" || id === "[object Object]") {
-			console.error("Invalid campaign ID detected:", id);
-			// Add a delay to show the error message before redirecting
+		if (
+			!campaignId ||
+			campaignId === "undefined" ||
+			campaignId === "[object Object]"
+		) {
 			const timer = setTimeout(() => {
 				router.push("/dashboard/campaigns");
 			}, 2000);
 			return () => clearTimeout(timer);
 		}
-	}, [id, router]);
+	}, [campaignId, router]);
 
-	// Safely query the campaign with validated ID
+	// API query calls
 	const {
 		data: campaignData,
 		isLoading: isLoadingCampaign,
 		error: campaignError,
-	} = useGetCampaignByIdQuery(id, {
-		// Skip the query if the ID is invalid
-		skip: !id || id === "undefined" || id === "[object Object]",
+	} = useGetCampaignByIdQuery(campaignId, {
+		skip:
+			!campaignId ||
+			campaignId === "undefined" ||
+			campaignId === "[object Object]",
 	});
 
-	const [updateCampaign, { isLoading: isUpdating, isSuccess }] =
-		useUpdateCampaignMutation();
+	const [
+		updateCampaign,
+		{ isLoading: isUpdating, error: updateError, isSuccess },
+	] = useUpdateCampaignMutation();
 
 	// Query user organization causes
-	const { data: causesData, isLoading: isLoadingCauses } =
-		useGetOrganizationCausesQuery(
-			{ organizationId: user?.id || "" },
-			{ skip: !user?.id }
-		);
+	const { data: causesData, isLoading: isLoadingCauses } = useGetCausesQuery(
+		{ organizationId: user?.id || "" },
+		{ skip: !user?.id }
+	);
 
 	const [formData, setFormData] = useState<FormData>({
 		title: "",
@@ -116,25 +128,22 @@ export default function EditCampaignPage({
 		causes: [],
 	});
 
-	// Image upload state
-	const [imagePublicId, setImagePublicId] = useState<string>("");
-
 	// Initialize form with campaign data when it loads
 	useEffect(() => {
-		if (campaignData?.data?.campaign) {
-			const campaign = campaignData.data.campaign;
+		if (campaignData?.campaign) {
+			const campaign = campaignData.campaign as unknown as Campaign;
 			setFormData({
 				title: campaign.title,
 				description: campaign.description,
 				startDate: dayjs(campaign.startDate),
 				endDate: dayjs(campaign.endDate),
 				totalTargetAmount: campaign.totalTargetAmount.toString(),
-				status: campaign.status.toLowerCase(),
-				acceptedDonationTypes: campaign.acceptedDonationTypes?.map(
-					(type: string) => type as DonationType
-				) || [DonationType.MONEY],
+				status: campaign.status,
+				acceptedDonationTypes: campaign.acceptedDonationTypes || [
+					DonationType.MONEY,
+				],
 				imageUrl: campaign.imageUrl || "",
-				causes: campaign.causes.map((cause: { id: string }) => cause.id) || [],
+				causes: campaign.causes?.map((cause: { id: string }) => cause.id) || [],
 			});
 		}
 	}, [campaignData]);
@@ -142,9 +151,9 @@ export default function EditCampaignPage({
 	// Redirect after successful update
 	useEffect(() => {
 		if (isSuccess) {
-			router.push(`/dashboard/campaigns/${id}`);
+			router.push(`/dashboard/campaigns/${campaignId}`);
 		}
-	}, [isSuccess, router, id]);
+	}, [isSuccess, router, campaignId]);
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
@@ -205,12 +214,11 @@ export default function EditCampaignPage({
 	};
 
 	// Image upload handler
-	const handleImageUpload = (imageUrl: string, publicId: string) => {
+	const handleImageUpload = (imageUrl: string) => {
 		setFormData((prev) => ({
 			...prev,
 			imageUrl,
 		}));
-		setImagePublicId(publicId);
 	};
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -241,38 +249,33 @@ export default function EditCampaignPage({
 			return;
 		}
 
-		// Image validation
 		if (!formData.imageUrl) {
 			toast.error("Please upload an image for your campaign");
 			return;
 		}
 
 		try {
-			const payload = {
-				id,
-				body: {
-					title: formData.title,
-					description: formData.description,
-					startDate: formData.startDate.toISOString(),
-					endDate: formData.endDate.toISOString(),
-					status: formData.status,
-					totalTargetAmount: parseFloat(formData.totalTargetAmount),
-					imageUrl: formData.imageUrl,
-					acceptedDonationTypes: formData.acceptedDonationTypes,
-					causes: formData.causes,
-				},
+			const updateData = {
+				title: formData.title,
+				description: formData.description,
+				startDate: formData.startDate.toISOString(),
+				endDate: formData.endDate.toISOString(),
+				totalTargetAmount: parseFloat(formData.totalTargetAmount),
+				status: formData.status,
+				acceptedDonationTypes: formData.acceptedDonationTypes,
+				imageUrl: formData.imageUrl,
+				causes: formData.causes,
 			};
 
-			console.log("Updating campaign with payload:", payload);
-			const result = await updateCampaign(payload).unwrap();
-			console.log("Campaign updated successfully:", result);
-
-			// Show success message and redirect
-			alert("Campaign updated successfully!");
-			router.push(`/dashboard/campaigns/${id}`);
+			await updateCampaign({
+				id: campaignId,
+				body: updateData as Partial<UpdateCampaignBody>,
+			}).unwrap();
+			toast.success("Campaign updated successfully!");
+			router.push(`/dashboard/campaigns/${campaignId}`);
 		} catch (err) {
 			console.error("Failed to update campaign:", err);
-			alert("Failed to update campaign. Please check console for details.");
+			toast.error("Failed to update campaign. Please try again.");
 		}
 	};
 
@@ -299,12 +302,22 @@ export default function EditCampaignPage({
 		);
 	}
 
+	if (campaignError) {
+		return (
+			<Box p={4}>
+				<Alert severity="error">
+					Failed to load campaign data. Please try again.
+				</Alert>
+			</Box>
+		);
+	}
+
 	return (
 		<LocalizationProvider dateAdapter={AdapterDayjs}>
 			<Box p={4}>
 				<Button
 					startIcon={<BackIcon />}
-					onClick={() => router.push(`/dashboard/campaigns/${id}`)}
+					onClick={() => router.push(`/dashboard/campaigns/${campaignId}`)}
 					sx={{ mb: 3 }}
 				>
 					Back to Campaign
@@ -373,8 +386,10 @@ export default function EditCampaignPage({
 								value={formData.totalTargetAmount}
 								onChange={handleChange}
 								required
-								InputProps={{
-									startAdornment: <span>$</span>,
+								slotProps={{
+									input: {
+										startAdornment: <span>$</span>,
+									},
 								}}
 							/>
 
@@ -456,16 +471,18 @@ export default function EditCampaignPage({
 								</FormHelperText>
 							</Box>
 
-							{/* {updateError && (
+							{updateError && (
 								<Alert severity="error">
 									Failed to update campaign. Please try again.
 								</Alert>
-							)} */}
+							)}
 
 							<Box display="flex" gap={2} justifyContent="flex-end" mt={2}>
 								<Button
 									variant="outlined"
-									onClick={() => router.push(`/dashboard/campaigns/${id}`)}
+									onClick={() =>
+										router.push(`/dashboard/campaigns/${campaignId}`)
+									}
 								>
 									Cancel
 								</Button>
@@ -484,4 +501,6 @@ export default function EditCampaignPage({
 			</Box>
 		</LocalizationProvider>
 	);
-}
+};
+
+export default EditCampaignPage;

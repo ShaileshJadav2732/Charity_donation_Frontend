@@ -2,7 +2,6 @@ import { loadStripe } from "@stripe/stripe-js";
 
 // Validate Stripe publishable key
 if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-	console.error("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not configured");
 	throw new Error("Stripe publishable key is required");
 }
 

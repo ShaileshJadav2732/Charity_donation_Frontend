@@ -488,7 +488,6 @@ const EnhancedDashboard: React.FC<{ data: OrganizationAnalyticsData }> = ({
 	const { user } = useSelector((state: RootState) => state.auth);
 
 	// Debug: Log the data structure
-	console.log("Dashboard data received:", data);
 
 	const safeStats = {
 		donations: {
