@@ -19,6 +19,7 @@ export default function DonationForm() {
 	const handleDonationSubmit = async (values: any) => {
 		try {
 			const payload = {
+
 				cause: causeId,
 				organization: cause?.cause?.organizationId || "",
 				type: values.type,
@@ -40,19 +41,17 @@ export default function DonationForm() {
 				dropoffAddress:
 					!values.isPickup && values.type !== "MONEY"
 						? {
-								street: "ORGANIZATION_ADDRESS",
-								city: "",
-								state: "",
-								zipCode: "",
-								country: "",
-						  }
+							street: "ORGANIZATION_ADDRESS",
+							city: "",
+							state: "",
+							zipCode: "",
+							country: "",
+						}
 						: undefined,
 			};
 
 			console.log("Submitting donation with payload:", payload);
 
-			const result = await createDonation(payload).unwrap();
-			console.log("Donation created successfully:", result);
 
 			toast.success("Donation created successfully!");
 
@@ -75,7 +74,16 @@ export default function DonationForm() {
 
 	const handlePaymentSubmit = async (values: any) => {
 		try {
+			// Check if user is logged in
+			const token = localStorage.getItem('token');
+			if (!token) {
+				toast.error("Please log in to make a donation");
+				router.push("/login");
+				return;
+			}
+
 			// Create the complete donation payload
+
 			const donationPayload = {
 				cause: causeId,
 				organization: cause?.cause?.organizationId || "",
@@ -98,29 +106,33 @@ export default function DonationForm() {
 				dropoffAddress:
 					!values.isPickup && values.type !== "MONEY"
 						? {
-								street: "ORGANIZATION_ADDRESS",
-								city: "",
-								state: "",
-								zipCode: "",
-								country: "",
-						  }
+							street: "ORGANIZATION_ADDRESS",
+							city: "",
+							state: "",
+							zipCode: "",
+							country: "",
+						}
 						: undefined,
 			};
 
 			console.log("Creating Stripe checkout session with:", donationPayload);
 
+
 			const res = await axios.post(
 				"http://localhost:8080/api/payments/create-checkout-session",
 				{
-					// Amount and basic payment info
-					amount: Number(values.amount),
 
-					// Complete donation data for webhook processing
-					donationData: donationPayload,
-
-					// Success/cancel URLs
-					successUrl: `${window.location.origin}/dashboard/donations?payment=success`,
-					cancelUrl: `${window.location.origin}/dashboard/causes/${causeId}?payment=cancelled`,
+					amount: donationPayload.amount,
+					organizationId: donationPayload.organization,
+					causeId,
+					description: donationPayload.description,
+					contactPhone: donationPayload.contactPhone,
+					contactEmail: donationPayload.contactEmail
+				},
+				{
+					headers: {
+						Authorization: `Bearer ${localStorage.getItem('token')}`,
+					},
 				}
 			);
 
