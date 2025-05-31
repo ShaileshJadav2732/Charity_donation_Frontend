@@ -35,7 +35,13 @@ import {
 
 export default function DonationsPage() {
 	const [activeTab, setActiveTab] = useState<
-		"all" | "donations" | "pending" | "received" | "approved" | "confirmed"
+		| "all"
+		| "money"
+		| "items"
+		| "pending"
+		| "received"
+		| "approved"
+		| "confirmed"
 	>("all");
 	const [page, setPage] = useState(1);
 	const limit = 10;
@@ -51,7 +57,7 @@ export default function DonationsPage() {
 		isError: isDonationsError,
 	} = useGetDonorDonationsQuery({
 		status:
-			activeTab === "all"
+			activeTab === "all" || activeTab === "money" || activeTab === "items"
 				? undefined
 				: activeTab === "approved"
 				? "APPROVED"
@@ -61,9 +67,8 @@ export default function DonationsPage() {
 				? "RECEIVED"
 				: activeTab === "confirmed"
 				? "CONFIRMED"
-				: activeTab === "donations"
-				? "DONATIONS"
 				: undefined,
+		type: activeTab === "money" ? "MONEY" : undefined,
 		page,
 		limit,
 	});
@@ -86,17 +91,17 @@ export default function DonationsPage() {
 	}
 
 	const stats = statsData.data as unknown as DonorStatsResponse;
-	const donations = Array.isArray(donationsData.data)
+	const allDonations = Array.isArray(donationsData.data)
 		? donationsData.data
 		: donationsData.data?.data || [];
-	const pagination = donationsData.pagination;
 
-	const handleFeedbackSubmitted = () => {
-		// Refetch donations to update the feedback status
-		// This will trigger a re-render and update the feedback check
-		// Note: This could be optimized with cache invalidation instead of page reload
-		window.location.reload();
-	};
+	// Filter donations based on active tab
+	const donations =
+		activeTab === "items"
+			? allDonations.filter((donation: Donation) => donation.type !== "MONEY")
+			: allDonations;
+
+	const pagination = donationsData.pagination;
 
 	return (
 		<div className="max-w-7xl mx-auto">
@@ -231,16 +236,29 @@ export default function DonationsPage() {
 						>
 							All Donations
 						</button>
+
 						<button
-							onClick={() => setActiveTab("donations")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "donations"
-									? "border-teal-600 text-teal-600"
+							onClick={() => setActiveTab("money")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
+								activeTab === "money"
+									? "border-green-600 text-green-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
-							Donations
+							💰 Money
 						</button>
+
+						<button
+							onClick={() => setActiveTab("items")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
+								activeTab === "items"
+									? "border-blue-600 text-blue-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							📦 Items
+						</button>
+
 						<button
 							onClick={() => setActiveTab("pending")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -296,11 +314,7 @@ export default function DonationsPage() {
 				<div className="grid gap-6 md:grid-cols-2">
 					{donations && donations.length > 0 ? (
 						donations.map((donation: Donation) => (
-							<EnhancedDonationCard
-								key={donation._id}
-								donation={donation}
-								onFeedbackSubmitted={handleFeedbackSubmitted}
-							/>
+							<EnhancedDonationCard key={donation._id} donation={donation} />
 						))
 					) : (
 						<p className="text-gray-600 text-center col-span-2">

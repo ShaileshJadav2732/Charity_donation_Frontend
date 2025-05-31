@@ -10,10 +10,8 @@ import { DonationType } from "@/types/donation";
 import {
 	Bloodtype as BloodIcon,
 	MenuBook as BooksIcon,
-	Category as CategoryIcon,
 	LocalMall as ClothesIcon,
 	Favorite as FavoriteIcon,
-	FilterList as FilterIcon,
 	Fastfood as FoodIcon,
 	Chair as FurnitureIcon,
 	Home as HouseholdIcon,
@@ -29,20 +27,14 @@ import {
 	Card,
 	CardContent,
 	Chip,
-	Collapse,
-	FormControl,
 	InputAdornment,
-	InputLabel,
 	LinearProgress,
-	MenuItem,
-	Select,
-	SelectChangeEvent,
 	Skeleton,
 	TextField,
 	Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 
 const DonationTypeIcons = {
@@ -62,22 +54,9 @@ const CausesPage = () => {
 
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [searchTerm, setSearchTerm] = useState("");
-	const [selectedTag, setSelectedTag] = useState<string>("");
-	const [showFilters, setShowFilters] = useState(false);
-	const [selectedDonationType, setSelectedDonationType] = useState<
-		DonationType | "all"
-	>("all");
+
 	const [page, setPage] = useState(1);
 
-	// Query parameters for filters (remove search from API call)
-	const filterParams = {
-		page,
-		donationType:
-			selectedDonationType !== "all" ? selectedDonationType : undefined,
-		tags: selectedTag ? [selectedTag] : undefined,
-	};
-
-	// For organization users - get their own causes
 	const {
 		data: organizationCausesData,
 		isLoading: isLoadingOrgCauses,
@@ -92,9 +71,7 @@ const CausesPage = () => {
 		data: activeCampaignCausesData,
 		isLoading: isLoadingActiveCauses,
 		error: activeCausesError,
-	} = useGetActiveCampaignCausesQuery(filterParams, {
-		skip: user?.role !== "donor",
-	});
+	} = useGetActiveCampaignCausesQuery({});
 
 	// Determine which data to use based on user role
 	const causesData =
@@ -118,16 +95,6 @@ const CausesPage = () => {
 
 	const handleViewCause = (id: string) => {
 		router.push(`/dashboard/causes/${id}`);
-	};
-
-	const handleDonationTypeChange = (e: SelectChangeEvent) => {
-		setSelectedDonationType(e.target.value as DonationType | "all");
-		setPage(1);
-	};
-
-	const handleTagSelect = (tag: string) => {
-		setSelectedTag(tag === selectedTag ? "" : tag);
-		setPage(1);
 	};
 
 	// Collect all unique tags for filtering
@@ -194,140 +161,7 @@ const CausesPage = () => {
 							}}
 						/>
 					</Box>
-					<Box width={{ xs: "100%", md: 200 }}>
-						<Button
-							fullWidth
-							variant="outlined"
-							startIcon={<FilterIcon />}
-							onClick={() => setShowFilters(!showFilters)}
-							sx={{
-								borderRadius: 3,
-								textTransform: "none",
-								fontWeight: 600,
-								py: 1.5,
-								borderColor: "#287068",
-								color: "#287068",
-								borderWidth: 2,
-								transition: "all 0.3s ease",
-								"&:hover": {
-									backgroundColor: "#287068",
-									color: "white",
-									borderColor: "#287068",
-								},
-							}}
-						>
-							{showFilters ? "Hide Filters" : "Show Filters"}
-						</Button>
-					</Box>
 				</Box>
-
-				<Collapse in={showFilters}>
-					<Box
-						mt={3}
-						p={3}
-						sx={{
-							backgroundColor: "white",
-							borderRadius: 3,
-							boxShadow: "0 4px 12px rgba(40, 112, 104, 0.1)",
-							border: "1px solid #e0e0e0",
-						}}
-					>
-						<Box display="flex" flexWrap="wrap" gap={3}>
-							<Box width={{ xs: "100%", md: 280 }}>
-								<FormControl fullWidth>
-									<InputLabel sx={{ fontWeight: 600, color: "#287068" }}>
-										Donation Type
-									</InputLabel>
-									<Select
-										value={selectedDonationType}
-										onChange={handleDonationTypeChange}
-										label="Donation Type"
-										sx={{
-											borderRadius: 2,
-											"& .MuiSelect-select": { py: 1.5 },
-											"& .MuiOutlinedInput-root": {
-												"& fieldset": {
-													borderColor: "#e0e0e0",
-													borderWidth: 2,
-												},
-												"&:hover fieldset": {
-													borderColor: "#287068",
-												},
-												"&.Mui-focused fieldset": {
-													borderColor: "#287068",
-												},
-											},
-										}}
-									>
-										<MenuItem value="all">All Types</MenuItem>
-										{Object.values(DonationType).map((type) => {
-											const Icon = DonationTypeIcons[type];
-											return (
-												<MenuItem key={type} value={type}>
-													<Box display="flex" alignItems="center">
-														<Icon
-															sx={{
-																mr: 1.5,
-																color: "#287068",
-																fontSize: "1.2rem",
-															}}
-														/>
-														{type.charAt(0) +
-															type.slice(1).toLowerCase().replace("_", " ")}
-													</Box>
-												</MenuItem>
-											);
-										})}
-									</Select>
-								</FormControl>
-							</Box>
-
-							{allTags.size > 0 && (
-								<Box width="100%">
-									<Typography
-										variant="subtitle1"
-										sx={{
-											fontWeight: 600,
-											mb: 2,
-											color: "#287068",
-										}}
-									>
-										Categories
-									</Typography>
-									<Box display="flex" flexWrap="wrap" gap={1}>
-										{Array.from(allTags).map((tag) => (
-											<Chip
-												key={tag}
-												label={tag}
-												clickable
-												onClick={() => handleTagSelect(tag)}
-												icon={<CategoryIcon sx={{ fontSize: "1rem" }} />}
-												sx={{
-													borderRadius: 2,
-													fontSize: "0.875rem",
-													height: 36,
-													px: 1,
-													fontWeight: 500,
-													transition: "all 0.3s ease",
-													backgroundColor:
-														selectedTag === tag ? "#287068" : "white",
-													color: selectedTag === tag ? "white" : "#287068",
-													border: "2px solid #287068",
-													"&:hover": {
-														backgroundColor: "#287068",
-														color: "white",
-														transform: "translateY(-2px)",
-														boxShadow: "0 4px 12px rgba(40, 112, 104, 0.3)",
-													},
-												}}
-											/>
-										))}
-									</Box>
-								</Box>
-							)}
-						</Box>
-					</Box>
-				</Collapse>
 			</Box>
 
 			{/* Causes Grid */}
@@ -389,7 +223,7 @@ const CausesPage = () => {
 						},
 					}}
 				>
-					{searchTerm || selectedDonationType !== "all" || selectedTag
+					{searchTerm
 						? "No causes match your search criteria. Try adjusting your filters."
 						: "No active causes available at the moment. Check back soon!"}
 				</Alert>
@@ -402,10 +236,13 @@ const CausesPage = () => {
 					}}
 				>
 					{filteredCauses?.map((cause: Cause) => {
-						const progress = Math.min(
-							100,
-							Math.round((cause.raisedAmount / cause.targetAmount) * 100)
-						);
+						const raisedAmount = cause.raisedAmount || 0;
+						const targetAmount = cause.targetAmount || 1; // Prevent division by zero
+						const progress =
+							targetAmount > 0
+								? Math.min(100, Math.round((raisedAmount / targetAmount) * 100))
+								: 0;
+
 						const primaryDonationType =
 							cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
 						const DonationIcon = DonationTypeIcons[primaryDonationType];
@@ -422,10 +259,7 @@ const CausesPage = () => {
 						}
 
 						const formatCurrency = (amount: number) => {
-							return new Intl.NumberFormat("en-US", {
-								style: "currency",
-								currency: "USD",
-							}).format(amount);
+							return `₹${amount.toLocaleString()}`;
 						};
 
 						return (
@@ -553,8 +387,8 @@ const CausesPage = () => {
 												Progress
 											</Typography>
 											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(cause.raisedAmount)} /{" "}
-												{formatCurrency(cause.targetAmount)}
+												{formatCurrency(raisedAmount)} /{" "}
+												{formatCurrency(cause.targetAmount || 0)}
 											</Typography>
 										</Box>
 										<LinearProgress

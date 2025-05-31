@@ -4,6 +4,7 @@ import { useGetItemDonationTypeAnalyticsQuery } from "@/store/api/donationApi";
 import { DonationType } from "@/types/donation";
 import { ItemDonationTypeAnalytics } from "@/types/itemDonation";
 import Link from "next/link";
+import { use } from "react";
 import { useRouter } from "next/navigation";
 import {
 	FaArrowLeft,
@@ -98,10 +99,10 @@ const formatDate = (dateString: string) => {
 export default function DonationTypeAnalyticsPage({
 	params,
 }: {
-	params: { type: string };
+	params: Promise<{ type: string }>;
 }) {
 	const router = useRouter();
-	const { type } = params;
+	const { type } = use(params);
 	const decodedType = decodeURIComponent(type);
 
 	const { data, isLoading, isError } =

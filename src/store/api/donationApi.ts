@@ -17,6 +17,7 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "POST",
 				body: data,
 			}),
+			invalidatesTags: ["Donations", "Cause", "Analytics", "Dashboard"],
 		}),
 		getDonations: builder.query<DonationFormData[], void>({
 			query: () => "/donations",

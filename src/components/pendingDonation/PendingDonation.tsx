@@ -303,7 +303,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			}).unwrap();
 
 			toast.dismiss(loadingToast);
-			toast.success("✅ Donation marked as confirmed with receipt!");
+			toast.success(" Donation marked as confirmed with receipt!");
 
 			// Close modal and reset state
 			setShowReceiptUploadModal(false);

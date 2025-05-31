@@ -7,6 +7,7 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import React from "react";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 export default function DonationForm() {
 	const params = useParams();
@@ -15,14 +16,11 @@ export default function DonationForm() {
 	const { data: cause, isLoading } = useGetCauseByIdQuery(causeId as string);
 	const [createDonation, { isLoading: creating }] = useCreateDonationMutation();
 
-	// Get authentication state
-
 	const handleDonationSubmit = async (values: any) => {
 		try {
 			const payload = {
-				donor: "current_user", // This will be handled by the backend auth middleware
 				cause: causeId,
-				organization: (cause?.cause as any)?.organizationId || "",
+				organization: cause?.cause?.organizationId || "",
 				type: values.type,
 				amount: values.type === "MONEY" ? Number(values.amount) : undefined,
 				description: values.description,
@@ -32,7 +30,7 @@ export default function DonationForm() {
 					values.type !== "MONEY" ? values.scheduledDate : undefined,
 				scheduledTime:
 					values.type !== "MONEY" ? values.scheduledTime : undefined,
-				isPickup: values.type === "MONEY" ? false : Boolean(values.isPickup), // Always send boolean
+				isPickup: values.type === "MONEY" ? false : Boolean(values.isPickup),
 				contactPhone: values.contactPhone,
 				contactEmail: values.contactEmail,
 				pickupAddress:
@@ -51,6 +49,11 @@ export default function DonationForm() {
 						: undefined,
 			};
 
+			console.log("Submitting donation with payload:", payload);
+
+			const result = await createDonation(payload).unwrap();
+			console.log("Donation created successfully:", result);
+
 			toast.success("Donation created successfully!");
 
 			// Redirect to donations page after successful creation
@@ -66,6 +69,72 @@ export default function DonationForm() {
 				toast.error(error.data.message);
 			} else {
 				toast.error("Failed to create donation. Please try again.");
+			}
+		}
+	};
+
+	const handlePaymentSubmit = async (values: any) => {
+		try {
+			// Create the complete donation payload
+			const donationPayload = {
+				cause: causeId,
+				organization: cause?.cause?.organizationId || "",
+				type: values.type,
+				amount: values.type === "MONEY" ? Number(values.amount) : undefined,
+				description: values.description,
+				quantity: values.type !== "MONEY" ? Number(values.quantity) : undefined,
+				unit: values.type !== "MONEY" ? values.unit : undefined,
+				scheduledDate:
+					values.type !== "MONEY" ? values.scheduledDate : undefined,
+				scheduledTime:
+					values.type !== "MONEY" ? values.scheduledTime : undefined,
+				isPickup: values.type === "MONEY" ? false : Boolean(values.isPickup),
+				contactPhone: values.contactPhone,
+				contactEmail: values.contactEmail,
+				pickupAddress:
+					values.isPickup && values.type !== "MONEY"
+						? values.pickupAddress
+						: undefined,
+				dropoffAddress:
+					!values.isPickup && values.type !== "MONEY"
+						? {
+								street: "ORGANIZATION_ADDRESS",
+								city: "",
+								state: "",
+								zipCode: "",
+								country: "",
+						  }
+						: undefined,
+			};
+
+			console.log("Creating Stripe checkout session with:", donationPayload);
+
+			const res = await axios.post(
+				"http://localhost:8080/api/payments/create-checkout-session",
+				{
+					// Amount and basic payment info
+					amount: Number(values.amount),
+
+					// Complete donation data for webhook processing
+					donationData: donationPayload,
+
+					// Success/cancel URLs
+					successUrl: `${window.location.origin}/dashboard/donations?payment=success`,
+					cancelUrl: `${window.location.origin}/dashboard/causes/${causeId}?payment=cancelled`,
+				}
+			);
+
+			if (res.data.url) {
+				window.location.href = res.data.url;
+			} else {
+				throw new Error("No checkout URL received");
+			}
+		} catch (err: any) {
+			console.error("Error redirecting to Stripe:", err);
+			if (err.response?.data?.message) {
+				toast.error(err.response.data.message);
+			} else {
+				toast.error("Payment failed. Please try again.");
 			}
 		}
 	};
@@ -99,6 +168,7 @@ export default function DonationForm() {
 		<ImprovedDonationForm
 			cause={cause}
 			onSubmit={handleDonationSubmit}
+			onPaymentSubmit={handlePaymentSubmit}
 			isLoading={creating}
 		/>
 	);

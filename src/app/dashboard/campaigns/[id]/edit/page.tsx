@@ -151,7 +151,7 @@ const EditCampaignPage = ({ params }: EditCampaignPageProps) => {
 	// Redirect after successful update
 	useEffect(() => {
 		if (isSuccess) {
-			router.push(`/dashboard/campaigns/${campaignId}`);
+			router.push(`/dashboard/campaigns`);
 		}
 	}, [isSuccess, router, campaignId]);
 

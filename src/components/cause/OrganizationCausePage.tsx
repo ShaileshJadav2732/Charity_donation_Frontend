@@ -288,10 +288,16 @@ const CausesPage = () => {
 						}}
 					>
 						{filteredCauses?.map((cause: Cause) => {
-							const progress = Math.min(
-								100,
-								Math.round((cause.raisedAmount / cause.targetAmount) * 100)
-							);
+							// Fix progress calculation with safe defaults
+							const raisedAmount = cause.raisedAmount || 0;
+							const targetAmount = cause.targetAmount || 1; // Prevent division by zero
+							const progress =
+								targetAmount > 0
+									? Math.min(
+											100,
+											Math.round((raisedAmount / targetAmount) * 100)
+									  )
+									: 0;
 
 							const acceptanceType = cause.acceptanceType || "money";
 							const primaryDonationType =
@@ -489,7 +495,7 @@ const CausesPage = () => {
 																variant="h6"
 																sx={{ fontWeight: 600, color: "#287068" }}
 															>
-																₹{cause.raisedAmount.toLocaleString()}
+																₹{raisedAmount.toLocaleString()}
 															</Typography>
 														</Box>
 														<Box sx={{ textAlign: "right" }}>
@@ -500,7 +506,7 @@ const CausesPage = () => {
 																Goal
 															</Typography>
 															<Typography variant="h6" sx={{ fontWeight: 600 }}>
-																₹{cause.targetAmount.toLocaleString()}
+																₹{(cause.targetAmount || 0).toLocaleString()}
 															</Typography>
 														</Box>
 													</Box>
@@ -578,7 +584,7 @@ const CausesPage = () => {
 																variant="h6"
 																sx={{ fontWeight: 600, color: "#287068" }}
 															>
-																₹{cause.raisedAmount.toLocaleString()}
+																₹{raisedAmount.toLocaleString()}
 															</Typography>
 														</Box>
 														<Box sx={{ textAlign: "right" }}>
@@ -589,7 +595,7 @@ const CausesPage = () => {
 																Goal + Items
 															</Typography>
 															<Typography variant="h6" sx={{ fontWeight: 600 }}>
-																₹{cause.targetAmount.toLocaleString()}
+																₹{(cause.targetAmount || 0).toLocaleString()}
 															</Typography>
 														</Box>
 													</Box>
