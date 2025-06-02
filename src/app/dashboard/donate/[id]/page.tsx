@@ -3,9 +3,13 @@
 import ImprovedDonationForm from "@/components/donation/ImprovedDonationForm";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { useCreateDonationMutation } from "@/store/api/donationApi";
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
+import StartConversationButton from "@/components/messaging/StartConversationButton";
+import { Box, CircularProgress, Typography, Card, CardContent, Divider } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import React from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import toast from "react-hot-toast";
 import axios from "axios";
 
@@ -13,7 +17,11 @@ export default function DonationForm() {
 	const params = useParams();
 	const router = useRouter();
 	const causeId = params.id;
+	const { user } = useSelector((state: RootState) => state.auth);
 	const { data: cause, isLoading } = useGetCauseByIdQuery(causeId as string);
+	const { data: organizationData } = useGetOrganizationByCauseIdQuery(causeId as string, {
+		skip: !causeId,
+	});
 	const [createDonation, { isLoading: creating }] = useCreateDonationMutation();
 
 	const handleDonationSubmit = async (values: any) => {
@@ -177,11 +185,40 @@ export default function DonationForm() {
 	}
 
 	return (
-		<ImprovedDonationForm
-			cause={cause}
-			onSubmit={handleDonationSubmit}
-			onPaymentSubmit={handlePaymentSubmit}
-			isLoading={creating}
-		/>
+		<Box sx={{ maxWidth: 800, mx: "auto", p: 2 }}>
+			{/* Message Organization Section */}
+			{user?.role === "donor" && organizationData?.organization && (
+				<Card sx={{ mb: 3 }}>
+					<CardContent>
+						<Typography variant="h6" sx={{ mb: 2, color: "#2f8077" }}>
+							Have Questions About This Cause?
+						</Typography>
+						<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+							Message {organizationData.organization.name} directly to ask questions about this cause before donating.
+						</Typography>
+						{/* Use organization.userId (direct User ID) for organizations */}
+						<StartConversationButton
+							recipientId={organizationData.organization.userId}
+							recipientType="user"
+							recipientName={organizationData.organization.name}
+							recipientRole="organization"
+							relatedCause={causeId as string}
+							variant="button"
+							size="medium"
+						/>
+					</CardContent>
+				</Card>
+			)}
+
+			<Divider sx={{ mb: 3 }} />
+
+			{/* Donation Form */}
+			<ImprovedDonationForm
+				cause={cause}
+				onSubmit={handleDonationSubmit}
+				onPaymentSubmit={handlePaymentSubmit}
+				isLoading={creating}
+			/>
+		</Box>
 	);
 }

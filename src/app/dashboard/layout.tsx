@@ -8,6 +8,13 @@ import { RootState } from "@/store/store";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import {
+	useGetDonorProfileQuery,
+	useGetOrganizationProfileQuery
+} from "@/store/api/profileApi";
+import { useGetUnreadCountQuery } from "@/store/api/messageApi";
+import { getProfileImageUrl } from "@/utils/url";
 import {
 	FaBars,
 	FaBell,
@@ -19,6 +26,7 @@ import {
 	FaTimes,
 	FaUser,
 	FaUsers,
+	FaComments,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
 
@@ -36,6 +44,23 @@ export default function DashboardLayout({
 
 	// Use real-time notifications
 	const { unreadCount } = useSocket();
+
+	// Fetch profile data based on user role
+	const { data: donorData } = useGetDonorProfileQuery(undefined, {
+		skip: user?.role !== "donor",
+	});
+
+	const { data: orgData } = useGetOrganizationProfileQuery(undefined, {
+		skip: user?.role !== "organization",
+	});
+
+	// Get unread message count
+	const { data: unreadMessagesData } = useGetUnreadCountQuery();
+
+	// Get profile image
+	const profileImage = user?.role === "donor"
+		? donorData?.profile?.profileImage
+		: orgData?.profile?.logo;
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -68,49 +93,59 @@ export default function DashboardLayout({
 		{ icon: FaHome, text: "Home", path: "/dashboard/home" },
 		...(user?.role === "donor"
 			? [
-					{
-						icon: FaHandsHelping,
-						text: "Causes",
-						path: "/dashboard/causes",
-					},
-					{
-						icon: FaHeart,
-						text: "My Donations",
-						path: "/dashboard/donations",
-					},
-					{
-						icon: FaChartBar,
-						text: "Analytics",
-						path: "/dashboard/analytics/donations",
-					},
-			  ]
+				{
+					icon: FaHandsHelping,
+					text: "Causes",
+					path: "/dashboard/causes",
+				},
+				{
+					icon: FaHeart,
+					text: "My Donations",
+					path: "/dashboard/donations",
+				},
+				{
+					icon: FaComments,
+					text: "Messages",
+					path: "/dashboard/messages",
+				},
+				{
+					icon: FaChartBar,
+					text: "Analytics",
+					path: "/dashboard/analytics/donations",
+				},
+			]
 			: [
-					{
-						icon: FaUsers,
-						text: "Campaigns",
-						path: "/dashboard/campaigns",
-					},
-					{
-						icon: FaHandsHelping,
-						text: "Causes",
-						path: "/dashboard/causes",
-					},
-					{
-						icon: FaUsers,
-						text: "Donation",
-						path: "/dashboard/donations/pending",
-					},
-					{
-						icon: FaHeart,
-						text: "Donors",
-						path: "/dashboard/donors",
-					},
-					{
-						icon: FaChartBar,
-						text: "Analytics",
-						path: "/dashboard/analytics",
-					},
-			  ]),
+				{
+					icon: FaUsers,
+					text: "Campaigns",
+					path: "/dashboard/campaigns",
+				},
+				{
+					icon: FaHandsHelping,
+					text: "Causes",
+					path: "/dashboard/causes",
+				},
+				{
+					icon: FaUsers,
+					text: "Donation",
+					path: "/dashboard/donations/pending",
+				},
+				{
+					icon: FaHeart,
+					text: "Donors",
+					path: "/dashboard/donors",
+				},
+				{
+					icon: FaComments,
+					text: "Messages",
+					path: "/dashboard/messages",
+				},
+				{
+					icon: FaChartBar,
+					text: "Analytics",
+					path: "/dashboard/analytics",
+				},
+			]),
 	];
 
 	return (
@@ -118,9 +153,8 @@ export default function DashboardLayout({
 			<div className="min-h-screen bg-gradient-to-br from-teal-100 via-teal-50 to-teal-200">
 				{/* Top Navigation Bar */}
 				<div
-					className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
-						scrolled ? "shadow-lg" : ""
-					}`}
+					className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${scrolled ? "shadow-lg" : ""
+						}`}
 				>
 					{/* Left side: Hamburger menu (mobile only) + Logo */}
 					<div className="flex items-center space-x-4">
@@ -147,13 +181,30 @@ export default function DashboardLayout({
 						{/* Profile Button */}
 						<Link
 							href="/dashboard/profile"
-							className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
+							className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
 							title="Profile"
 						>
-							<FaUser className="h-6 w-6 text-teal-600" />
-							<span className="hidden md:block text-sm font-medium text-gray-700">
-								Profile
-							</span>
+							<div className="h-8 w-8 rounded-full border-2 border-teal-200 overflow-hidden bg-gray-200">
+								{profileImage ? (
+									<Image
+										src={getProfileImageUrl(profileImage)}
+										alt="Profile"
+										className="h-full w-full object-cover"
+										width={32}
+										height={32}
+										onError={(e) => {
+											// Fallback to default avatar on error
+											e.currentTarget.src = "/default-avatar.svg";
+										}}
+									/>
+								) : (
+									<div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-teal-400 to-green-500">
+										<span className="text-white text-xs font-bold">
+											{user?.email?.[0]?.toUpperCase() || '?'}
+										</span>
+									</div>
+								)}
+							</div>
 						</Link>
 
 						{/* Notification Button */}
@@ -182,9 +233,8 @@ export default function DashboardLayout({
 
 				{/* Sidebar */}
 				<aside
-					className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${
-						isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-					} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16 overflow-y-auto`}
+					className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+						} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16 overflow-y-auto`}
 				>
 					<div className="h-full flex flex-col">
 						{/* Sidebar header */}
@@ -203,15 +253,21 @@ export default function DashboardLayout({
 								<Link
 									key={item.path}
 									href={item.path}
-									className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${
-										pathname === item.path
-											? "bg-teal-50 text-teal-600"
-											: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
-									}`}
+									className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors duration-200 ${pathname === item.path
+										? "bg-teal-50 text-teal-600"
+										: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
+										}`}
 									onClick={() => setIsMobileMenuOpen(false)}
 								>
-									<item.icon className="mr-3 h-5 w-5" />
-									{item.text}
+									<div className="flex items-center">
+										<item.icon className="mr-3 h-5 w-5" />
+										{item.text}
+									</div>
+									{item.text === "Messages" && unreadMessagesData?.count > 0 && (
+										<span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+											{unreadMessagesData.count}
+										</span>
+									)}
 								</Link>
 							))}
 						</nav>

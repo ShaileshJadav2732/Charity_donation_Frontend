@@ -4,6 +4,8 @@ import { RootState } from "../store";
 // Define interfaces for organization data
 export interface Organization {
 	_id: string;
+	id: string;
+	userId: string; // Add userId for messaging
 	name: string;
 	description: string;
 	email: string;

@@ -218,7 +218,14 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 						{/* Receipt Downloads */}
 						<div className="flex items-center gap-2">
 							{donation.receiptImage && (
-								<button
+								<a
+									href={
+										donation.receiptImage.startsWith('http')
+											? donation.receiptImage
+											: `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080'}${donation.receiptImage}`
+									}
+									target="_blank"
+									rel="noopener noreferrer"
 									className="inline-flex items-center px-3 py-2 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
 									title={
 										donation.type === "MONEY"
@@ -228,16 +235,24 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 								>
 									<FaImage className="h-3 w-3 mr-1" />
 									{donation.type === "MONEY" ? "Payment Proof" : "Photo"}
-								</button>
+								</a>
 							)}
 							{donation.pdfReceiptUrl && (
-								<button
+								<a
+									href={
+										donation.pdfReceiptUrl.startsWith('http')
+											? donation.pdfReceiptUrl
+											: `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080'}${donation.pdfReceiptUrl}`
+									}
+									target="_blank"
+									rel="noopener noreferrer"
+									download
 									className="inline-flex items-center px-3 py-2 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
 									title="Download PDF receipt"
 								>
 									<FaFilePdf className="h-3 w-3 mr-1" />
 									PDF Receipt
-								</button>
+								</a>
 							)}
 						</div>
 

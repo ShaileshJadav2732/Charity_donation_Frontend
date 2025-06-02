@@ -186,12 +186,21 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		);
 
 		try {
+			// ✅ FIXED: Actually call the API to mark as received
+			const result = await markAsReceived({
+				donationId: selectedDonation._id,
+				photo: selectedPhoto,
+			}).unwrap();
+
 			// Dismiss loading toast and show success
 			toast.dismiss(loadingToast);
 			toast.success("Donation marked as received successfully");
+
+			// Close modal and reset state
 			setShowPhotoUploadModal(false);
 			setSelectedPhoto(null);
 			setPhotoPreviewUrl(null);
+			setSelectedDonation(null);
 
 			// Force refetch to update the UI
 			await refetch();
@@ -286,29 +295,26 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 	};
 
 	const handleMarkAsConfirmed = async () => {
-		if (!selectedDonation || !selectedReceipt) {
-			toast.error("Please select a receipt file to upload");
+		if (!selectedDonation) {
+			toast.error("No donation selected");
 			return;
 		}
 
 		setIsMarkingConfirmed(true);
 		const loadingToast = toast.loading(
-			"Uploading receipt and marking donation as confirmed..."
+			"Marking donation as confirmed and generating PDF receipt..."
 		);
 
 		try {
 			const result = await markAsConfirmed({
 				donationId: selectedDonation._id,
-				receiptFile: selectedReceipt,
 			}).unwrap();
 
 			toast.dismiss(loadingToast);
-			toast.success(" Donation marked as confirmed with receipt!");
+			toast.success("Donation confirmed! PDF receipt auto-generated.");
 
 			// Close modal and reset state
 			setShowReceiptUploadModal(false);
-			setSelectedReceipt(null);
-			setReceiptPreviewUrl(null);
 			setSelectedDonation(null);
 
 			// Force refetch to update the UI
@@ -460,16 +466,16 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 						{searchTerm
 							? "No donations match your search criteria."
 							: status === "PENDING"
-							? "You don't have any pending donations."
-							: status === "APPROVED"
-							? "You don't have any approved donations."
-							: status === "RECEIVED"
-							? "You don't have any completed donations."
-							: status === "CONFIRMED"
-							? "You don't have any confirmed donations."
-							: status === "CANCELLED"
-							? "You don't have any cancelled donations."
-							: "You haven't received any donations yet."}
+								? "You don't have any pending donations."
+								: status === "APPROVED"
+									? "You don't have any approved donations."
+									: status === "RECEIVED"
+										? "You don't have any completed donations."
+										: status === "CONFIRMED"
+											? "You don't have any confirmed donations."
+											: status === "CANCELLED"
+												? "You don't have any cancelled donations."
+												: "You haven't received any donations yet."}
 					</p>
 					{searchTerm && (
 						<button
@@ -567,10 +573,9 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div className="text-sm font-bold text-gray-900">
 													{donation.type === "MONEY"
-														? `$${donation.amount?.toFixed(2) || "0.00"}`
-														: `${donation.quantity || 0} ${
-																donation.unit || ""
-														  }`}
+														? `₹${donation.amount?.toFixed(2) || "0.00"}`
+														: `${donation.quantity || 0} ${donation.unit || ""
+														}`}
 												</div>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
@@ -706,8 +711,8 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								</strong>{" "}
 								{selectedDonation.scheduledDate
 									? new Date(
-											selectedDonation.scheduledDate
-									  ).toLocaleDateString()
+										selectedDonation.scheduledDate
+									).toLocaleDateString()
 									: "N/A"}{" "}
 								at {selectedDonation.scheduledTime || "N/A"}
 							</p>
@@ -721,18 +726,17 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								<strong className="font-medium text-gray-900">Status:</strong>{" "}
 								<span
 									className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
-                    ${
-											selectedDonation.status === "PENDING"
-												? "bg-yellow-100 text-yellow-800"
-												: selectedDonation.status === "APPROVED"
+                    ${selectedDonation.status === "PENDING"
+											? "bg-yellow-100 text-yellow-800"
+											: selectedDonation.status === "APPROVED"
 												? "bg-blue-100 text-blue-800"
 												: selectedDonation.status === "RECEIVED"
-												? "bg-green-100 text-green-800"
-												: selectedDonation.status === "CONFIRMED"
-												? "bg-purple-100 text-purple-800"
-												: selectedDonation.status === "CANCELLED"
-												? "bg-green-100 text-green-800"
-												: "bg-red-100 text-red-800"
+													? "bg-green-100 text-green-800"
+													: selectedDonation.status === "CONFIRMED"
+														? "bg-purple-100 text-purple-800"
+														: selectedDonation.status === "CANCELLED"
+															? "bg-green-100 text-green-800"
+															: "bg-red-100 text-red-800"
 										}`}
 								>
 									{selectedDonation.status}
@@ -750,11 +754,9 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										Pickup Address:
 									</strong>{" "}
 									{selectedDonation.pickupAddress
-										? `${selectedDonation.pickupAddress.street || ""}, ${
-												selectedDonation.pickupAddress.city || ""
-										  }, ${selectedDonation.pickupAddress.state || ""}, ${
-												selectedDonation.pickupAddress.zipCode || ""
-										  }, ${selectedDonation.pickupAddress.country || ""}`
+										? `${selectedDonation.pickupAddress.street || ""}, ${selectedDonation.pickupAddress.city || ""
+										}, ${selectedDonation.pickupAddress.state || ""}, ${selectedDonation.pickupAddress.zipCode || ""
+										}, ${selectedDonation.pickupAddress.country || ""}`
 										: "N/A"}
 								</p>
 							)}
@@ -869,12 +871,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										Donation Type:
 									</strong>{" "}
 									{selectedDonation.type === "MONEY"
-										? `Money ($${
-												selectedDonation.amount?.toFixed(2) || "0.00"
-										  })`
-										: `${selectedDonation.type} (${selectedDonation.quantity} ${
-												selectedDonation.unit || ""
-										  })`}
+										? `Money (₹${selectedDonation.amount?.toFixed(2) || "0.00"
+										})`
+										: `${selectedDonation.type} (${selectedDonation.quantity} ${selectedDonation.unit || ""
+										})`}
 								</p>
 							</div>
 						</div>
@@ -895,11 +895,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							onClick={handleMarkAsReceived}
 							variant="contained"
 							disabled={!selectedPhoto || isMarkingReceived}
-							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${
-								!selectedPhoto || isMarkingReceived
-									? "opacity-50 cursor-not-allowed"
-									: ""
-							}`}
+							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${!selectedPhoto || isMarkingReceived
+								? "opacity-50 cursor-not-allowed"
+								: ""
+								}`}
 						>
 							{isMarkingReceived ? "Processing..." : "Mark as Received"}
 						</Button>
@@ -926,67 +925,37 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 					}}
 				>
 					<DialogTitle className="text-2xl font-bold text-gray-900 border-b border-gray-200">
-						Mark Donation as Confirmed
+						Confirm Donation Completion
 					</DialogTitle>
 					<DialogContent className="p-6 bg-white">
 						<div className="space-y-4">
 							<p className="text-sm text-gray-700 mb-4">
-								Upload a receipt for this donation to mark it as confirmed and
-								notify the donor.
+								Mark this donation as confirmed and completed. A PDF receipt will be automatically generated and sent to the donor.
 							</p>
 
-							<div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
-								{receiptPreviewUrl ? (
-									<div className="mb-4 relative h-64 w-full max-w-md mx-auto">
-										<Image
-											src={receiptPreviewUrl}
-											alt="Receipt preview"
-											className="rounded-lg shadow-sm object-contain"
-											fill
-											sizes="(max-width: 768px) 100vw, 400px"
-										/>
+							<div className="flex flex-col items-center justify-center border-2 border-dashed border-green-300 rounded-lg p-6 bg-green-50">
+								<div className="text-center">
+									<div className="mx-auto h-16 w-16 text-green-600 mb-4">
+										📄
 									</div>
-								) : selectedReceipt &&
-								  selectedReceipt.type === "application/pdf" ? (
-									<div className="text-center mb-4">
-										<div className="mx-auto h-12 w-12 text-red-500 mb-2">
-											📄
-										</div>
-										<p className="text-sm text-gray-700 font-medium">
-											{selectedReceipt.name}
+									<h3 className="text-lg font-medium text-green-900 mb-2">
+										Auto-Generate PDF Receipt
+									</h3>
+									<p className="text-sm text-green-700 mb-4">
+										A professional PDF receipt will be automatically generated and sent to the donor when you confirm this donation.
+									</p>
+									<div className="bg-white rounded-lg p-3 border border-green-200">
+										<p className="text-xs text-green-600 font-medium">
+											✅ No file upload required
 										</p>
-										<p className="text-xs text-gray-500">
-											PDF files cannot be previewed
+										<p className="text-xs text-green-600">
+											✅ Automatic email notification
+										</p>
+										<p className="text-xs text-green-600">
+											✅ Professional receipt format
 										</p>
 									</div>
-								) : (
-									<div className="text-center mb-4">
-										<div className="mx-auto h-12 w-12 text-gray-400 mb-2">
-											📄
-										</div>
-										<p className="mt-1 text-sm text-gray-500">
-											No receipt selected
-										</p>
-									</div>
-								)}
-
-								<input
-									type="file"
-									ref={receiptInputRef}
-									onChange={handleReceiptFileChange}
-									accept="image/*,.pdf"
-									className="hidden"
-								/>
-								<Button
-									onClick={() => receiptInputRef.current?.click()}
-									variant="outlined"
-									className="border-blue-300 text-blue-700 hover:bg-blue-50 font-medium rounded-lg px-4 py-2 transition-colors"
-								>
-									{selectedReceipt ? "Change Receipt" : "Select Receipt"}
-								</Button>
-								<p className="text-xs text-gray-500 mt-2 text-center">
-									Supports images and PDF files (max 5MB)
-								</p>
+								</div>
 							</div>
 
 							<div className="mt-4">
@@ -999,12 +968,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										Donation Type:
 									</strong>{" "}
 									{selectedDonation.type === "MONEY"
-										? `Money ($${
-												selectedDonation.amount?.toFixed(2) || "0.00"
-										  })`
-										: `${selectedDonation.type} (${selectedDonation.quantity} ${
-												selectedDonation.unit || ""
-										  })`}
+										? `Money (₹${selectedDonation.amount?.toFixed(2) || "0.00"
+										})`
+										: `${selectedDonation.type} (${selectedDonation.quantity} ${selectedDonation.unit || ""
+										})`}
 								</p>
 							</div>
 						</div>
@@ -1013,8 +980,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 						<Button
 							onClick={() => {
 								setShowReceiptUploadModal(false);
-								setSelectedReceipt(null);
-								setReceiptPreviewUrl(null);
+								setSelectedDonation(null);
 							}}
 							variant="outlined"
 							className="border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg px-4 py-2 transition-colors"
@@ -1024,14 +990,13 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 						<Button
 							onClick={handleMarkAsConfirmed}
 							variant="contained"
-							disabled={!selectedReceipt || isMarkingConfirmed}
-							className={`bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${
-								!selectedReceipt || isMarkingConfirmed
-									? "opacity-50 cursor-not-allowed"
-									: ""
-							}`}
+							disabled={isMarkingConfirmed}
+							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${isMarkingConfirmed
+								? "opacity-50 cursor-not-allowed"
+								: ""
+								}`}
 						>
-							{isMarkingConfirmed ? "Processing..." : "Mark as Confirmed"}
+							{isMarkingConfirmed ? "Generating Receipt..." : "Confirm & Generate Receipt"}
 						</Button>
 					</DialogActions>
 				</Dialog>
@@ -1076,11 +1041,10 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										<button
 											key={pageNum}
 											onClick={() => setPage(pageNum)}
-											className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-												page === pageNum
-													? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-													: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-											} transition-colors`}
+											className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === pageNum
+												? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+												: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+												} transition-colors`}
 										>
 											{pageNum}
 										</button>

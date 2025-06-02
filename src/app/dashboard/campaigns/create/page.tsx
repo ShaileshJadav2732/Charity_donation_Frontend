@@ -638,7 +638,7 @@ const CreateCampaignPage = () => {
 							slotProps={{
 								input: {
 									readOnly: formData.selectedCauses.length > 0,
-									startAdornment: <span>$</span>,
+									startAdornment: <span>₹</span>,
 								},
 							}}
 							helperText={

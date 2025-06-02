@@ -10,7 +10,8 @@ interface DonorProfile {
 	firstName: string;
 	lastName: string;
 	email: string;
-	avatar?: string;
+	profileImage?: string;
+	coverImage?: string;
 	phoneNumber?: string;
 	address?: string;
 	city?: string;
@@ -36,7 +37,8 @@ interface OrganizationProfile {
 	city?: string;
 	state?: string;
 	country?: string;
-	avatar?: string;
+	logo?: string;
+	coverImage?: string;
 	joinDate: string;
 }
 
@@ -113,10 +115,13 @@ export const profileApi = createApi({
 		}),
 
 		// Update donor profile
-		updateDonorProfile: builder.mutation<DonorProfile, Partial<DonorProfile>>({
+		updateDonorProfile: builder.mutation<
+			{ message: string; profile: DonorProfile },
+			Partial<DonorProfile>
+		>({
 			query: (data) => ({
 				url: "/profile/donor",
-				method: "POST",
+				method: "PUT",
 				body: data,
 			}),
 			invalidatesTags: ["Profile"],
@@ -129,7 +134,7 @@ export const profileApi = createApi({
 		>({
 			query: (data) => ({
 				url: "/profile/organization",
-				method: "POST",
+				method: "PUT",
 				body: data,
 			}),
 			invalidatesTags: ["OrganizationProfile"],
@@ -143,6 +148,8 @@ export const profileApi = createApi({
 			}),
 			invalidatesTags: ["Profile"],
 		}),
+
+
 	}),
 });
 

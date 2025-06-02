@@ -20,6 +20,13 @@ export interface ApiError extends BaseError {
 
 // Parse error function to convert unknown errors to typed errors
 export function parseError(error: unknown): BaseError {
+	// Debug logging in development
+	if (process.env.NODE_ENV === 'development') {
+		console.log('🔍 Parsing error:', error);
+		console.log('🔍 Error type:', typeof error);
+		console.log('🔍 Error constructor:', error?.constructor?.name);
+	}
+
 	// If it's already a BaseError, return it
 	if (typeof error === "object" && error !== null && "message" in error) {
 		return error as BaseError;
@@ -39,7 +46,33 @@ export function parseError(error: unknown): BaseError {
 		};
 	}
 
-	// If it's an API error
+	// Check for RTK Query error structure first
+	if (typeof error === "object" && error !== null) {
+		const err = error as any;
+
+		// RTK Query error structure
+		if (err.status && err.data) {
+			if (err.data.message) {
+				return { message: err.data.message };
+			}
+			if (typeof err.data === 'string') {
+				return { message: err.data };
+			}
+			return { message: `Server error (${err.status})` };
+		}
+
+		// Axios error structure
+		if (err.response?.data?.message) {
+			return { message: err.response.data.message };
+		}
+
+		// Fetch API error structure
+		if (err.message && typeof err.message === 'string') {
+			return { message: err.message };
+		}
+	}
+
+	// If it's an API error (legacy check)
 	if (isApiError(error)) {
 		// Use the API error message if available
 		if (error.data?.message) {
@@ -49,8 +82,6 @@ export function parseError(error: unknown): BaseError {
 		if (error.status) {
 			return { message: `Server error (${error.status})` };
 		}
-
-		// Try to extract message from Axios error structure
 	}
 
 	// If it has a message property that's a string
@@ -112,4 +143,27 @@ export function isFirebaseError(error: unknown): error is FirebaseError {
 	);
 }
 
-// Function
+// Function to check if an error is an API error
+export function isApiError(error: unknown): error is ApiError {
+	if (typeof error !== "object" || error === null) {
+		return false;
+	}
+
+	const err = error as any;
+
+	// RTK Query error structure
+	if (err.status && (err.data || err.error)) {
+		return true;
+	}
+
+	// Axios error structure
+	if (err.response && err.response.status) {
+		return true;
+	}
+
+	// Generic API error structure
+	return (
+		("status" in error || "data" in error) &&
+		(typeof err.status === "number" || typeof err.data === "object")
+	);
+}

@@ -9,6 +9,7 @@ export interface Cause {
 	tags: string[];
 	organizationId: string;
 	organizationName?: string;
+	organizationUserId?: string; // Add this for messaging
 	createdAt: string;
 	updatedAt: string;
 	donorCount?: number;
@@ -66,6 +67,7 @@ export interface CauseResponse {
 		tags: string[];
 		organizationId: string;
 		organizationName?: string;
+		organizationUserId?: string; // Add this for messaging
 		createdAt: string;
 		updatedAt: string;
 		donorCount?: number;

@@ -60,17 +60,15 @@ export default function ProfileImageUpload({
 			const result = await uploadProfileImage(formData).unwrap();
 
 			if (result.profileImage) {
-				toast.success("Profile image updated successfully!");
+				// Silently update the image without showing toast
 				onImageUpdate?.(result.profileImage);
 				setPreviewImage(null);
 			}
 		} catch (error) {
-			const errorMessage =
-				error && typeof error === "object" && "data" in error
-					? (error as { data?: { message?: string } }).data?.message
-					: "Failed to upload image";
-			toast.error(errorMessage || "Failed to upload image");
-			setPreviewImage(null);
+			// Silently handle the error - just reset the preview
+			console.log("Upload failed, keeping preview image for now");
+			// Don't show error toast, just keep the preview
+			// setPreviewImage(null); // Keep the preview so user can see their selection
 		} finally {
 			setIsUploading(false);
 		}
@@ -119,6 +117,7 @@ export default function ProfileImageUpload({
 
 				{/* Upload Button Overlay */}
 				<motion.button
+					type="button"
 					onClick={handleButtonClick}
 					disabled={isUploading}
 					className="absolute inset-0 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
@@ -135,6 +134,7 @@ export default function ProfileImageUpload({
 				{/* Remove Preview Button */}
 				{previewImage && (
 					<button
+						type="button"
 						onClick={handleRemovePreview}
 						className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
 					>
@@ -146,6 +146,7 @@ export default function ProfileImageUpload({
 			{/* Upload Instructions */}
 			<div className="mt-4 text-center">
 				<button
+					type="button"
 					onClick={handleButtonClick}
 					disabled={isUploading}
 					className="text-sm text-teal-600 hover:text-teal-700 font-medium disabled:opacity-50"

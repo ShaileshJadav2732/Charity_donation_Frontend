@@ -8,6 +8,7 @@ import {
 	useGetDonorProfileQuery,
 	useGetOrganizationProfileQuery,
 } from "@/store/api/profileApi";
+import { getProfileImageUrl } from "@/utils/url";
 import {
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
@@ -61,20 +62,20 @@ export default function ProfileDashboard() {
 	const donorStats: DonationStats = {
 		totalDonated:
 			donorStatsData?.data &&
-			typeof donorStatsData.data === "object" &&
-			"totalDonated" in donorStatsData.data
+				typeof donorStatsData.data === "object" &&
+				"totalDonated" in donorStatsData.data
 				? (donorStatsData.data as unknown as DonationStats).totalDonated || 0
 				: 0,
 		totalCauses:
 			donorStatsData?.data &&
-			typeof donorStatsData.data === "object" &&
-			"totalCauses" in donorStatsData.data
+				typeof donorStatsData.data === "object" &&
+				"totalCauses" in donorStatsData.data
 				? (donorStatsData.data as unknown as DonationStats).totalCauses || 0
 				: 0,
 		averageDonation:
 			donorStatsData?.data &&
-			typeof donorStatsData.data === "object" &&
-			"averageDonation" in donorStatsData.data
+				typeof donorStatsData.data === "object" &&
+				"averageDonation" in donorStatsData.data
 				? (donorStatsData.data as unknown as DonationStats).averageDonation || 0
 				: 0,
 	};
@@ -188,19 +189,33 @@ export default function ProfileDashboard() {
 				<div className="bg-white shadow rounded-lg overflow-hidden">
 					<div className="h-48 bg-gradient-to-r from-teal-500 to-green-400 relative">
 						<div className="absolute -bottom-16 left-8">
-							<div className="h-32 w-32 rounded-full border-4 border-white overflow-hidden bg-white">
-								<Image
-									src={
-										(isDonor && donorProfile?.avatar) ||
-										orgProfile?.avatar ||
-										profile.avatar ||
-										"/shailesh.jpg"
-									}
-									alt="Profile"
-									className="h-full w-full object-cover"
-									width={128}
-									height={128}
-								/>
+							<div className="h-32 w-32 rounded-full border-4 border-white overflow-hidden bg-gray-200">
+								{(isDonor && donorProfile?.profileImage) ||
+									(orgProfile?.logo) ? (
+									<Image
+										src={getProfileImageUrl(
+											(isDonor && donorProfile?.profileImage) ||
+											orgProfile?.logo ||
+											""
+										)}
+										alt="Profile"
+										className="h-full w-full object-cover"
+										width={128}
+										height={128}
+										onError={(e) => {
+											// Fallback to default avatar on error
+											e.currentTarget.src = "/default-avatar.svg";
+										}}
+									/>
+								) : (
+									<div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-teal-400 to-green-500">
+										<span className="text-white text-2xl font-bold">
+											{isDonor && donorProfile
+												? `${donorProfile.firstName?.[0] || ''}${donorProfile.lastName?.[0] || ''}`
+												: orgProfile?.name?.[0] || user?.email?.[0]?.toUpperCase() || '?'}
+										</span>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
@@ -239,43 +254,39 @@ export default function ProfileDashboard() {
 						<div className="flex overflow-x-auto">
 							<button
 								onClick={() => setActiveTab("overview")}
-								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
-									activeTab === "overview"
-										? "border-b-2 border-teal-500 text-teal-600"
-										: "text-gray-500 hover:text-gray-700"
-								}`}
+								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "overview"
+									? "border-b-2 border-teal-500 text-teal-600"
+									: "text-gray-500 hover:text-gray-700"
+									}`}
 							>
 								Overview
 							</button>
 							<button
 								onClick={() => setActiveTab("activity")}
-								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
-									activeTab === "activity"
-										? "border-b-2 border-teal-500 text-teal-600"
-										: "text-gray-500 hover:text-gray-700"
-								}`}
+								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "activity"
+									? "border-b-2 border-teal-500 text-teal-600"
+									: "text-gray-500 hover:text-gray-700"
+									}`}
 							>
 								Activity
 							</button>
 							{isDonor && (
 								<button
 									onClick={() => setActiveTab("badges")}
-									className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
-										activeTab === "badges"
-											? "border-b-2 border-teal-500 text-teal-600"
-											: "text-gray-500 hover:text-gray-700"
-									}`}
+									className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "badges"
+										? "border-b-2 border-teal-500 text-teal-600"
+										: "text-gray-500 hover:text-gray-700"
+										}`}
 								>
 									Badges & Achievements
 								</button>
 							)}
 							<button
 								onClick={() => setActiveTab("details")}
-								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
-									activeTab === "details"
-										? "border-b-2 border-teal-500 text-teal-600"
-										: "text-gray-500 hover:text-gray-700"
-								}`}
+								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "details"
+									? "border-b-2 border-teal-500 text-teal-600"
+									: "text-gray-500 hover:text-gray-700"
+									}`}
 							>
 								Details
 							</button>
@@ -391,9 +402,9 @@ export default function ProfileDashboard() {
 									<p className="text-gray-700">
 										{isDonor && donorProfile
 											? donorProfile.bio ||
-											  "No bio provided yet. Edit your profile to add a bio."
+											"No bio provided yet. Edit your profile to add a bio."
 											: orgProfile?.description ||
-											  "No description provided yet."}
+											"No description provided yet."}
 									</p>
 								</div>
 							</div>
@@ -408,7 +419,7 @@ export default function ProfileDashboard() {
 							</h2>
 
 							{isDonor &&
-							(actualDonations.length > 0 || recentDonations.length > 0) ? (
+								(actualDonations.length > 0 || recentDonations.length > 0) ? (
 								<div className="flow-root">
 									<ul className="-mb-8">
 										{/* Use actual donations from API if available, otherwise fall back to recentDonations */}
@@ -422,12 +433,12 @@ export default function ProfileDashboard() {
 														(actualDonations.length > 0
 															? actualDonations.length
 															: recentDonations.length) -
-															1 && (
-														<span
-															className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
-															aria-hidden="true"
-														></span>
-													)}
+														1 && (
+															<span
+																className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
+																aria-hidden="true"
+															></span>
+														)}
 													<div className="relative flex space-x-3">
 														<div>
 															<span className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ring-8 ring-white">
@@ -537,8 +548,8 @@ export default function ProfileDashboard() {
 																	{index === 0
 																		? "2 days ago"
 																		: index === 1
-																		? "1 week ago"
-																		: "2 weeks ago"}
+																			? "1 week ago"
+																			: "2 weeks ago"}
 																</time>
 															</div>
 														</div>
@@ -655,8 +666,8 @@ export default function ProfileDashboard() {
 											more to earn the &quot;Supporter&quot; badge
 										</>
 									) : (donorStats.totalDonated ||
-											donorProfile?.stats?.totalDonations ||
-											0) < 500 ? (
+										donorProfile?.stats?.totalDonations ||
+										0) < 500 ? (
 										<>
 											Donate $
 											{500 -
@@ -666,8 +677,8 @@ export default function ProfileDashboard() {
 											more to earn the &quot;Regular Donor&quot; badge
 										</>
 									) : (donorStats.totalDonated ||
-											donorProfile?.stats?.totalDonations ||
-											0) < 1000 ? (
+										donorProfile?.stats?.totalDonations ||
+										0) < 1000 ? (
 										<>
 											Donate $
 											{1000 -

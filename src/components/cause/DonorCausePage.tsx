@@ -7,6 +7,7 @@ import {
 import { RootState } from "@/store/store";
 import { Cause } from "@/types/cause";
 import { DonationType } from "@/types/donation";
+import StartConversationButton from "@/components/messaging/StartConversationButton";
 import {
 	Bloodtype as BloodIcon,
 	MenuBook as BooksIcon,
@@ -130,15 +131,17 @@ const CausesPage = () => {
 							placeholder="Search causes by title, description, or tags..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: "#287068" }} />
-									</InputAdornment>
-								),
-								sx: {
-									backgroundColor: "white",
-									borderRadius: 3,
+							slotProps={{
+								input: {
+									startAdornment: (
+										<InputAdornment position="start">
+											<SearchIcon sx={{ color: "#287068" }} />
+										</InputAdornment>
+									),
+									sx: {
+										backgroundColor: "white",
+										borderRadius: 3,
+									},
 								},
 							}}
 							sx={{
@@ -236,12 +239,22 @@ const CausesPage = () => {
 					}}
 				>
 					{filteredCauses?.map((cause: Cause) => {
-						const raisedAmount = cause.raisedAmount || 0;
-						const targetAmount = cause.targetAmount || 1; // Prevent division by zero
+						// Ensure we have valid numbers for calculation
+						const raisedAmount = typeof cause.raisedAmount === 'number' ? cause.raisedAmount : 0;
+						const targetAmount = typeof cause.targetAmount === 'number' && cause.targetAmount > 0 ? cause.targetAmount : 1;
 						const progress =
 							targetAmount > 0
 								? Math.min(100, Math.round((raisedAmount / targetAmount) * 100))
 								: 0;
+
+						// Debug logging for progress issues
+						console.log(`🔍 Cause Progress: ${cause.title}`, {
+							raisedAmount,
+							targetAmount,
+							progress,
+							originalRaised: cause.raisedAmount,
+							originalTarget: cause.targetAmount
+						});
 
 						const primaryDonationType =
 							cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
@@ -261,6 +274,15 @@ const CausesPage = () => {
 						const formatCurrency = (amount: number) => {
 							return `₹${amount.toLocaleString()}`;
 						};
+
+						// Debug logging for each cause
+						console.log('🔍 CAUSE MESSAGE BUTTON DEBUG:', {
+							causeId: cause.id,
+							organizationId: cause.organizationId,
+							organizationUserId: cause.organizationUserId,
+							organizationName: cause.organizationName,
+							strategy: "Use cause.organizationUserId (populated from organization.userId)"
+						});
 
 						return (
 							<Card
@@ -448,32 +470,46 @@ const CausesPage = () => {
 										</Box>
 									)}
 
-									{/* Donate Button */}
-									<Button
-										variant="contained"
-										fullWidth
-										startIcon={<FavoriteIcon />}
-										onClick={(e) => {
-											e.stopPropagation();
-											router.push(`/dashboard/donate/${cause.id}`);
-										}}
-										sx={{
-											backgroundColor: "#287068",
-											borderRadius: 2,
-											textTransform: "none",
-											fontWeight: 600,
-											py: 1.5,
-											fontSize: "0.875rem",
-											transition: "all 0.3s ease",
-											"&:hover": {
-												backgroundColor: "#1f5a52",
-												transform: "translateY(-2px)",
-												boxShadow: "0 4px 12px rgba(40, 112, 104, 0.3)",
-											},
-										}}
-									>
-										Donate Now
-									</Button>
+									{/* Action Buttons */}
+									<Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+										{/* Message Button - Use cause.organizationUserId (populated from organization.userId) */}
+										<StartConversationButton
+											recipientId={cause.organizationId.userId || "6838302f0060c3ec49a0e80e"}
+											recipientType="user"
+											recipientName={cause.organizationName || "Organization"}
+											recipientRole="organization"
+											relatedCause={cause.id}
+											variant="icon"
+											size="medium"
+										/>
+
+										{/* Donate Button */}
+										<Button
+											variant="contained"
+											fullWidth
+											startIcon={<FavoriteIcon />}
+											onClick={(e) => {
+												e.stopPropagation();
+												router.push(`/dashboard/donate/${cause.id}`);
+											}}
+											sx={{
+												backgroundColor: "#287068",
+												borderRadius: 2,
+												textTransform: "none",
+												fontWeight: 600,
+												py: 1.5,
+												fontSize: "0.875rem",
+												transition: "all 0.3s ease",
+												"&:hover": {
+													backgroundColor: "#1f5a52",
+													transform: "translateY(-2px)",
+													boxShadow: "0 4px 12px rgba(40, 112, 104, 0.3)",
+												},
+											}}
+										>
+											Donate Now
+										</Button>
+									</Box>
 								</CardContent>
 							</Card>
 						);

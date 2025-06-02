@@ -31,6 +31,7 @@ interface FormData {
 	title: string;
 	description: string;
 	targetAmount: string;
+	targetDescription?: string;
 	imageUrl: string;
 	tags: string[];
 	acceptanceType: "money" | "items" | "both";
@@ -211,17 +212,17 @@ const CreateCausePage = () => {
 		} catch (apiError: unknown) {
 			const errorMessage =
 				typeof apiError === "object" &&
-				apiError !== null &&
-				"data" in apiError &&
-				typeof apiError.data === "object" &&
-				apiError.data !== null &&
-				"message" in apiError.data
+					apiError !== null &&
+					"data" in apiError &&
+					typeof apiError.data === "object" &&
+					apiError.data !== null &&
+					"message" in apiError.data
 					? apiError.data.message
 					: typeof apiError === "object" &&
-					  apiError !== null &&
-					  "error" in apiError
-					? (apiError as { error: string }).error
-					: "Failed to create cause. Please try again.";
+						apiError !== null &&
+						"error" in apiError
+						? (apiError as { error: string }).error
+						: "Failed to create cause. Please try again.";
 			toast.error(`Error: ${errorMessage}`);
 		}
 	};
@@ -293,9 +294,9 @@ const CreateCausePage = () => {
 							<TextField
 								fullWidth
 								label="Target Description (Optional)"
-								name="targetAmount"
+								name="targetDescription"
 								type="text"
-								value={formData.targetAmount}
+								value={formData.targetDescription || ""}
 								onChange={handleChange}
 								placeholder="e.g., 100 units of food, 50 books, etc."
 								helperText="Describe your target goal for item donations (optional)"

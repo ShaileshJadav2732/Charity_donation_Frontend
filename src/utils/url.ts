@@ -28,18 +28,32 @@ export const getStaticFileUrl = (path: string): string => {
 
 /**
  * Construct a full URL for profile images
- * @param imagePath - The relative path to the profile image
+ * @param imagePath - The relative path to the profile image or full Cloudinary URL
  */
 export const getProfileImageUrl = (imagePath?: string): string => {
 	if (!imagePath) return "";
+
+	// If it's already a full URL (Cloudinary), return as is
+	if (imagePath.startsWith('http')) {
+		return imagePath;
+	}
+
+	// Otherwise, construct local URL
 	return getStaticFileUrl(imagePath);
 };
 
 /**
  * Construct a full URL for receipt images
- * @param imagePath - The relative path to the receipt image
+ * @param imagePath - The relative path to the receipt image or full Cloudinary URL
  */
 export const getReceiptImageUrl = (imagePath?: string): string => {
 	if (!imagePath) return "";
+
+	// If it's already a full URL (Cloudinary), return as is
+	if (imagePath.startsWith('http')) {
+		return imagePath;
+	}
+
+	// Otherwise, construct local URL
 	return getStaticFileUrl(imagePath);
 };

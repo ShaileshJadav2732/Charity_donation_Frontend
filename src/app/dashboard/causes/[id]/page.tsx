@@ -1,9 +1,13 @@
 "use client";
 
-import { useGetCauseByIdQuery } from "@/store/api/causeApi";
+import {
+	useGetCauseByIdQuery,
+	useGetOrganizationUserIdByCauseIdQuery
+} from "@/store/api/causeApi";
 import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
 import { RootState } from "@/store/store";
 import { DonationType } from "@/types/donation";
+import StartConversationButton from "@/components/messaging/StartConversationButton";
 
 import {
 	ArrowBack,
@@ -65,9 +69,25 @@ export default function CauseDetailPage({
 	const theme = useTheme();
 
 	const { data, isLoading, error } = useGetCauseByIdQuery(id);
-	const { data: organizationData } = useGetOrganizationByCauseIdQuery(id, {
+	const { data: organizationData, isLoading: orgLoading } = useGetOrganizationByCauseIdQuery(id, {
 		skip: !id,
 	});
+
+	// Get organization User ID for messaging using the new dedicated API
+	const { data: orgUserIdData, isLoading: orgUserIdLoading } = useGetOrganizationUserIdByCauseIdQuery(id, {
+		skip: !id || user?.role !== "donor", // Only fetch for donors
+	});
+
+	// Debug logging for the new API
+	console.log('🔍 CAUSE DETAIL PAGE - Organization User ID API:', {
+		causeId: id,
+		userRole: user?.role,
+		orgUserIdData,
+		isLoading: orgUserIdLoading,
+		organizationUserId: orgUserIdData?.data?.organizationUserId
+	});
+
+
 
 	const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
 		setActiveTab(newValue);
@@ -100,10 +120,10 @@ export default function CauseDetailPage({
 				fetchError.status === 404
 					? "Cause not found."
 					: fetchError.status === 403
-					? "Access denied."
-					: fetchError.status === 401
-					? "Please log in."
-					: "An error occurred.";
+						? "Access denied."
+						: fetchError.status === 401
+							? "Please log in."
+							: "An error occurred.";
 		}
 
 		return (
@@ -135,9 +155,9 @@ export default function CauseDetailPage({
 	const progress =
 		cause.raisedAmount && cause.targetAmount
 			? Math.min(
-					100,
-					Math.round((cause.raisedAmount / cause.targetAmount) * 100)
-			  )
+				100,
+				Math.round((cause.raisedAmount / cause.targetAmount) * 100)
+			)
 			: 0;
 	const acceptanceType = cause.acceptanceType || "money";
 	const donationItems = cause.donationItems || [];
@@ -145,9 +165,9 @@ export default function CauseDetailPage({
 		DonationType.MONEY,
 	];
 	const formatCurrency = (amount: number) =>
-		new Intl.NumberFormat("en-US", {
+		new Intl.NumberFormat("en-IN", {
 			style: "currency",
-			currency: "USD",
+			currency: "INR",
 		}).format(amount);
 
 	const urgency = progress < 30 ? "High" : progress < 70 ? "Medium" : "Low";
@@ -155,8 +175,8 @@ export default function CauseDetailPage({
 		progress < 30
 			? theme.palette.error.main
 			: progress < 70
-			? theme.palette.warning.main
-			: theme.palette.success.main;
+				? theme.palette.warning.main
+				: theme.palette.success.main;
 
 	return (
 		<Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto" }}>
@@ -542,17 +562,14 @@ export default function CauseDetailPage({
 														}}
 													/>
 													<Typography variant="body2" color="text.secondary">
-														{`${organization.address}${
-															organization.city ? `, ${organization.city}` : ""
-														}${
-															organization.state
+														{`${organization.address}${organization.city ? `, ${organization.city}` : ""
+															}${organization.state
 																? `, ${organization.state}`
 																: ""
-														}${
-															organization.country
+															}${organization.country
 																? `, ${organization.country}`
 																: ""
-														}`}
+															}`}
 													</Typography>
 												</Box>
 											)}
@@ -871,6 +888,23 @@ export default function CauseDetailPage({
 									Donate Items
 								</Button>
 							)}
+						</Box>
+					)}
+
+					{/* Message Organization Button - Only show for donors */}
+					{user?.role === "donor" && orgUserIdData?.data?.organizationUserId && (
+						<Box sx={{ mb: 3 }}>
+							{/* Use organizationUserId from dedicated API (cause ID → organization.userId) */}
+							<StartConversationButton
+								recipientId={orgUserIdData.data.organizationUserId}
+								recipientType="user"
+								recipientName={orgUserIdData.data.organizationName || cause.organizationName}
+								recipientRole="organization"
+								relatedCause={cause.id}
+								variant="button"
+								size="large"
+								fullWidth
+							/>
 						</Box>
 					)}
 				</CardContent>

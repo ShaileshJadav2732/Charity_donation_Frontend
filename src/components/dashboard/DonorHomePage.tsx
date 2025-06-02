@@ -53,10 +53,13 @@ const DonorHomePage: React.FC = () => {
 		page: 1,
 		limit: 100, // Get more donations to calculate stats
 	});
-	const { data: causesData } = useGetActiveCampaignCausesQuery({
+	const { data: causesData, isLoading: causesLoading, error: causesError } = useGetActiveCampaignCausesQuery({
 		limit: 6,
 		page: 1,
 	});
+
+	// Debug API call status
+	console.log("🔍 Causes API Status:", { causesLoading, causesError, causesData });
 	const router = useRouter();
 
 	// Use real donations data - handle the actual API response structure
@@ -65,16 +68,16 @@ const DonorHomePage: React.FC = () => {
 		totalDonations: donations.length || 0,
 		totalAmount: Array.isArray(donations)
 			? donations.reduce(
-					(sum: number, donation: any) => sum + (donation.amount || 0),
-					0
-			  )
+				(sum: number, donation: any) => sum + (donation.amount || 0),
+				0
+			)
 			: 0,
 		causesSupported: Array.isArray(donations)
 			? new Set(donations.map((d: any) => d.cause?._id).filter(Boolean)).size
 			: 0,
 		organizationsSupported: Array.isArray(donations)
 			? new Set(donations.map((d: any) => d.organization?._id).filter(Boolean))
-					.size
+				.size
 			: 0,
 		recentDonations: Array.isArray(donations) ? donations.slice(0, 5) : [],
 	};
@@ -82,11 +85,31 @@ const DonorHomePage: React.FC = () => {
 	// Use real causes data
 	const realCauses = causesData?.causes || [];
 
+	// Debug logging to check the data
+	console.log("🔍 Causes data:", causesData);
+	console.log("🔍 Real causes:", realCauses);
+
+	// Check if we have any causes at all
+	if (realCauses.length === 0) {
+		console.log("⚠️ No causes found in the data");
+	}
+
 	// Transform real causes into featured causes with urgency calculation
 	const featuredCauses = realCauses.slice(0, 3).map((cause: Cause) => {
-		const raised = cause.raisedAmount || 0;
-		const goal = cause.targetAmount || 1;
+		// Ensure we have valid numbers for calculation
+		const raised = typeof cause.raisedAmount === 'number' ? cause.raisedAmount : 0;
+		const goal = typeof cause.targetAmount === 'number' && cause.targetAmount > 0 ? cause.targetAmount : 1;
 		const progressPercentage = (raised / goal) * 100;
+
+		console.log(`🔍 Cause: ${cause.title}`, {
+			raised,
+			goal,
+			progressPercentage,
+			raisedAmount: cause.raisedAmount,
+			targetAmount: cause.targetAmount,
+			raisedAmountType: typeof cause.raisedAmount,
+			targetAmountType: typeof cause.targetAmount
+		});
 
 		// Determine urgency based on progress and time factors
 		let urgency = "Low";
@@ -124,9 +147,9 @@ const DonorHomePage: React.FC = () => {
 	};
 
 	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("en-US", {
+		return new Intl.NumberFormat("en-IN", {
 			style: "currency",
-			currency: "USD",
+			currency: "INR",
 		}).format(amount);
 	};
 
@@ -362,7 +385,7 @@ const DonorHomePage: React.FC = () => {
 						variant="h5"
 						sx={{ fontWeight: "bold", color: "#1a1a1a" }}
 					>
-						Urgent Causes
+						Urgent Causes {causesLoading && "(Loading...)"}
 					</Typography>
 					<Button
 						endIcon={<ArrowRight size={16} />}
@@ -372,6 +395,24 @@ const DonorHomePage: React.FC = () => {
 						View All
 					</Button>
 				</Box>
+
+				{/* Error state */}
+				{causesError && (
+					<Box sx={{ p: 2, backgroundColor: "#ffebee", borderRadius: 2, mb: 2 }}>
+						<Typography color="error">
+							Error loading causes: {JSON.stringify(causesError)}
+						</Typography>
+					</Box>
+				)}
+
+				{/* No data state */}
+				{!causesLoading && !causesError && featuredCauses.length === 0 && (
+					<Box sx={{ p: 2, backgroundColor: "#fff3e0", borderRadius: 2, mb: 2 }}>
+						<Typography color="warning.main">
+							No causes available at the moment.
+						</Typography>
+					</Box>
+				)}
 				<Box
 					sx={{
 						display: "grid",
@@ -441,7 +482,7 @@ const DonorHomePage: React.FC = () => {
 										}}
 									>
 										<Typography variant="body2" color="text.secondary">
-											Progress
+											Progress ({Math.round((cause.raised / cause.goal) * 100)}%)
 										</Typography>
 										<Typography variant="body2" sx={{ fontWeight: 600 }}>
 											{formatCurrency(cause.raised)} /{" "}
@@ -450,7 +491,7 @@ const DonorHomePage: React.FC = () => {
 									</Box>
 									<LinearProgress
 										variant="determinate"
-										value={(cause.raised / cause.goal) * 100}
+										value={Math.min(100, Math.max(0, (cause.raised / cause.goal) * 100)) || 25} // Fallback to 25% for testing
 										sx={{
 											height: 8,
 											borderRadius: 4,
@@ -539,8 +580,8 @@ const DonorHomePage: React.FC = () => {
 														donation.status === "CONFIRMED"
 															? "success"
 															: donation.status === "PENDING"
-															? "warning"
-															: "info"
+																? "warning"
+																: "info"
 													}
 													sx={{ mb: 1 }}
 												/>

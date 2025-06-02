@@ -9,5 +9,30 @@ body{
    width:100%;
    height:100%;
    /* overflow :hidden; */
+}
 
+/* Add cursor pointer to all buttons and clickable elements */
+button,
+button:hover,
+.cursor-pointer,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a,
+[role="button"],
+.clickable,
+.group:hover .group-hover\:opacity-100,
+motion-button,
+.motion-button {
+   cursor: pointer !important;
+}
+
+/* Add cursor pointer to interactive elements */
+.hover\:bg-opacity-70:hover,
+.hover\:bg-opacity-80:hover,
+.hover\:scale-105:hover,
+.transition-all,
+.transition-colors,
+.transition-opacity {
+   cursor: pointer !important;
 }

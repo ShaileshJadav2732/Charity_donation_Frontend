@@ -100,6 +100,25 @@ export const causeApi = createApi({
 			invalidatesTags: ["Cause"],
 		}),
 
+		// Get organization User ID by cause ID for messaging
+		getOrganizationUserIdByCauseId: builder.query<
+			{
+				success: boolean;
+				data: {
+					causeId: string;
+					causeTitle: string;
+					organizationId: string;
+					organizationName: string;
+					organizationUserId: string; // This is what we need for messaging
+					organizationEmail: string;
+				};
+			},
+			string
+		>({
+			query: (causeId) => `/causes/${causeId}/organization-user-id`,
+			providesTags: ["Causes"],
+		}),
+
 		// Get causes for a specific campaign
 	}),
 });
@@ -112,4 +131,5 @@ export const {
 	useCreateCauseMutation,
 	useUpdateCauseMutation,
 	useDeleteCauseMutation,
+	useGetOrganizationUserIdByCauseIdQuery,
 } = causeApi;

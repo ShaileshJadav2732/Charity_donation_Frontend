@@ -11,6 +11,7 @@ import { dashboardApi } from "./api/dashboardApi";
 import { organizationApi } from "./api/organizationApi";
 import { paymentApi } from "./api/paymentApi";
 import { notificationApi } from "./api/notificationApi";
+import { messageApi } from "./api/messageApi";
 
 // Configure Redux store
 export const store = configureStore({
@@ -24,6 +25,7 @@ export const store = configureStore({
 		[organizationApi.reducerPath]: organizationApi.reducer,
 		[paymentApi.reducerPath]: paymentApi.reducer,
 		[notificationApi.reducerPath]: notificationApi.reducer,
+		[messageApi.reducerPath]: messageApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
@@ -36,7 +38,8 @@ export const store = configureStore({
 			.concat(uploadApi.middleware)
 			.concat(organizationApi.middleware)
 			.concat(paymentApi.middleware)
-			.concat(notificationApi.middleware),
+			.concat(notificationApi.middleware)
+			.concat(messageApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });
 

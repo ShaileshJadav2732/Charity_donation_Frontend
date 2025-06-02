@@ -8,6 +8,7 @@ export * from "./analytics";
 export * from "./cause";
 export * from "./profile";
 export * from "./campaigns";
+export * from "./message";
 
 // User types
 export interface User {
@@ -36,6 +37,9 @@ export interface DonorProfile {
 	state?: string;
 	country?: string;
 	profileImage?: string;
+	cloudinaryPublicId?: string;
+	coverImage?: string;
+	coverImageCloudinaryId?: string;
 	bio?: string;
 	createdAt?: string;
 	updatedAt?: string;
@@ -53,6 +57,8 @@ export interface OrganizationProfile {
 	state?: string;
 	country?: string;
 	logo?: string;
+	coverImage?: string;
+	coverImageCloudinaryId?: string;
 	documents?: string[];
 	verified: boolean;
 	createdAt?: string;
@@ -82,6 +88,7 @@ export interface DonorProfileFormData {
 	state?: string;
 	country?: string;
 	profileImage?: string;
+	cloudinaryPublicId?: string;
 	bio?: string;
 }
 

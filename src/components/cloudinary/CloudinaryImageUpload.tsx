@@ -1,6 +1,6 @@
 "use client";
 
-import { CLOUDINARY_CONFIG } from "@/config/cloudinary.config";
+import { CLOUDINARY_CONFIG } from "@/config/cloudinary.frontend";
 import {
 	Alert,
 	Box,

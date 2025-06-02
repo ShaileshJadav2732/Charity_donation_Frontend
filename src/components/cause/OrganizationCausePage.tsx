@@ -169,8 +169,10 @@ const CausesPage = () => {
 								setSearchTerm(e.target.value)
 							}
 							size="medium"
-							InputProps={{
-								startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+							slotProps={{
+								input: {
+									startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+								},
 							}}
 							sx={{
 								flexGrow: 1,
@@ -294,9 +296,9 @@ const CausesPage = () => {
 							const progress =
 								targetAmount > 0
 									? Math.min(
-											100,
-											Math.round((raisedAmount / targetAmount) * 100)
-									  )
+										100,
+										Math.round((raisedAmount / targetAmount) * 100)
+									)
 									: 0;
 
 							const acceptanceType = cause.acceptanceType || "money";
@@ -394,8 +396,8 @@ const CausesPage = () => {
 														acceptanceType === "money"
 															? "Funding"
 															: acceptanceType === "items"
-															? "Items"
-															: "Mixed"
+																? "Items"
+																: "Mixed"
 													}
 													size="small"
 													sx={{
@@ -503,7 +505,7 @@ const CausesPage = () => {
 																variant="body2"
 																color="text.secondary"
 															>
-																Goal
+																Goal/Money
 															</Typography>
 															<Typography variant="h6" sx={{ fontWeight: 600 }}>
 																₹{(cause.targetAmount || 0).toLocaleString()}
@@ -520,7 +522,7 @@ const CausesPage = () => {
 															Needed Items:
 														</Typography>
 														{cause.donationItems &&
-														cause.donationItems.length > 0 ? (
+															cause.donationItems.length > 0 ? (
 															<Box display="flex" gap={0.5} flexWrap="wrap">
 																{cause.donationItems
 																	.slice(0, 2)
@@ -541,9 +543,8 @@ const CausesPage = () => {
 																	))}
 																{cause.donationItems.length > 2 && (
 																	<Chip
-																		label={`+${
-																			cause.donationItems.length - 2
-																		} more`}
+																		label={`+${cause.donationItems.length - 2
+																			} more`}
 																		size="small"
 																		variant="outlined"
 																		sx={{
@@ -584,7 +585,7 @@ const CausesPage = () => {
 																variant="h6"
 																sx={{ fontWeight: 600, color: "#287068" }}
 															>
-																₹{raisedAmount.toLocaleString()}
+																{raisedAmount.toLocaleString()}
 															</Typography>
 														</Box>
 														<Box sx={{ textAlign: "right" }}>
@@ -592,10 +593,10 @@ const CausesPage = () => {
 																variant="body2"
 																color="text.secondary"
 															>
-																Goal + Items
+																Goal/Items
 															</Typography>
 															<Typography variant="h6" sx={{ fontWeight: 600 }}>
-																₹{(cause.targetAmount || 0).toLocaleString()}
+																{(cause.targetAmount || 0).toLocaleString()}
 															</Typography>
 														</Box>
 													</Box>
@@ -688,10 +689,12 @@ const CausesPage = () => {
 				onClose={handleCloseCreateCauseDialog}
 				maxWidth="sm"
 				fullWidth
-				PaperProps={{
-					sx: {
-						borderRadius: 3,
-						p: 1,
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: 3,
+							p: 1,
+						},
 					},
 				}}
 			>

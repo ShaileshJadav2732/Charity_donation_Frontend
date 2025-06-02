@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useGetOrganizationDonorsQuery } from "@/store/api/donorsApi";
 import { Donor } from "@/store/api/donorsApi";
+import StartConversationButton from "@/components/messaging/StartConversationButton";
 
 const DonorsPage: React.FC = () => {
 	const [page, setPage] = useState(0);
@@ -69,9 +70,9 @@ const DonorsPage: React.FC = () => {
 	};
 
 	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat("en-US", {
+		return new Intl.NumberFormat("en-IN", {
 			style: "currency",
-			currency: "USD",
+			currency: "INR",
 		}).format(amount);
 	};
 
@@ -403,6 +404,12 @@ const DonorsPage: React.FC = () => {
 									>
 										Donation Dates
 									</TableCell>
+									<TableCell
+										sx={{ fontWeight: "bold", color: "#374151" }}
+										align="center"
+									>
+										Actions
+									</TableCell>
 								</TableRow>
 							</TableHead>
 							<TableBody>
@@ -584,6 +591,19 @@ const DonorsPage: React.FC = () => {
 													Latest: {formatDate(donor.lastDonation)}
 												</Typography>
 											</Box>
+										</TableCell>
+
+										{/* Actions */}
+										<TableCell align="center">
+											{/* Note: donor.id is already the User ID from the API */}
+											<StartConversationButton
+												recipientId={donor.id}
+												recipientType="user"
+												recipientName={donor.name}
+												recipientRole="donor"
+												variant="icon"
+												size="small"
+											/>
 										</TableCell>
 									</TableRow>
 								))}
