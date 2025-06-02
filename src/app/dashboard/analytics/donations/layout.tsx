@@ -1,6 +1,6 @@
 "use client";
 
-import { DonationType } from "@/types/donation";
+import { DonationType } from "@/types";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";

@@ -4,7 +4,7 @@ import {
 	useUpdateCauseMutation,
 } from "@/store/api/causeApi";
 import { UpdateCauseBody } from "@/types/cause";
-import { DonationType } from "@/types/donation";
+import { DonationType } from "@/types";
 import {
 	Box,
 	Button,
@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import * as Yup from "yup";
 import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
 import { toast } from "react-hot-toast";
+import { updateCauseValidationSchema } from "@/utils/validationSchemas";
 
 interface Cause {
 	id: string;
@@ -56,23 +57,6 @@ const DONATION_ITEMS = [
 	"Baby Items",
 	"Sports Equipment",
 ];
-
-// Create dynamic validation schema based on acceptance type
-const createValidationSchema = (acceptanceType: string) => {
-	return Yup.object().shape({
-		title: Yup.string().min(3, "Title must be at least 3 characters"),
-		description: Yup.string().min(
-			10,
-			"Description must be at least 10 characters"
-		),
-		targetAmount:
-			acceptanceType === "items"
-				? Yup.mixed() // Allow any value for items-only causes
-				: Yup.number().min(1, "Target amount must be greater than 0"),
-		imageUrl: Yup.string().url("Must be a valid URL"),
-		tags: Yup.array().of(Yup.string()),
-	});
-};
 
 export const UpdateCauseForm = () => {
 	const params = useParams<{ id: string }>();
@@ -234,7 +218,7 @@ export const UpdateCauseForm = () => {
 			targetAmount = 0;
 		} else {
 			// For money or both, parse as number
-			targetAmount = parseFloat(values.targetAmount.toString()) || 0;
+			targetAmount = parseFloat(values.targetAmount?.toString() || "0") || 0;
 		}
 
 		const body = {
@@ -259,13 +243,14 @@ export const UpdateCauseForm = () => {
 
 			<Formik
 				initialValues={initialValues}
-				validationSchema={createValidationSchema(acceptanceType)}
+				validationSchema={updateCauseValidationSchema(acceptanceType)}
 				onSubmit={handleSubmit}
+				enableReinitialize
 			>
 				{({ errors, touched }) => (
 					<Form>
-						<Grid container spacing={3}>
-							<Grid item xs={12}>
+						<Box display="grid" gap={3}>
+							<Box>
 								<Field
 									as={TextField}
 									fullWidth
@@ -275,9 +260,9 @@ export const UpdateCauseForm = () => {
 									error={touched.title && !!errors.title}
 									helperText={<ErrorMessage name="title" />}
 								/>
-							</Grid>
+							</Box>
 
-							<Grid item xs={12}>
+							<Box>
 								<Field
 									as={TextField}
 									fullWidth
@@ -289,11 +274,11 @@ export const UpdateCauseForm = () => {
 									error={touched.description && !!errors.description}
 									helperText={<ErrorMessage name="description" />}
 								/>
-							</Grid>
+							</Box>
 
 							{/* Target Amount - only show for money or both acceptance types */}
 							{acceptanceType !== "items" && (
-								<Grid item xs={12} md={6}>
+								<Box>
 									<Field
 										as={TextField}
 										fullWidth
@@ -309,12 +294,12 @@ export const UpdateCauseForm = () => {
 											},
 										}}
 									/>
-								</Grid>
+								</Box>
 							)}
 
 							{/* Optional target for items-only causes */}
 							{acceptanceType === "items" && (
-								<Grid item xs={12} md={6}>
+								<Box>
 									<Field
 										as={TextField}
 										fullWidth
@@ -325,19 +310,19 @@ export const UpdateCauseForm = () => {
 										placeholder="e.g., 100 units of food, 50 books, etc."
 										helperText="Describe your target goal for item donations (optional)"
 									/>
-								</Grid>
+								</Box>
 							)}
 
-							<Grid item xs={12}>
+							<Box>
 								<CloudinaryImageUpload
 									onImageUpload={handleImageUpload}
 									currentImageUrl={imageUrl}
 									label="Cause Image"
 									helperText="Upload a new image for your cause (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
 								/>
-							</Grid>
+							</Box>
 
-							<Grid item xs={12}>
+							<Box>
 								<FormControl fullWidth>
 									<InputLabel id="acceptance-type-label">
 										Acceptance Type
@@ -354,10 +339,10 @@ export const UpdateCauseForm = () => {
 										<MenuItem value="both">Both Money and Items</MenuItem>
 									</Select>
 								</FormControl>
-							</Grid>
+							</Box>
 
 							{acceptanceType !== "money" && (
-								<Grid item xs={12}>
+								<Box>
 									<FormControl fullWidth>
 										<InputLabel id="donation-items-label">
 											Donation Items
@@ -381,10 +366,10 @@ export const UpdateCauseForm = () => {
 											))}
 										</Select>
 									</FormControl>
-								</Grid>
+								</Box>
 							)}
 
-							<Grid item xs={12}>
+							<Box>
 								<Box sx={{ mb: 2 }}>
 									<Typography variant="subtitle1" gutterBottom>
 										Tags
@@ -420,9 +405,9 @@ export const UpdateCauseForm = () => {
 										))}
 									</Box>
 								</Box>
-							</Grid>
+							</Box>
 
-							<Grid item xs={12}>
+							<Box>
 								<Box
 									sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}
 								>
@@ -446,8 +431,8 @@ export const UpdateCauseForm = () => {
 										)}
 									</Button>
 								</Box>
-							</Grid>
-						</Grid>
+							</Box>
+						</Box>
 					</Form>
 				)}
 			</Formik>

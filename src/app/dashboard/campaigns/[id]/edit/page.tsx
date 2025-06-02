@@ -31,24 +31,26 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import dayjs, { Dayjs } from "dayjs";
-import { DonationType } from "@/types/donation";
+import { DonationType } from "@/types";
 import { ArrowBack as BackIcon } from "@mui/icons-material";
 import { useGetCausesQuery } from "@/store/api/causeApi";
 import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
 import { toast } from "react-hot-toast";
 import { Campaign } from "@/types/campaigns";
 import { UpdateCampaignBody } from "@/types/campaings";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { updateCampaignValidationSchema } from "@/utils/validationSchemas";
 
 interface FormData {
 	title: string;
 	description: string;
 	startDate: Dayjs | null;
 	endDate: Dayjs | null;
-	totalTargetAmount: string;
+	totalTargetAmount: number; // Changed to number for consistency
 	status: string;
 	acceptedDonationTypes: DonationType[];
 	imageUrl: string;
-	causes: string[];
+	selectedCauses: string[]; // Renamed to match validation schema
 }
 
 const DONATION_TYPES = [
@@ -116,37 +118,40 @@ const EditCampaignPage = ({ params }: EditCampaignPageProps) => {
 		{ skip: !user?.id }
 	);
 
-	const [formData, setFormData] = useState<FormData>({
+	// Initial form values for Formik
+	const initialValues: FormData = {
 		title: "",
 		description: "",
 		startDate: null,
 		endDate: null,
-		totalTargetAmount: "",
+		totalTargetAmount: 0,
 		status: "draft",
 		acceptedDonationTypes: [DonationType.MONEY],
 		imageUrl: "",
-		causes: [],
-	});
+		selectedCauses: [],
+	};
 
-	// Initialize form with campaign data when it loads
-	useEffect(() => {
+	// Update initial values when campaign data loads
+	const getInitialValues = (): FormData => {
 		if (campaignData?.campaign) {
 			const campaign = campaignData.campaign as unknown as Campaign;
-			setFormData({
+			return {
 				title: campaign.title,
 				description: campaign.description,
 				startDate: dayjs(campaign.startDate),
 				endDate: dayjs(campaign.endDate),
-				totalTargetAmount: campaign.totalTargetAmount.toString(),
+				totalTargetAmount: campaign.totalTargetAmount,
 				status: campaign.status,
 				acceptedDonationTypes: campaign.acceptedDonationTypes || [
 					DonationType.MONEY,
 				],
 				imageUrl: campaign.imageUrl || "",
-				causes: campaign.causes?.map((cause: { id: string }) => cause.id) || [],
-			});
+				selectedCauses:
+					campaign.causes?.map((cause: { id: string }) => cause.id) || [],
+			};
 		}
-	}, [campaignData]);
+		return initialValues;
+	};
 
 	// Redirect after successful update
 	useEffect(() => {
@@ -155,116 +160,19 @@ const EditCampaignPage = ({ params }: EditCampaignPageProps) => {
 		}
 	}, [isSuccess, router, campaignId]);
 
-	const handleChange = (
-		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
-	) => {
-		const { name, value } = e.target;
-		if (name) {
-			setFormData((prev) => ({
-				...prev,
-				[name]: value,
-			}));
-		}
-	};
-
-	const handleSelectChange = (
-		e:
-			| React.ChangeEvent<HTMLInputElement>
-			| (Event & { target: { value: string; name: string } })
-	) => {
-		const { name, value } = e.target;
-		if (name) {
-			setFormData((prev) => ({
-				...prev,
-				[name]: value,
-			}));
-		}
-	};
-
-	const handleDateChange =
-		(field: "startDate" | "endDate") => (date: Dayjs | null) => {
-			setFormData((prev) => ({
-				...prev,
-				[field]: date,
-			}));
-		};
-
-	const handleDonationTypeChange = (type: DonationType) => {
-		setFormData((prev) => {
-			const types = prev.acceptedDonationTypes.includes(type)
-				? prev.acceptedDonationTypes.filter((t) => t !== type)
-				: [...prev.acceptedDonationTypes, type];
-			return {
-				...prev,
-				acceptedDonationTypes: types,
-			};
-		});
-	};
-
-	const handleCauseChange = (causeId: string) => {
-		setFormData((prev) => {
-			const updatedCauses = prev.causes.includes(causeId)
-				? prev.causes.filter((id) => id !== causeId)
-				: [...prev.causes, causeId];
-			return {
-				...prev,
-				causes: updatedCauses,
-			};
-		});
-	};
-
-	// Image upload handler
-	const handleImageUpload = (imageUrl: string) => {
-		setFormData((prev) => ({
-			...prev,
-			imageUrl,
-		}));
-	};
-
-	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-
-		// Date validation
-		if (!formData.startDate || !formData.endDate) {
-			toast.error("Start date and end date are required");
-			return;
-		}
-
-		const now = dayjs();
-		const startDate = dayjs(formData.startDate);
-		const endDate = dayjs(formData.endDate);
-
-		if (startDate.isBefore(now, "day")) {
-			toast.error("Start date cannot be in the past");
-			return;
-		}
-
-		if (endDate.isBefore(startDate)) {
-			toast.error("End date must be after start date");
-			return;
-		}
-
-		if (formData.acceptedDonationTypes.length === 0) {
-			toast.error("At least one donation type is required");
-			return;
-		}
-
-		if (!formData.imageUrl) {
-			toast.error("Please upload an image for your campaign");
-			return;
-		}
-
+	// Form submission handler for Formik
+	const handleSubmit = async (values: FormData) => {
 		try {
 			const updateData = {
-				title: formData.title,
-				description: formData.description,
-				startDate: formData.startDate.toISOString(),
-				endDate: formData.endDate.toISOString(),
-				totalTargetAmount: parseFloat(formData.totalTargetAmount),
-				status: formData.status,
-				acceptedDonationTypes: formData.acceptedDonationTypes,
-				imageUrl: formData.imageUrl,
-				causes: formData.causes,
+				title: values.title,
+				description: values.description,
+				startDate: values.startDate!.toISOString(),
+				endDate: values.endDate!.toISOString(),
+				totalTargetAmount: values.totalTargetAmount,
+				status: values.status,
+				acceptedDonationTypes: values.acceptedDonationTypes,
+				imageUrl: values.imageUrl,
+				causes: values.selectedCauses,
 			};
 
 			await updateCampaign({
@@ -330,173 +238,232 @@ const EditCampaignPage = ({ params }: EditCampaignPageProps) => {
 
 					<Divider sx={{ mb: 4 }} />
 
-					<form onSubmit={handleSubmit}>
-						<Box display="grid" gap={3}>
-							<TextField
-								fullWidth
-								label="Campaign Title"
-								name="title"
-								value={formData.title}
-								onChange={handleChange}
-								required
-							/>
+					<Formik
+						initialValues={getInitialValues()}
+						validationSchema={updateCampaignValidationSchema()}
+						onSubmit={handleSubmit}
+						enableReinitialize
+					>
+						{({ values, errors, touched, setFieldValue }) => (
+							<Form>
+								<Box display="grid" gap={3}>
+									<Field
+										as={TextField}
+										fullWidth
+										label="Campaign Title"
+										name="title"
+										error={touched.title && !!errors.title}
+										helperText={<ErrorMessage name="title" />}
+									/>
 
-							<TextField
-								fullWidth
-								label="Description"
-								name="description"
-								value={formData.description}
-								onChange={handleChange}
-								multiline
-								rows={4}
-								required
-							/>
+									<Field
+										as={TextField}
+										fullWidth
+										label="Description"
+										name="description"
+										multiline
+										rows={4}
+										error={touched.description && !!errors.description}
+										helperText={<ErrorMessage name="description" />}
+									/>
 
-							<Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
-								<DatePicker
-									label="Start Date"
-									value={formData.startDate}
-									onChange={handleDateChange("startDate")}
-									slotProps={{
-										textField: {
-											required: true,
-											fullWidth: true,
-										},
-									}}
-								/>
-
-								<DatePicker
-									label="End Date"
-									value={formData.endDate}
-									onChange={handleDateChange("endDate")}
-									slotProps={{
-										textField: {
-											required: true,
-											fullWidth: true,
-										},
-									}}
-								/>
-							</Box>
-
-							<TextField
-								fullWidth
-								label="Total Target Amount"
-								name="totalTargetAmount"
-								type="number"
-								value={formData.totalTargetAmount}
-								onChange={handleChange}
-								required
-								slotProps={{
-									input: {
-										startAdornment: <span>$</span>,
-									},
-								}}
-							/>
-
-							<CloudinaryImageUpload
-								onImageUpload={handleImageUpload}
-								currentImageUrl={formData.imageUrl}
-								label="Campaign Image"
-								helperText="Upload an image for your campaign (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
-							/>
-
-							<FormControl fullWidth>
-								<InputLabel>Status</InputLabel>
-								<Select
-									name="status"
-									value={formData.status}
-									onChange={handleSelectChange}
-									required
-								>
-									<MenuItem value="draft">Draft</MenuItem>
-									<MenuItem value="active">Active</MenuItem>
-									<MenuItem value="paused">Paused</MenuItem>
-									<MenuItem value="completed">Completed</MenuItem>
-								</Select>
-							</FormControl>
-
-							<Box>
-								<Typography variant="subtitle1" gutterBottom>
-									Accepted Donation Types
-								</Typography>
-								<Box display="flex" gap={1} flexWrap="wrap">
-									{DONATION_TYPES.map((type) => (
-										<Chip
-											key={type.value}
-											label={type.label}
-											onClick={() => handleDonationTypeChange(type.value)}
-											color={
-												formData.acceptedDonationTypes.includes(type.value)
-													? "primary"
-													: "default"
-											}
-											variant={
-												formData.acceptedDonationTypes.includes(type.value)
-													? "filled"
-													: "outlined"
-											}
+									<Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+										<DatePicker
+											label="Start Date"
+											value={values.startDate}
+											onChange={(date) => setFieldValue("startDate", date)}
+											slotProps={{
+												textField: {
+													required: true,
+													fullWidth: true,
+													error: touched.startDate && !!errors.startDate,
+													helperText: touched.startDate && errors.startDate,
+												},
+											}}
 										/>
-									))}
-								</Box>
-							</Box>
 
-							<Box>
-								<Typography variant="subtitle1" gutterBottom>
-									Associated Causes
-								</Typography>
-								{isLoadingCauses ? (
-									<CircularProgress size={24} />
-								) : causesData?.causes?.length ? (
-									<FormGroup>
-										{causesData.causes.map((cause) => (
-											<FormControlLabel
-												key={cause.id}
-												control={
-													<Checkbox
-														checked={formData.causes.includes(cause.id)}
-														onChange={() => handleCauseChange(cause.id)}
+										<DatePicker
+											label="End Date"
+											value={values.endDate}
+											onChange={(date) => setFieldValue("endDate", date)}
+											slotProps={{
+												textField: {
+													required: true,
+													fullWidth: true,
+													error: touched.endDate && !!errors.endDate,
+													helperText: touched.endDate && errors.endDate,
+												},
+											}}
+										/>
+									</Box>
+
+									<Field
+										as={TextField}
+										fullWidth
+										label="Total Target Amount"
+										name="totalTargetAmount"
+										type="number"
+										error={
+											touched.totalTargetAmount && !!errors.totalTargetAmount
+										}
+										helperText={<ErrorMessage name="totalTargetAmount" />}
+										slotProps={{
+											input: {
+												startAdornment: <span>₹</span>,
+											},
+										}}
+									/>
+
+									<CloudinaryImageUpload
+										onImageUpload={(imageUrl: string) =>
+											setFieldValue("imageUrl", imageUrl)
+										}
+										currentImageUrl={values.imageUrl}
+										label="Campaign Image"
+										helperText="Upload an image for your campaign (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
+									/>
+									{touched.imageUrl && errors.imageUrl && (
+										<Typography color="error" variant="caption">
+											{errors.imageUrl}
+										</Typography>
+									)}
+
+									<FormControl
+										fullWidth
+										error={touched.status && !!errors.status}
+									>
+										<InputLabel>Status</InputLabel>
+										<Select
+											name="status"
+											value={values.status}
+											onChange={(e) => setFieldValue("status", e.target.value)}
+											required
+										>
+											<MenuItem value="draft">Draft</MenuItem>
+											<MenuItem value="active">Active</MenuItem>
+											<MenuItem value="paused">Paused</MenuItem>
+											<MenuItem value="completed">Completed</MenuItem>
+										</Select>
+										{touched.status && errors.status && (
+											<Typography color="error" variant="caption">
+												{errors.status}
+											</Typography>
+										)}
+									</FormControl>
+
+									<Box>
+										<Typography variant="subtitle1" gutterBottom>
+											Accepted Donation Types
+										</Typography>
+										<Box display="flex" gap={1} flexWrap="wrap">
+											{DONATION_TYPES.map((type) => (
+												<Chip
+													key={type.value}
+													label={type.label}
+													onClick={() => {
+														const currentTypes = values.acceptedDonationTypes;
+														const newTypes = currentTypes.includes(type.value)
+															? currentTypes.filter((t) => t !== type.value)
+															: [...currentTypes, type.value];
+														setFieldValue("acceptedDonationTypes", newTypes);
+													}}
+													color={
+														values.acceptedDonationTypes.includes(type.value)
+															? "primary"
+															: "default"
+													}
+													variant={
+														values.acceptedDonationTypes.includes(type.value)
+															? "filled"
+															: "outlined"
+													}
+												/>
+											))}
+										</Box>
+										{touched.acceptedDonationTypes &&
+											errors.acceptedDonationTypes && (
+												<Typography color="error" variant="caption">
+													{errors.acceptedDonationTypes}
+												</Typography>
+											)}
+									</Box>
+
+									<Box>
+										<Typography variant="subtitle1" gutterBottom>
+											Associated Causes
+										</Typography>
+										{isLoadingCauses ? (
+											<CircularProgress size={24} />
+										) : causesData?.causes?.length ? (
+											<FormGroup>
+												{causesData.causes.map((cause) => (
+													<FormControlLabel
+														key={cause.id}
+														control={
+															<Checkbox
+																checked={values.selectedCauses.includes(
+																	cause.id
+																)}
+																onChange={() => {
+																	const currentCauses = values.selectedCauses;
+																	const newCauses = currentCauses.includes(
+																		cause.id
+																	)
+																		? currentCauses.filter(
+																				(id) => id !== cause.id
+																		  )
+																		: [...currentCauses, cause.id];
+																	setFieldValue("selectedCauses", newCauses);
+																}}
+															/>
+														}
+														label={cause.title}
 													/>
-												}
-												label={cause.title}
-											/>
-										))}
-									</FormGroup>
-								) : (
-									<Typography color="text.secondary">
-										No causes available. Please create causes first.
-									</Typography>
-								)}
-								<FormHelperText>
-									Select at least one cause to associate with this campaign
-								</FormHelperText>
-							</Box>
+												))}
+											</FormGroup>
+										) : (
+											<Typography color="text.secondary">
+												No causes available. Please create causes first.
+											</Typography>
+										)}
+										<FormHelperText>
+											Select at least one cause to associate with this campaign
+										</FormHelperText>
+										{touched.selectedCauses && errors.selectedCauses && (
+											<Typography color="error" variant="caption">
+												{errors.selectedCauses}
+											</Typography>
+										)}
+									</Box>
 
-							{updateError && (
-								<Alert severity="error">
-									Failed to update campaign. Please try again.
-								</Alert>
-							)}
+									{updateError && (
+										<Alert severity="error">
+											Failed to update campaign. Please try again.
+										</Alert>
+									)}
 
-							<Box display="flex" gap={2} justifyContent="flex-end" mt={2}>
-								<Button
-									variant="outlined"
-									onClick={() =>
-										router.push(`/dashboard/campaigns/${campaignId}`)
-									}
-								>
-									Cancel
-								</Button>
-								<Button
-									type="submit"
-									variant="contained"
-									color="primary"
-									disabled={isUpdating}
-								>
-									{isUpdating ? "Updating..." : "Update Campaign"}
-								</Button>
-							</Box>
-						</Box>
-					</form>
+									<Box display="flex" gap={2} justifyContent="flex-end" mt={2}>
+										<Button
+											variant="outlined"
+											onClick={() =>
+												router.push(`/dashboard/campaigns/${campaignId}`)
+											}
+										>
+											Cancel
+										</Button>
+										<Button
+											type="submit"
+											variant="contained"
+											color="primary"
+											disabled={isUpdating}
+										>
+											{isUpdating ? "Updating..." : "Update Campaign"}
+										</Button>
+									</Box>
+								</Box>
+							</Form>
+						)}
+					</Formik>
 				</Paper>
 			</Box>
 		</LocalizationProvider>

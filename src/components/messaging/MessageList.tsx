@@ -1,25 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useMessage } from "@/contexts/MessageContext";
 import {
-	Box,
-	Typography,
-	CircularProgress,
-	Alert,
-	Paper,
-	Avatar,
-	IconButton,
-	Chip,
+  useGetMessagesQuery,
+  useMarkConversationAsReadMutation,
+} from "@/store/api/messageApi";
+import { RootState } from "@/store/store";
+import { Conversation, Message } from "@/types/message";
+import {
+  Alert,
+  Avatar,
+  Box,
+  Chip,
+  CircularProgress,
+  Paper,
+  Typography
 } from "@mui/material";
 import { Info } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import {
-	useGetMessagesQuery,
-	useMarkConversationAsReadMutation,
-} from "@/store/api/messageApi";
-import { useMessage } from "@/contexts/MessageContext";
-import { Conversation, Message } from "@/types/message";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 

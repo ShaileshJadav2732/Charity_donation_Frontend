@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Box,
@@ -23,7 +23,8 @@ import {
 	InputLabel,
 	Select,
 	MenuItem,
-	FormGroup,
+	TextField,
+	Button,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { useCreateCampaignMutation } from "@/store/api/campaignApi";
@@ -34,28 +35,25 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { Dayjs } from "dayjs";
-import dayjs from "dayjs";
-import { DonationType } from "@/types/donation";
+
+import { DonationType } from "@/types";
 import { Cause, CreateCauseBody } from "@/types/cause";
-import {
-	Add as AddIcon,
-	Close as CloseIcon,
-	Refresh as RefreshIcon,
-} from "@mui/icons-material";
-import { SelectChangeEvent } from "@mui/material/Select";
-import { motion } from "framer-motion";
+import { Plus, X, RefreshCw, Calendar, Target } from "lucide-react";
+
 import { toast } from "react-hot-toast";
-import FormContainer from "@/components/ui/FormContainer";
-import FormInput from "@/components/ui/FormInput";
-import FormButton from "@/components/ui/FormButton";
+import PageHeader from "@/components/ui/PageHeader";
+import StandardCard from "@/components/ui/StandardCard";
+import { colors, spacing } from "@/styles/theme";
 import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { createCampaignValidationSchema } from "@/utils/validationSchemas";
 
 interface FormData {
 	title: string;
 	description: string;
 	startDate: Dayjs | null;
 	endDate: Dayjs | null;
-	totalTargetAmount: string;
+	totalTargetAmount: number; // Standardized to number for consistency
 	status: string;
 	acceptedDonationTypes: DonationType[];
 	imageUrl: string;
@@ -65,7 +63,7 @@ interface FormData {
 interface CauseFormData {
 	title: string;
 	description: string;
-	targetAmount: string;
+	targetAmount: number; // Standardized to number for consistency
 	imageUrl: string;
 	tags: string[];
 }
@@ -97,65 +95,58 @@ const CreateCampaignPage = () => {
 		organizationId: user?.id,
 	});
 
-	// Theme color for consistency
-	const customColor = "#287068";
+	// Remove hard-coded color - use theme colors
 
-	// Campaign creation form
-	const [formData, setFormData] = useState<FormData>({
+	// Initial form values for Formik
+	const initialValues: FormData = {
 		title: "",
 		description: "",
 		startDate: null,
 		endDate: null,
-		totalTargetAmount: "",
+		totalTargetAmount: 0,
 		status: "draft",
 		acceptedDonationTypes: [DonationType.MONEY],
 		imageUrl: "",
 		selectedCauses: [],
-	});
+	};
 
 	// New cause creation modal
 	const [isCreateCauseModalOpen, setIsCreateCauseModalOpen] = useState(false);
 	const [causeFormData, setCauseFormData] = useState<CauseFormData>({
 		title: "",
 		description: "",
-		targetAmount: "",
+		targetAmount: 0, // Initialize as number
 		imageUrl: "",
 		tags: [],
 	});
 
-	// Calculate total target amount based on selected causes
-	useEffect(() => {
-		if (formData.selectedCauses.length > 0 && causesData?.causes) {
-			const total = causesData.causes
-				.filter((cause: Cause) => formData.selectedCauses.includes(cause.id))
-				.reduce((sum: number, cause: Cause) => sum + cause.targetAmount, 0);
+	// Form submission handler for Formik
+	const handleSubmit = async (values: FormData) => {
+		try {
+			if (!user) {
+				throw new Error("User not found");
+			}
 
-			setFormData((prev) => ({
-				...prev,
-				totalTargetAmount: total.toString(),
-			}));
-		}
-	}, [formData.selectedCauses, causesData]);
+			const campaignData = {
+				title: values.title,
+				description: values.description,
+				startDate: values.startDate!.toISOString(),
+				endDate: values.endDate!.toISOString(),
+				totalTargetAmount: values.totalTargetAmount,
+				status: values.status,
+				acceptedDonationTypes: values.acceptedDonationTypes,
+				imageUrl: values.imageUrl,
+				causes: values.selectedCauses,
+				organizations: [user.id],
+			};
 
-	const handleChange = (
-		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
-	) => {
-		const { name, value } = e.target;
-		if (name) {
-			setFormData((prev) => ({
-				...prev,
-				[name]: value,
-			}));
-		}
-	};
-
-	const handleSelectChange = (e: SelectChangeEvent) => {
-		const { name, value } = e.target;
-		if (name) {
-			setFormData((prev) => ({
-				...prev,
-				[name]: value,
-			}));
+			await createCampaign(campaignData).unwrap();
+			toast.success("Campaign created successfully!");
+			router.push("/dashboard/campaigns");
+		} catch {
+			toast.error(
+				"Failed to create campaign. Please check the form and try again."
+			);
 		}
 	};
 
@@ -180,76 +171,9 @@ const CreateCampaignPage = () => {
 		setCauseFormData({
 			title: "",
 			description: "",
-			targetAmount: "",
+			targetAmount: 0, // Reset to number
 			imageUrl: "",
 			tags: [],
-		});
-	};
-
-	const handleDateChange =
-		(field: "startDate" | "endDate") => (date: Dayjs | null) => {
-			const today = new Date();
-			today.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
-
-			if (date) {
-				const selectedDate = date.toDate();
-				selectedDate.setHours(0, 0, 0, 0);
-
-				// Prevent past date selection
-				if (selectedDate < today) {
-					toast.error("Cannot select a date in the past");
-					return;
-				}
-
-				// Validate startDate is not after endDate
-				if (field === "startDate" && formData.endDate) {
-					const endDate = formData.endDate.toDate();
-					endDate.setHours(0, 0, 0, 0);
-					if (selectedDate > endDate) {
-						toast.error("Start date cannot be after end date");
-						return;
-					}
-				}
-
-				// Validate endDate is not before startDate
-				if (field === "endDate" && formData.startDate) {
-					const startDate = formData.startDate.toDate();
-					startDate.setHours(0, 0, 0, 0);
-					if (selectedDate < startDate) {
-						toast.error("End date cannot be before start date");
-						return;
-					}
-				}
-			}
-
-			setFormData((prev) => ({
-				...prev,
-				[field]: date,
-			}));
-		};
-
-	const handleDonationTypeChange = (type: DonationType) => {
-		setFormData((prev) => {
-			const types = prev.acceptedDonationTypes.includes(type)
-				? prev.acceptedDonationTypes.filter((t) => t !== type)
-				: [...prev.acceptedDonationTypes, type];
-			return {
-				...prev,
-				acceptedDonationTypes: types,
-			};
-		});
-	};
-
-	const handleCauseToggle = (causeId: string) => {
-		setFormData((prev) => {
-			const selectedCauses = prev.selectedCauses.includes(causeId)
-				? prev.selectedCauses.filter((id) => id !== causeId)
-				: [...prev.selectedCauses, causeId];
-
-			return {
-				...prev,
-				selectedCauses,
-			};
 		});
 	};
 
@@ -266,7 +190,7 @@ const CreateCampaignPage = () => {
 			const payload: CreateCauseBody = {
 				title: causeFormData.title,
 				description: causeFormData.description,
-				targetAmount: parseFloat(causeFormData.targetAmount) || 0,
+				targetAmount: causeFormData.targetAmount, // Already a number, no conversion needed
 				imageUrl: causeFormData.imageUrl,
 				tags: causeFormData.tags,
 				organizationId: user.id,
@@ -283,10 +207,8 @@ const CreateCampaignPage = () => {
 
 			// Add the newly created cause to selected causes
 			if (response.cause && response.cause.id) {
-				setFormData((prev) => ({
-					...prev,
-					selectedCauses: [...prev.selectedCauses, response.cause.id],
-				}));
+				// This will be handled by the parent Formik form
+				// We'll need to pass setFieldValue to this function
 
 				// Refresh the causes list
 				refetchCauses();
@@ -300,77 +222,6 @@ const CreateCampaignPage = () => {
 		}
 	};
 
-	// Image upload handler
-	const handleImageUpload = (imageUrl: string) => {
-		setFormData((prev) => ({
-			...prev,
-			imageUrl,
-		}));
-	};
-
-	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-
-		// Date validation
-		if (!formData.startDate || !formData.endDate) {
-			toast.error("Start date and end date are required");
-			return;
-		}
-
-		const now = dayjs();
-		const startDate = dayjs(formData.startDate);
-		const endDate = dayjs(formData.endDate);
-
-		if (startDate.isBefore(now, "day")) {
-			toast.error("Start date cannot be in the past");
-			return;
-		}
-
-		if (endDate.isBefore(startDate)) {
-			toast.error("End date must be after start date");
-			return;
-		}
-
-		// Donation types validation
-		if (formData.acceptedDonationTypes.length === 0) {
-			toast.error("At least one donation type is required");
-			return;
-		}
-
-		// Image validation
-		if (!formData.imageUrl) {
-			toast.error("Please upload an image for your campaign");
-			return;
-		}
-
-		try {
-			if (!user) {
-				throw new Error("User not found");
-			}
-
-			const campaignData = {
-				title: formData.title,
-				description: formData.description,
-				startDate: formData.startDate.toISOString(),
-				endDate: formData.endDate.toISOString(),
-				totalTargetAmount: parseFloat(formData.totalTargetAmount),
-				status: formData.status,
-				acceptedDonationTypes: formData.acceptedDonationTypes,
-				imageUrl: formData.imageUrl,
-				causes: formData.selectedCauses,
-				organizations: [user.id], // Add the required organizations field
-			};
-
-			await createCampaign(campaignData).unwrap();
-			toast.success("Campaign created successfully!");
-			router.push("/dashboard/campaigns");
-		} catch {
-			toast.error(
-				"Failed to create campaign. Please check the form and try again."
-			);
-		}
-	};
-
 	if (!user || user.role !== "organization") {
 		return (
 			<Box p={4}>
@@ -381,7 +232,7 @@ const CreateCampaignPage = () => {
 		);
 	}
 
-	const renderCausesSection = () => {
+	const renderCausesSection = (values: FormData, setFieldValue: any) => {
 		if (isLoadingCauses) {
 			return (
 				<Box display="flex" justifyContent="center" p={3}>
@@ -405,8 +256,14 @@ const CreateCampaignPage = () => {
 						<FormControlLabel
 							control={
 								<Checkbox
-									checked={formData.selectedCauses.includes(cause.id)}
-									onChange={() => handleCauseToggle(cause.id)}
+									checked={values.selectedCauses.includes(cause.id)}
+									onChange={() => {
+										const currentCauses = values.selectedCauses;
+										const newCauses = currentCauses.includes(cause.id)
+											? currentCauses.filter((id) => id !== cause.id)
+											: [...currentCauses, cause.id];
+										setFieldValue("selectedCauses", newCauses);
+									}}
 								/>
 							}
 							label={
@@ -424,254 +281,294 @@ const CreateCampaignPage = () => {
 	};
 
 	return (
-		<motion.div
-			initial={{ opacity: 0, y: 20 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.5 }}
-		>
-			<FormContainer
+		<Box sx={{ maxWidth: 900, mx: "auto" }}>
+			<PageHeader
 				title="Create New Campaign"
 				subtitle="Set up a new fundraising campaign for your organization"
-				maxWidth={900}
-			>
-				<form onSubmit={handleSubmit}>
-					<Box display="grid" gap={3}>
-						<FormInput
-							fullWidth
-							label="Campaign Title"
-							name="title"
-							value={formData.title}
-							onChange={handleChange}
-							required
-							placeholder="Enter a compelling campaign title"
-						/>
+				variant="minimal"
+				breadcrumbs={[
+					{ label: "Dashboard", href: "/dashboard" },
+					{ label: "Campaigns", href: "/dashboard/campaigns" },
+					{ label: "Create" },
+				]}
+			/>
 
-						<FormInput
-							fullWidth
-							label="Description"
-							name="description"
-							value={formData.description}
-							onChange={handleChange}
-							multiline
-							rows={4}
-							required
-							placeholder="Describe your campaign goals and impact"
-						/>
+			<StandardCard variant="outlined">
+				<Formik
+					initialValues={initialValues}
+					validationSchema={createCampaignValidationSchema()}
+					onSubmit={handleSubmit}
+				>
+					{({ values, errors, touched, setFieldValue }) => (
+						<Form>
+							<Box display="grid" gap={3}>
+								<Field
+									as={FormInput}
+									fullWidth
+									label="Campaign Title"
+									name="title"
+									error={touched.title && !!errors.title}
+									helperText={<ErrorMessage name="title" />}
+									placeholder="Enter a compelling campaign title"
+								/>
 
-						<Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
-							<DatePicker
-								label="Start Date"
-								value={formData.startDate}
-								onChange={handleDateChange("startDate")}
-								slotProps={{
-									textField: {
-										required: true,
-										fullWidth: true,
-										sx: {
-											"& .MuiOutlinedInput-root": {
-												borderRadius: 2,
-												"&.Mui-focused": {
-													"& .MuiOutlinedInput-notchedOutline": {
-														borderColor: customColor,
+								<Field
+									as={FormInput}
+									fullWidth
+									label="Description"
+									name="description"
+									multiline
+									rows={4}
+									error={touched.description && !!errors.description}
+									helperText={<ErrorMessage name="description" />}
+									placeholder="Describe your campaign goals and impact"
+								/>
+
+								<Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+									<DatePicker
+										label="Start Date"
+										value={values.startDate}
+										onChange={(date) => setFieldValue("startDate", date)}
+										slotProps={{
+											textField: {
+												required: true,
+												fullWidth: true,
+												error: touched.startDate && !!errors.startDate,
+												helperText: touched.startDate && errors.startDate,
+												sx: {
+													"& .MuiOutlinedInput-root": {
+														borderRadius: 2,
+														"&.Mui-focused": {
+															"& .MuiOutlinedInput-notchedOutline": {
+																borderColor: customColor,
+															},
+														},
 													},
 												},
-											},
-										},
-									},
-								}}
-							/>
-
-							<DatePicker
-								label="End Date"
-								value={formData.endDate}
-								onChange={handleDateChange("endDate")}
-								slotProps={{
-									textField: {
-										required: true,
-										fullWidth: true,
-										sx: {
-											"& .MuiOutlinedInput-root": {
-												borderRadius: 2,
-												"&.Mui-focused": {
-													"& .MuiOutlinedInput-notchedOutline": {
-														borderColor: customColor,
-													},
-												},
-											},
-										},
-									},
-								}}
-							/>
-						</Box>
-
-						<CloudinaryImageUpload
-							onImageUpload={handleImageUpload}
-							currentImageUrl={formData.imageUrl}
-							label="Campaign Image"
-							helperText="Upload an image for your campaign (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
-						/>
-
-						<FormControl
-							fullWidth
-							sx={{
-								"& .MuiOutlinedInput-root": {
-									borderRadius: 2,
-									"&.Mui-focused": {
-										"& .MuiOutlinedInput-notchedOutline": {
-											borderColor: customColor,
-										},
-									},
-								},
-							}}
-						>
-							<InputLabel>Status</InputLabel>
-							<Select
-								name="status"
-								value={formData.status}
-								onChange={handleSelectChange}
-								required
-							>
-								<MenuItem value="draft">Draft</MenuItem>
-								<MenuItem value="active">Active</MenuItem>
-								<MenuItem value="paused">Paused</MenuItem>
-							</Select>
-						</FormControl>
-
-						<motion.div
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.3, delay: 0.1 }}
-						>
-							<Typography
-								variant="subtitle1"
-								gutterBottom
-								sx={{
-									fontWeight: 600,
-									color: customColor,
-									mb: 2,
-								}}
-							>
-								Accepted Donation Types
-							</Typography>
-							<Box display="flex" gap={1} flexWrap="wrap">
-								{DONATION_TYPES.map((type) => (
-									<Chip
-										key={type.value}
-										label={type.label}
-										onClick={() => handleDonationTypeChange(type.value)}
-										sx={{
-											backgroundColor: formData.acceptedDonationTypes.includes(
-												type.value
-											)
-												? customColor
-												: "transparent",
-											color: formData.acceptedDonationTypes.includes(type.value)
-												? "white"
-												: customColor,
-											borderColor: customColor,
-											"&:hover": {
-												backgroundColor:
-													formData.acceptedDonationTypes.includes(type.value)
-														? customColor
-														: `${customColor}20`,
 											},
 										}}
-										variant={
-											formData.acceptedDonationTypes.includes(type.value)
-												? "filled"
-												: "outlined"
-										}
 									/>
-								))}
-							</Box>
-						</motion.div>
 
-						<motion.div
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.3, delay: 0.2 }}
-						>
-							<Box
-								display="flex"
-								justifyContent="space-between"
-								alignItems="center"
-								mb={2}
-							>
-								<Typography
-									variant="subtitle1"
+									<DatePicker
+										label="End Date"
+										value={values.endDate}
+										onChange={(date) => setFieldValue("endDate", date)}
+										slotProps={{
+											textField: {
+												required: true,
+												fullWidth: true,
+												error: touched.endDate && !!errors.endDate,
+												helperText: touched.endDate && errors.endDate,
+												sx: {
+													"& .MuiOutlinedInput-root": {
+														borderRadius: 2,
+														"&.Mui-focused": {
+															"& .MuiOutlinedInput-notchedOutline": {
+																borderColor: customColor,
+															},
+														},
+													},
+												},
+											},
+										}}
+									/>
+								</Box>
+
+								<CloudinaryImageUpload
+									onImageUpload={(imageUrl: string) =>
+										setFieldValue("imageUrl", imageUrl)
+									}
+									currentImageUrl={values.imageUrl}
+									label="Campaign Image"
+									helperText="Upload an image for your campaign (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
+								/>
+								{touched.imageUrl && errors.imageUrl && (
+									<Typography color="error" variant="caption">
+										{errors.imageUrl}
+									</Typography>
+								)}
+
+								<FormControl
+									fullWidth
+									error={touched.status && !!errors.status}
 									sx={{
-										fontWeight: 600,
-										color: customColor,
+										"& .MuiOutlinedInput-root": {
+											borderRadius: 2,
+											"&.Mui-focused": {
+												"& .MuiOutlinedInput-notchedOutline": {
+													borderColor: customColor,
+												},
+											},
+										},
 									}}
 								>
-									Select Causes
-								</Typography>
-								<Box>
+									<InputLabel>Status</InputLabel>
+									<Select
+										name="status"
+										value={values.status}
+										onChange={(e) => setFieldValue("status", e.target.value)}
+										required
+									>
+										<MenuItem value="draft">Draft</MenuItem>
+										<MenuItem value="active">Active</MenuItem>
+										<MenuItem value="paused">Paused</MenuItem>
+									</Select>
+									{touched.status && errors.status && (
+										<Typography color="error" variant="caption">
+											{errors.status}
+										</Typography>
+									)}
+								</FormControl>
+
+								<motion.div
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.3, delay: 0.1 }}
+								>
+									<Typography
+										variant="subtitle1"
+										gutterBottom
+										sx={{
+											fontWeight: 600,
+											color: customColor,
+											mb: 2,
+										}}
+									>
+										Accepted Donation Types
+									</Typography>
+									<Box display="flex" gap={1} flexWrap="wrap">
+										{DONATION_TYPES.map((type) => (
+											<Chip
+												key={type.value}
+												label={type.label}
+												onClick={() => {
+													const currentTypes = values.acceptedDonationTypes;
+													const newTypes = currentTypes.includes(type.value)
+														? currentTypes.filter((t) => t !== type.value)
+														: [...currentTypes, type.value];
+													setFieldValue("acceptedDonationTypes", newTypes);
+												}}
+												sx={{
+													backgroundColor:
+														values.acceptedDonationTypes.includes(type.value)
+															? customColor
+															: "transparent",
+													color: values.acceptedDonationTypes.includes(
+														type.value
+													)
+														? "white"
+														: customColor,
+													borderColor: customColor,
+													"&:hover": {
+														backgroundColor:
+															values.acceptedDonationTypes.includes(type.value)
+																? customColor
+																: `${customColor}20`,
+													},
+												}}
+												variant={
+													values.acceptedDonationTypes.includes(type.value)
+														? "filled"
+														: "outlined"
+												}
+											/>
+										))}
+									</Box>
+									{touched.acceptedDonationTypes &&
+										errors.acceptedDonationTypes && (
+											<Typography color="error" variant="caption">
+												{errors.acceptedDonationTypes}
+											</Typography>
+										)}
+								</motion.div>
+
+								<motion.div
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.3, delay: 0.2 }}
+								>
+									<Box
+										display="flex"
+										justifyContent="space-between"
+										alignItems="center"
+										mb={2}
+									>
+										<Typography
+											variant="subtitle1"
+											sx={{
+												fontWeight: 600,
+												color: customColor,
+											}}
+										>
+											Select Causes
+										</Typography>
+										<Box>
+											<FormButton
+												variant="outlined"
+												startIcon={<RefreshIcon />}
+												onClick={() => refetchCauses()}
+												size="small"
+												sx={{ mr: 1 }}
+											>
+												Refresh
+											</FormButton>
+											<FormButton
+												variant="primary"
+												startIcon={<AddIcon />}
+												onClick={handleOpenCreateCauseModal}
+												size="small"
+											>
+												Create New Cause
+											</FormButton>
+										</Box>
+									</Box>
+									{renderCausesSection(values, setFieldValue)}
+								</motion.div>
+
+								<Field
+									as={FormInput}
+									fullWidth
+									label="Total Target Amount"
+									name="totalTargetAmount"
+									type="number"
+									error={
+										touched.totalTargetAmount && !!errors.totalTargetAmount
+									}
+									helperText={<ErrorMessage name="totalTargetAmount" />}
+									slotProps={{
+										input: {
+											readOnly: values.selectedCauses.length > 0,
+											startAdornment: <span>₹</span>,
+										},
+									}}
+								/>
+
+								<Box display="flex" gap={2} justifyContent="flex-end" mt={4}>
 									<FormButton
 										variant="outlined"
-										startIcon={<RefreshIcon />}
-										onClick={() => refetchCauses()}
-										size="small"
-										sx={{ mr: 1 }}
+										onClick={() => router.push("/dashboard/campaigns")}
 									>
-										Refresh
+										Cancel
 									</FormButton>
 									<FormButton
+										type="submit"
 										variant="primary"
-										startIcon={<AddIcon />}
-										onClick={handleOpenCreateCauseModal}
-										size="small"
+										loadingText="Creating Campaign..."
+										sx={{
+											backgroundColor: customColor,
+											"&:hover": {
+												backgroundColor: `${customColor}dd`,
+											},
+										}}
 									>
-										Create New Cause
+										Create Campaign
 									</FormButton>
 								</Box>
 							</Box>
-							{renderCausesSection()}
-						</motion.div>
-
-						<FormInput
-							fullWidth
-							label="Total Target Amount"
-							name="totalTargetAmount"
-							type="number"
-							value={formData.totalTargetAmount}
-							slotProps={{
-								input: {
-									readOnly: formData.selectedCauses.length > 0,
-									startAdornment: <span>₹</span>,
-								},
-							}}
-							helperText={
-								formData.selectedCauses.length > 0
-									? "Automatically calculated from selected causes"
-									: "Enter the total target amount"
-							}
-						/>
-
-						<Box display="flex" gap={2} justifyContent="flex-end" mt={4}>
-							<FormButton
-								variant="outlined"
-								onClick={() => router.push("/dashboard/campaigns")}
-							>
-								Cancel
-							</FormButton>
-							<FormButton
-								type="submit"
-								variant="primary"
-								loadingText="Creating Campaign..."
-								sx={{
-									backgroundColor: customColor,
-									"&:hover": {
-										backgroundColor: `${customColor}dd`,
-									},
-								}}
-							>
-								Create Campaign
-							</FormButton>
-						</Box>
-					</Box>
-				</form>
-			</FormContainer>
+						</Form>
+					)}
+				</Formik>
+			</StandardCard>
 
 			{/* Create New Cause Modal */}
 			<Dialog
@@ -847,7 +744,7 @@ const CreateCampaignPage = () => {
 					</DialogActions>
 				</form>
 			</Dialog>
-		</motion.div>
+		</Box>
 	);
 };
 

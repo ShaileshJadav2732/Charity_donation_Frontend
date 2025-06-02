@@ -6,30 +6,14 @@ import {
 } from "@/store/api/causeApi";
 import { RootState } from "@/store/store";
 import { Cause } from "@/types/cause";
-import { DonationType } from "@/types/donation";
+import { DonationType } from "@/types";
 import StartConversationButton from "@/components/messaging/StartConversationButton";
-import {
-	Bloodtype as BloodIcon,
-	MenuBook as BooksIcon,
-	LocalMall as ClothesIcon,
-	Favorite as FavoriteIcon,
-	Fastfood as FoodIcon,
-	Chair as FurnitureIcon,
-	Home as HouseholdIcon,
-	MonetizationOn as MoneyIcon,
-	MoreHoriz as OtherIcon,
-	Search as SearchIcon,
-	Toys as ToysIcon,
-} from "@mui/icons-material";
+import { Search, Heart, MessageCircle } from "lucide-react";
 import {
 	Alert,
 	Box,
 	Button,
-	Card,
-	CardContent,
-	Chip,
 	InputAdornment,
-	LinearProgress,
 	Skeleton,
 	TextField,
 	Typography,
@@ -37,18 +21,10 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-
-const DonationTypeIcons = {
-	[DonationType.MONEY]: MoneyIcon,
-	[DonationType.CLOTHES]: ClothesIcon,
-	[DonationType.BLOOD]: BloodIcon,
-	[DonationType.FOOD]: FoodIcon,
-	[DonationType.TOYS]: ToysIcon,
-	[DonationType.BOOKS]: BooksIcon,
-	[DonationType.FURNITURE]: FurnitureIcon,
-	[DonationType.HOUSEHOLD]: HouseholdIcon,
-	[DonationType.OTHER]: OtherIcon,
-};
+import PageHeader from "@/components/ui/PageHeader";
+import CauseCard from "@/components/ui/CauseCard";
+import StandardCard from "@/components/ui/StandardCard";
+import { colors, spacing } from "@/styles/theme";
 
 const CausesPage = () => {
 	const router = useRouter();
@@ -105,364 +81,150 @@ const CausesPage = () => {
 	});
 
 	return (
-		<Box sx={{ p: 3, maxWidth: "1200px", mx: "auto" }}>
-			<Typography
-				variant="h4"
-				component="h1"
-				sx={{ fontWeight: "bold", mb: 2, color: "#1a1a1a" }}
-			>
-				Browse Active Causes
-			</Typography>
-			<Typography
-				variant="body1"
-				color="text.secondary"
-				sx={{ mb: 4, maxWidth: 600 }}
-			>
-				Discover causes from active campaigns that need your support. Every
-				donation makes a difference.
-			</Typography>
+		<Box sx={{ maxWidth: "1200px", mx: "auto" }}>
+			<PageHeader
+				title="Browse Active Causes"
+				subtitle="Discover causes from active campaigns that need your support. Every donation makes a difference."
+				variant="minimal"
+			/>
 
 			{/* Search and Filters */}
-			<Box mb={4}>
-				<Box display="flex" flexWrap="wrap" gap={3}>
-					<Box flexGrow={1} minWidth={{ xs: "100%", md: 400 }}>
-						<TextField
-							fullWidth
-							placeholder="Search causes by title, description, or tags..."
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-							slotProps={{
-								input: {
-									startAdornment: (
-										<InputAdornment position="start">
-											<SearchIcon sx={{ color: "#287068" }} />
-										</InputAdornment>
-									),
-									sx: {
-										backgroundColor: "white",
-										borderRadius: 3,
-									},
-								},
-							}}
-							sx={{
-								boxShadow: "0 2px 8px rgba(40, 112, 104, 0.1)",
-								"& .MuiInputBase-input": {
-									py: 1.5,
-								},
-								"& .MuiOutlinedInput-root": {
-									"& fieldset": {
-										borderColor: "#e0e0e0",
-										borderWidth: 2,
-									},
-									"&:hover fieldset": {
-										borderColor: "#287068",
-									},
-									"&.Mui-focused fieldset": {
-										borderColor: "#287068",
-									},
-								},
-							}}
-						/>
-					</Box>
-				</Box>
+			<Box mb={spacing.xl / 8}>
+				<TextField
+					fullWidth
+					placeholder="Search causes by title, description, or tags..."
+					value={searchTerm}
+					onChange={(e) => setSearchTerm(e.target.value)}
+					slotProps={{
+						input: {
+							startAdornment: (
+								<InputAdornment position="start">
+									<Search size={20} color={colors.primary.main} />
+								</InputAdornment>
+							),
+						},
+					}}
+					sx={{
+						maxWidth: 600,
+						"& .MuiOutlinedInput-root": {
+							backgroundColor: "white",
+							"& fieldset": {
+								borderColor: colors.grey[300],
+							},
+							"&:hover fieldset": {
+								borderColor: colors.primary.main,
+							},
+							"&.Mui-focused fieldset": {
+								borderColor: colors.primary.main,
+							},
+						},
+					}}
+				/>
 			</Box>
 
 			{/* Causes Grid */}
 			{isLoading ? (
 				<Box
-					sx={{
-						display: "grid",
-						gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-						gap: 3,
-					}}
+					display="grid"
+					gridTemplateColumns="repeat(auto-fill, minmax(350px, 1fr))"
+					gap={spacing.lg / 8}
 				>
 					{[...Array(8)].map((_, index) => (
-						<Box key={index}>
+						<StandardCard key={index} variant="outlined">
 							<Skeleton
 								variant="rectangular"
 								height={200}
-								sx={{ borderRadius: 3, mb: 2 }}
+								sx={{ mb: spacing.md / 8 }}
 							/>
-							<Skeleton variant="text" width="80%" sx={{ mb: 1 }} />
-							<Skeleton variant="text" width="60%" sx={{ mb: 1 }} />
+							<Skeleton
+								variant="text"
+								width="80%"
+								sx={{ mb: spacing.xs / 8 }}
+							/>
+							<Skeleton
+								variant="text"
+								width="60%"
+								sx={{ mb: spacing.xs / 8 }}
+							/>
 							<Skeleton
 								variant="rectangular"
 								height={8}
-								sx={{ mb: 2, borderRadius: 1 }}
+								sx={{ mb: spacing.md / 8 }}
 							/>
-							<Skeleton
-								variant="rectangular"
-								height={40}
-								sx={{ borderRadius: 2 }}
-							/>
-						</Box>
+							<Skeleton variant="rectangular" height={40} />
+						</StandardCard>
 					))}
 				</Box>
 			) : error ? (
-				<Alert
-					severity="error"
+				<StandardCard
+					variant="outlined"
 					sx={{
-						borderRadius: 3,
-						py: 3,
-						backgroundColor: "#fef2f2",
-						border: "1px solid #fecaca",
-						"& .MuiAlert-icon": {
-							color: "#dc2626",
-						},
+						backgroundColor: colors.error.light + "20",
+						borderColor: colors.error.main,
 					}}
 				>
-					Failed to load causes. Please try again later.
-				</Alert>
+					<Typography color={colors.error.main}>
+						Failed to load causes. Please try again later.
+					</Typography>
+				</StandardCard>
 			) : filteredCauses?.length === 0 ? (
-				<Alert
-					severity="info"
+				<StandardCard
+					variant="outlined"
 					sx={{
-						borderRadius: 3,
-						py: 3,
-						backgroundColor: "#f0f9ff",
-						border: "1px solid #bae6fd",
-						"& .MuiAlert-icon": {
-							color: "#287068",
-						},
+						backgroundColor: colors.info.light + "20",
+						borderColor: colors.info.main,
 					}}
 				>
-					{searchTerm
-						? "No causes match your search criteria. Try adjusting your filters."
-						: "No active causes available at the moment. Check back soon!"}
-				</Alert>
+					<Typography color={colors.info.main}>
+						{searchTerm
+							? "No causes match your search criteria. Try adjusting your filters."
+							: "No active causes available at the moment. Check back soon!"}
+					</Typography>
+				</StandardCard>
 			) : (
 				<Box
-					sx={{
-						display: "grid",
-						gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-						gap: 3,
-					}}
+					display="grid"
+					gridTemplateColumns="repeat(auto-fill, minmax(350px, 1fr))"
+					gap={spacing.lg / 8}
 				>
 					{filteredCauses?.map((cause: Cause) => {
-						// Ensure we have valid numbers for calculation
-						const raisedAmount =
-							typeof cause.raisedAmount === "number" ? cause.raisedAmount : 0;
-						const targetAmount =
-							typeof cause.targetAmount === "number" && cause.targetAmount > 0
-								? cause.targetAmount
-								: 1;
-						const progress =
-							targetAmount > 0
-								? Math.min(100, Math.round((raisedAmount / targetAmount) * 100))
-								: 0;
-
-						const primaryDonationType =
-							cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
-						const DonationIcon = DonationTypeIcons[primaryDonationType];
-
-						// Determine urgency based on progress
-						let urgency = "Low";
-						let urgencyColor = "#10b981";
-						if (progress < 30) {
-							urgency = "High";
-							urgencyColor = "#ef4444";
-						} else if (progress < 70) {
-							urgency = "Medium";
-							urgencyColor = "#f59e0b";
-						}
-
-						const formatCurrency = (amount: number) => {
-							return `₹${amount.toLocaleString()}`;
+						// Transform cause data to match CauseCard interface
+						const causeData = {
+							id: cause.id,
+							title: cause.title,
+							description: cause.description,
+							targetAmount: cause.targetAmount,
+							raisedAmount: cause.raisedAmount,
+							imageUrl: cause.imageUrl,
+							organizationName: cause.organizationName,
+							location: cause.location || undefined, // Handle optional location
+							tags: cause.tags,
+							acceptanceType: cause.acceptanceType as
+								| "money"
+								| "items"
+								| "both",
+							acceptedDonationTypes: cause.acceptedDonationTypes,
+							donationItems: cause.donationItems,
+							status: "active" as const,
 						};
 
 						return (
-							<Card
+							<CauseCard
 								key={cause.id}
-								sx={{
-									height: "100%",
-									cursor: "pointer",
-									borderRadius: 3,
-									transition: "all 0.3s ease",
-									boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-									"&:hover": {
-										transform: "translateY(-8px)",
-										boxShadow: "0 12px 30px rgba(40, 112, 104, 0.2)",
-									},
-								}}
+								cause={causeData}
+								variant="default"
+								showProgress={true}
+								showOrganization={true}
+								showTags={true}
 								onClick={() => handleViewCause(cause.id)}
-							>
-								{/* Hero Image Section */}
-								<Box
-									sx={{
-										height: 180,
-										position: "relative",
-										borderTopLeftRadius: 3,
-										borderTopRightRadius: 3,
-										overflow: "hidden",
-									}}
-								>
-									{cause.imageUrl ? (
-										<Box
-											component="img"
-											src={cause.imageUrl}
-											alt={cause.title}
-											sx={{
-												width: "100%",
-												height: "100%",
-												objectFit: "cover",
-											}}
-										/>
-									) : (
-										<Box
-											sx={{
-												height: "100%",
-												background: `linear-gradient(45deg, ${urgencyColor}20, ${urgencyColor}40)`,
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "center",
-											}}
-										>
-											<DonationIcon
-												sx={{
-													fontSize: 48,
-													color: urgencyColor,
-												}}
-											/>
-										</Box>
-									)}
-									<Chip
-										label={`${urgency} Priority`}
-										size="small"
-										sx={{
-											position: "absolute",
-											top: 16,
-											right: 16,
-											backgroundColor: urgencyColor,
-											color: "white",
-											fontWeight: 600,
-											fontSize: "0.75rem",
-											zIndex: 2,
-										}}
-									/>
-								</Box>
-								<CardContent sx={{ p: 3 }}>
-									{/* Organization */}
-									<Typography
-										variant="body2"
-										color="text.secondary"
-										sx={{ mb: 1, fontWeight: 500 }}
-									>
-										{cause.organizationName || "Organization"}
-									</Typography>
-
-									{/* Title */}
-									<Typography
-										variant="h6"
-										sx={{
-											fontWeight: 600,
-											mb: 2,
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											display: "-webkit-box",
-											WebkitLineClamp: 2,
-											WebkitBoxOrient: "vertical",
-										}}
-									>
-										{cause.title}
-									</Typography>
-									{/* Description */}
-									<Typography
-										variant="body2"
-										color="text.secondary"
-										sx={{
-											mb: 3,
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											display: "-webkit-box",
-											WebkitLineClamp: 3,
-											WebkitBoxOrient: "vertical",
-											lineHeight: 1.5,
-										}}
-									>
-										{cause.description}
-									</Typography>
-
-									{/* Progress Section */}
-									<Box sx={{ mb: 3 }}>
-										<Box
-											sx={{
-												display: "flex",
-												justifyContent: "space-between",
-												mb: 1,
-											}}
-										>
-											<Typography variant="body2" color="text.secondary">
-												Progress
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(raisedAmount)} /{" "}
-												{formatCurrency(cause.targetAmount || 0)}
-											</Typography>
-										</Box>
-										<LinearProgress
-											variant="determinate"
-											value={progress}
-											sx={{
-												height: 8,
-												borderRadius: 4,
-												backgroundColor: "#f0f0f0",
-												"& .MuiLinearProgress-bar": {
-													backgroundColor: urgencyColor,
-												},
-											}}
-										/>
-										<Typography
-											variant="caption"
-											color="text.secondary"
-											sx={{ mt: 0.5, display: "block" }}
-										>
-											{progress}% funded
-										</Typography>
-									</Box>
-
-									{/* Tags */}
-									{cause.tags && cause.tags.length > 0 && (
-										<Box sx={{ mb: 3 }}>
-											<Box display="flex" gap={1} flexWrap="wrap">
-												{cause.tags.slice(0, 3).map((tag) => (
-													<Chip
-														key={tag}
-														label={tag}
-														size="small"
-														sx={{
-															borderRadius: 2,
-															backgroundColor: "#f8f9fa",
-															color: "#287068",
-															fontSize: "0.75rem",
-															height: 28,
-															fontWeight: 500,
-														}}
-													/>
-												))}
-												{cause.tags.length > 3 && (
-													<Chip
-														label={`+${cause.tags.length - 3} more`}
-														size="small"
-														sx={{
-															borderRadius: 2,
-															backgroundColor: "#e9ecef",
-															color: "#6c757d",
-															fontSize: "0.75rem",
-															height: 28,
-														}}
-													/>
-												)}
-											</Box>
-										</Box>
-									)}
-
-									{/* Action Buttons */}
-									<Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-										{/* Message Button */}
+								actions={
+									<Box display="flex" gap={spacing.xs / 8}>
 										<StartConversationButton
 											recipientId={
 												cause.organizationUserId ||
-												cause.organizationId?.userId ||
+												(typeof cause.organizationId === "object"
+													? cause.organizationId?.userId
+													: cause.organizationId) ||
 												cause.organizationId
 											}
 											recipientType="user"
@@ -472,66 +234,56 @@ const CausesPage = () => {
 											variant="icon"
 											size="medium"
 										/>
-
-										{/* Donate Button */}
 										<Button
 											variant="contained"
-											fullWidth
-											startIcon={<FavoriteIcon />}
+											size="small"
+											startIcon={<Heart size={16} />}
 											onClick={(e) => {
 												e.stopPropagation();
 												router.push(`/dashboard/donate/${cause.id}`);
 											}}
 											sx={{
-												backgroundColor: "#287068",
-												borderRadius: 2,
-												textTransform: "none",
-												fontWeight: 600,
-												py: 1.5,
-												fontSize: "0.875rem",
-												transition: "all 0.3s ease",
+												backgroundColor: colors.primary.main,
 												"&:hover": {
-													backgroundColor: "#1f5a52",
-													transform: "translateY(-2px)",
-													boxShadow: "0 4px 12px rgba(40, 112, 104, 0.3)",
+													backgroundColor: colors.primary.dark,
 												},
 											}}
 										>
 											Donate Now
 										</Button>
 									</Box>
-								</CardContent>
-							</Card>
+								}
+							/>
 						);
 					})}
 				</Box>
 			)}
 
-			{/* Pagination - Update to use filteredCauses */}
+			{/* Pagination */}
 			{causesData && causesData.totalPages > 1 && !searchTerm && (
-				<Box display="flex" justifyContent="center" mt={5} gap={3}>
+				<Box
+					display="flex"
+					justifyContent="center"
+					mt={spacing.xl / 8}
+					gap={spacing.lg / 8}
+				>
 					<Button
 						disabled={page === 1}
 						onClick={() => setPage((p) => Math.max(1, p - 1))}
 						variant="outlined"
 						sx={{
-							borderRadius: 3,
-							textTransform: "none",
+							borderColor: colors.primary.main,
+							color: colors.primary.main,
 							fontWeight: 600,
-							px: 3,
-							py: 1.5,
-							borderColor: "#287068",
-							color: "#287068",
-							borderWidth: 2,
-							transition: "all 0.3s ease",
+							px: spacing.lg / 8,
+							py: spacing.md / 8,
 							"&:hover": {
-								backgroundColor: "#287068",
+								backgroundColor: colors.primary.main,
 								color: "white",
-								borderColor: "#287068",
 							},
 							"&:disabled": {
-								borderColor: "#e0e0e0",
-								color: "#9e9e9e",
+								borderColor: colors.grey[300],
+								color: colors.grey[500],
 							},
 						}}
 					>
@@ -542,8 +294,8 @@ const CausesPage = () => {
 						sx={{
 							alignSelf: "center",
 							fontWeight: 500,
-							color: "#287068",
-							px: 2,
+							color: colors.primary.main,
+							px: spacing.md / 8,
 						}}
 					>
 						Page {page} of {causesData.totalPages}
@@ -555,23 +307,18 @@ const CausesPage = () => {
 						}
 						variant="outlined"
 						sx={{
-							borderRadius: 3,
-							textTransform: "none",
+							borderColor: colors.primary.main,
+							color: colors.primary.main,
 							fontWeight: 600,
-							px: 3,
-							py: 1.5,
-							borderColor: "#287068",
-							color: "#287068",
-							borderWidth: 2,
-							transition: "all 0.3s ease",
+							px: spacing.lg / 8,
+							py: spacing.md / 8,
 							"&:hover": {
-								backgroundColor: "#287068",
+								backgroundColor: colors.primary.main,
 								color: "white",
-								borderColor: "#287068",
 							},
 							"&:disabled": {
-								borderColor: "#e0e0e0",
-								color: "#9e9e9e",
+								borderColor: colors.grey[300],
+								color: colors.grey[500],
 							},
 						}}
 					>

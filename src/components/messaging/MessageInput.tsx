@@ -1,21 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import { useMessage } from "@/contexts/MessageContext";
+import { useSendMessageMutation } from "@/store/api/messageApi";
+import { RootState } from "@/store/store";
+import { Conversation, Message } from "@/types/message";
 import {
 	Box,
-	TextField,
-	IconButton,
-	Paper,
-	Typography,
 	CircularProgress,
+	IconButton,
+	TextField,
+	Typography,
 } from "@mui/material";
 import { Send, Smile, X } from "lucide-react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { useSendMessageMutation } from "@/store/api/messageApi";
-import { useMessage } from "@/contexts/MessageContext";
-import { Conversation, Message } from "@/types/message";
+import React, { useCallback, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 interface MessageInputProps {
 	conversation: Conversation;
@@ -311,8 +310,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
 					)}
 				</IconButton>
 			</Box>
-
-			{/* File inputs removed for simplicity */}
 
 			{/* Note: Typing indicator is now shown in the header and message area */}
 		</Box>

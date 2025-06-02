@@ -1,11 +1,13 @@
-import { DonationType } from "./donation";
+import { DonationType } from "./index";
 
 export interface Cause {
 	id: string;
 	title: string;
 	description: string;
 	targetAmount: number;
-	raisedAmount: number;
+	raisedAmount: number; // Money raised - calculated dynamically by backend
+	itemDonations?: number; // Number of items donated - calculated dynamically by backend
+	donorCount?: number; // Total unique donors - calculated dynamically by backend
 	imageUrl: string;
 	tags: string[];
 	organizationId: string;
@@ -36,8 +38,9 @@ export interface Campaign {
 	organizationName: string;
 	status: "draft" | "active" | "completed" | "cancelled";
 	totalTargetAmount: number;
-	totalRaisedAmount: number;
-	donorCount: number;
+	totalRaisedAmount: number; // Money raised - calculated dynamically by backend
+	totalItemDonations?: number; // Items donated - calculated dynamically by backend
+	donorCount: number; // Total unique donors - calculated dynamically by backend
 	createdAt: string;
 	updatedAt: string;
 }
@@ -48,7 +51,9 @@ export interface CauseResponse {
 		title: string;
 		description: string;
 		targetAmount: number;
-		raisedAmount: number;
+		raisedAmount: number; // Money raised - calculated dynamically by backend
+		itemDonations?: number; // Number of items donated - calculated dynamically by backend
+		donorCount?: number; // Total unique donors - calculated dynamically by backend
 		imageUrl: string;
 		tags: string[];
 		organizationId: string;

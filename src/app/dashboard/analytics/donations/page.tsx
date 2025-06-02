@@ -1,7 +1,7 @@
 "use client";
 
 import { useGetItemDonationAnalyticsQuery } from "@/store/api/donationApi";
-import { DonationType } from "@/types/donation";
+import { DonationType } from "@/types";
 import {
 	ItemDonationAnalytics,
 	ItemDonationTypeStats,

@@ -1,36 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import { useMessage } from "@/contexts/MessageContext";
+import { RootState } from "@/store/store";
+import { Conversation } from "@/types/message";
 import {
+	Avatar,
+	Badge,
 	Box,
+	CircularProgress,
+	IconButton,
+	InputAdornment,
 	List,
 	ListItem,
 	ListItemAvatar,
 	ListItemText,
-	Avatar,
-	Typography,
-	TextField,
-	InputAdornment,
-	Badge,
-	Chip,
-	CircularProgress,
-	IconButton,
 	Menu,
 	MenuItem,
+	TextField,
+	Typography,
 } from "@mui/material";
+import { formatDistanceToNow } from "date-fns";
 import {
-	Search,
-	MessageCircle,
-	MoreVertical,
 	Archive,
 	Delete,
-	Circle,
+	MessageCircle,
+	MoreVertical,
+	Search,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { useMessage } from "@/contexts/MessageContext";
-import { Conversation } from "@/types/message";
 
 interface ConversationListProps {
 	conversations: Conversation[];

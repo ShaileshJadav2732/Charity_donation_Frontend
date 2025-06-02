@@ -1,3 +1,33 @@
+// Core donation enums - single source of truth for frontend
+export enum DonationType {
+	MONEY = "MONEY",
+	CLOTHES = "CLOTHES",
+	BLOOD = "BLOOD",
+	FOOD = "FOOD",
+	TOYS = "TOYS",
+	BOOKS = "BOOKS",
+	FURNITURE = "FURNITURE",
+	HOUSEHOLD = "HOUSEHOLD",
+	OTHER = "OTHER",
+}
+
+export enum DonationStatus {
+	PENDING = "PENDING",
+	APPROVED = "APPROVED",
+	RECEIVED = "RECEIVED",
+	CONFIRMED = "CONFIRMED",
+	CANCELLED = "CANCELLED",
+}
+
+// Core address interface
+export interface Address {
+	street: string;
+	city: string;
+	state: string;
+	zipCode: string;
+	country: string;
+}
+
 // Export all types from other files
 export * from "./errors";
 export * from "./user";

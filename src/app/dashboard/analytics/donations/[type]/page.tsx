@@ -1,7 +1,7 @@
 "use client";
 
 import { useGetItemDonationTypeAnalyticsQuery } from "@/store/api/donationApi";
-import { DonationType } from "@/types/donation";
+import { DonationType } from "@/types";
 import { ItemDonationTypeAnalytics } from "@/types/itemDonation";
 import Link from "next/link";
 import { use } from "react";

@@ -149,6 +149,27 @@ export const campaignApi = createApi({
 				"Cause",
 			],
 		}),
+
+		// Remove a cause from a campaign
+		removeCauseFromCampaign: builder.mutation<
+			CampaignResponse,
+			{ campaignId: string; causeId: string }
+		>({
+			query: ({ campaignId, causeId }) => ({
+				url: `/campaigns/${campaignId}/causes/${causeId}`,
+				method: "DELETE",
+			}),
+			transformResponse: (response: any) => {
+				// Transform backend response to match frontend expectations
+				return {
+					campaign: response.data || null,
+				};
+			},
+			invalidatesTags: (_result, _error, { campaignId }) => [
+				{ type: "Campaign", id: campaignId },
+				"Cause",
+			],
+		}),
 	}),
 });
 
@@ -160,4 +181,5 @@ export const {
 	useUpdateCampaignMutation,
 	useDeleteCampaignMutation,
 	useAddCauseToCampaignMutation,
+	useRemoveCauseFromCampaignMutation,
 } = campaignApi;
