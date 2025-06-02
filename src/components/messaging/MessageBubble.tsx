@@ -18,7 +18,6 @@ import {
 	Edit,
 	Delete,
 	Copy,
-	Download,
 	Check,
 	CheckCheck,
 } from "lucide-react";
@@ -37,6 +36,7 @@ interface MessageBubbleProps {
 	isOwn: boolean;
 	showAvatar: boolean;
 	onMessageUpdate: (message: Message) => void;
+	onReply?: (message: Message) => void;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -44,6 +44,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 	isOwn,
 	showAvatar,
 	onMessageUpdate,
+	onReply,
 }) => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -93,7 +94,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 				content: editContent.trim(),
 				conversationId: message.conversationId,
 			}).unwrap();
-			
+
 			onMessageUpdate(result.data);
 			toast.success("Message updated");
 			setIsEditing(false);
@@ -111,11 +112,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 	const formatMessageTime = (timestamp: string) => {
 		const messageDate = new Date(timestamp);
 		const now = new Date();
-		const diffInHours = (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
+		const diffInHours =
+			(now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
 
 		if (diffInHours < 24) {
 			return format(messageDate, "HH:mm");
-		} else if (diffInHours < 168) { // 7 days
+		} else if (diffInHours < 168) {
+			// 7 days
 			return format(messageDate, "EEE HH:mm");
 		} else {
 			return format(messageDate, "MMM dd, HH:mm");
@@ -168,23 +171,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 				{/* Message Bubble */}
 				<Box
 					sx={{
-						maxWidth: "70%",
+						width: "100%",
 						display: "flex",
 						flexDirection: "column",
 						alignItems: isOwn ? "flex-end" : "flex-start",
 					}}
 				>
-					{/* Sender name (for group chats or non-own messages) */}
-					{!isOwn && showAvatar && (
-						<Typography
-							variant="caption"
-							color="text.secondary"
-							sx={{ mb: 0.5, ml: 1 }}
-						>
-							{message.sender.name}
-						</Typography>
-					)}
-
 					{/* Reply context */}
 					{message.replyTo && (
 						<Paper
@@ -207,16 +199,29 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 					<Paper
 						elevation={1}
 						sx={{
-							p: 2,
-							backgroundColor: isOwn ? "primary.main" : "background.paper",
-							color: isOwn ? "primary.contrastText" : "text.primary",
-							borderRadius: 2,
-							borderTopLeftRadius: !isOwn && showAvatar ? 0 : 2,
-							borderTopRightRadius: isOwn && showAvatar ? 0 : 2,
+							p: 2.5,
+							backgroundColor: isOwn ? "#2c7a72" : "background.paper",
+							color: isOwn ? "white" : "text.primary",
+							borderRadius: 3,
+							borderTopLeftRadius: !isOwn && showAvatar ? 0 : 3,
+							borderTopRightRadius: isOwn && showAvatar ? 0 : 3,
 							position: "relative",
+							maxWidth: "85%",
+							width: "fit-content",
+							minWidth: "200px",
+							boxShadow: isOwn
+								? "0 4px 20px rgba(44, 122, 114, 0.2)"
+								: "0 2px 12px rgba(0, 0, 0, 0.08)",
 							"&:hover .message-actions": {
 								opacity: 1,
 							},
+							"&:hover": {
+								transform: "translateY(-1px)",
+								boxShadow: isOwn
+									? "0 6px 25px rgba(44, 122, 114, 0.25)"
+									: "0 4px 16px rgba(0, 0, 0, 0.12)",
+							},
+							transition: "all 0.2s ease-in-out",
 						}}
 					>
 						{isEditing ? (
@@ -272,46 +277,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 									{message.content}
 								</Typography>
 
-								{/* Attachments */}
-								{message.attachments && message.attachments.length > 0 && (
-									<Box sx={{ mt: 1 }}>
-										{message.attachments.map((attachment, index) => (
-											<Box
-												key={index}
-												sx={{
-													display: "flex",
-													alignItems: "center",
-													gap: 1,
-													p: 1,
-													backgroundColor: "rgba(255,255,255,0.1)",
-													borderRadius: 1,
-													mb: 1,
-												}}
-											>
-												{attachment.type.startsWith("image/") ? (
-													<img
-														src={attachment.url}
-														alt={attachment.name}
-														style={{
-															maxWidth: "200px",
-															maxHeight: "200px",
-															borderRadius: "4px",
-														}}
-													/>
-												) : (
-													<>
-														<Typography variant="body2">
-															{attachment.name}
-														</Typography>
-														<IconButton size="small">
-															<Download size={16} />
-														</IconButton>
-													</>
-												)}
-											</Box>
-										))}
-									</Box>
-								)}
+								{/* File attachments removed for simplicity */}
 
 								{/* Message Actions */}
 								<IconButton
@@ -398,7 +364,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 					<Copy size={16} style={{ marginRight: 8 }} />
 					Copy
 				</MenuItem>
-				
+
 				<MenuItem onClick={() => console.log("Reply to message")}>
 					<Reply size={16} style={{ marginRight: 8 }} />
 					Reply

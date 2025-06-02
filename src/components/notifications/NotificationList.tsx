@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
 	List,
 	ListItem,
@@ -11,19 +11,23 @@ import {
 	Badge,
 	Divider,
 	useTheme,
-} from '@mui/material';
-import { useGetNotificationsQuery, useMarkNotificationAsReadMutation, useDismissNotificationMutation } from '@/store/api/notificationApi';
-import { formatDistanceToNow } from 'date-fns';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+} from "@mui/material";
+import {
+	useGetNotificationsQuery,
+	useMarkNotificationAsReadMutation,
+	useDismissNotificationMutation,
+} from "@/store/api/notificationApi";
+import { formatDistanceToNow } from "date-fns";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import {
 	Bell as BellIcon,
 	CheckCircle2 as CheckIcon,
 	Trash2 as DeleteIcon,
 	X as CloseIcon,
 	AlertCircle as ErrorIcon,
-	CheckCircle2 as SuccessIcon
-} from 'lucide-react';
+	CheckCircle2 as SuccessIcon,
+} from "lucide-react";
 
 interface Notification {
 	id: string;
@@ -41,7 +45,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 	const theme = useTheme();
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-	const userId = user?.id || '';
+	const userId = user?.id || "";
 
 	useEffect(() => {
 		if (user !== undefined) {
@@ -56,23 +60,29 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 
 	const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
 	const [dismissNotification] = useDismissNotificationMutation();
-	const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+	const [toast, setToast] = useState<{
+		message: string;
+		type: "success" | "error";
+	} | null>(null);
 
 	const handleMarkAsRead = async (notificationId: string) => {
 		try {
 			await markNotificationAsRead(notificationId).unwrap();
-			setToast({ message: 'Notification marked as read', type: 'success' });
+			setToast({ message: "Notification marked as read", type: "success" });
 		} catch (err) {
-			setToast({ message: 'Failed to mark notification as read', type: 'error' });
+			setToast({
+				message: "Failed to mark notification as read",
+				type: "error",
+			});
 		}
 	};
 
 	const handleDismiss = async (notificationId: string) => {
 		try {
 			await dismissNotification(notificationId).unwrap();
-			setToast({ message: 'Notification dismissed', type: 'success' });
+			setToast({ message: "Notification dismissed", type: "success" });
 		} catch (err) {
-			setToast({ message: 'Failed to dismiss notification', type: 'error' });
+			setToast({ message: "Failed to dismiss notification", type: "error" });
 		}
 	};
 
@@ -88,7 +98,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 	if (!isAuthLoaded) {
 		return (
 			<Card sx={{ width: 360, maxHeight: 500, boxShadow: 3 }}>
-				<CardContent sx={{ textAlign: 'center', py: 4 }}>
+				<CardContent sx={{ textAlign: "center", py: 4 }}>
 					<Typography variant="body1" fontFamily="'Inter', sans-serif">
 						Loading authentication...
 					</Typography>
@@ -98,15 +108,23 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 	}
 
 	return (
-		<Card sx={{ width: 360, maxHeight: 500, boxShadow: 3, position: 'relative' }}>
-			<Box sx={{
-				p: 2,
-				display: 'flex',
-				justifyContent: 'space-between',
-				alignItems: 'center',
-				borderBottom: `1px solid ${theme.palette.divider}`
-			}}>
-				<Typography variant="h6" fontFamily="'Inter', sans-serif" fontWeight={600}>
+		<Card
+			sx={{ width: 360, maxHeight: 500, boxShadow: 3, position: "relative" }}
+		>
+			<Box
+				sx={{
+					p: 2,
+					display: "flex",
+					justifyContent: "space-between",
+					alignItems: "center",
+					borderBottom: `1px solid ${theme.palette.divider}`,
+				}}
+			>
+				<Typography
+					variant="h6"
+					fontFamily="'Inter', sans-serif"
+					fontWeight={600}
+				>
 					Notifications
 				</Typography>
 				<IconButton onClick={onClose} size="small">
@@ -117,23 +135,26 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 			{toast && (
 				<Box
 					sx={{
-						position: 'absolute',
+						position: "absolute",
 						top: 16,
-						left: '50%',
-						transform: 'translateX(-50%)',
+						left: "50%",
+						transform: "translateX(-50%)",
 						px: 3,
 						py: 1.5,
 						borderRadius: 2,
-						bgcolor: toast.type === 'success' ? 'success.light' : 'error.light',
-						color: toast.type === 'success' ? 'success.contrastText' : 'error.contrastText',
+						bgcolor: toast.type === "success" ? "success.light" : "error.light",
+						color:
+							toast.type === "success"
+								? "success.contrastText"
+								: "error.contrastText",
 						boxShadow: 3,
 						zIndex: 1000,
-						display: 'flex',
-						alignItems: 'center',
+						display: "flex",
+						alignItems: "center",
 						gap: 1,
 					}}
 				>
-					{toast.type === 'success' ? (
+					{toast.type === "success" ? (
 						<SuccessIcon size={18} />
 					) : (
 						<ErrorIcon size={18} />
@@ -144,9 +165,9 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 				</Box>
 			)}
 
-			<Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+			<Box sx={{ maxHeight: 400, overflow: "auto" }}>
 				{isLoading && (
-					<Box sx={{ p: 3, textAlign: 'center' }}>
+					<Box sx={{ p: 3, textAlign: "center" }}>
 						<Typography variant="body1" fontFamily="'Inter', sans-serif">
 							Loading notifications...
 						</Typography>
@@ -154,8 +175,12 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 				)}
 
 				{isError && (
-					<Box sx={{ p: 3, textAlign: 'center' }}>
-						<Typography variant="body1" color="error.main" fontFamily="'Inter', sans-serif">
+					<Box sx={{ p: 3, textAlign: "center" }}>
+						<Typography
+							variant="body1"
+							color="error.main"
+							fontFamily="'Inter', sans-serif"
+						>
 							Error loading notifications
 						</Typography>
 					</Box>
@@ -185,9 +210,11 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 										sx={{
 											py: 2,
 											px: 2.5,
-											bgcolor: notification.isRead ? 'transparent' : 'action.selected',
-											'&:hover': { bgcolor: 'action.hover' },
-											transition: 'background-color 0.2s ease',
+											bgcolor: notification.isRead
+												? "transparent"
+												: "action.selected",
+											"&:hover": { bgcolor: "action.hover" },
+											transition: "background-color 0.2s ease",
 										}}
 									>
 										<ListItemText
@@ -202,29 +229,41 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 												</Typography>
 											}
 											secondary={
-												<>
+												<Box component="span">
 													<Typography
+														component="span"
 														variant="body1"
 														color="text.secondary"
 														fontFamily="'Inter', sans-serif"
-														sx={{ mb: 1 }}
+														sx={{ mb: 1, display: "block" }}
 													>
 														{notification.message}
 													</Typography>
 													<Typography
+														component="span"
 														variant="caption"
 														color="text.secondary"
 														fontFamily="'Inter', sans-serif"
+														sx={{ display: "block" }}
 													>
-														{formatDistanceToNow(new Date(notification.createdAt), {
-															addSuffix: true,
-														})}
+														{formatDistanceToNow(
+															new Date(notification.createdAt),
+															{
+																addSuffix: true,
+															}
+														)}
 													</Typography>
-												</>
+												</Box>
 											}
 											sx={{ my: 0 }}
 										/>
-										<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+										<Box
+											sx={{
+												display: "flex",
+												flexDirection: "column",
+												gap: 0.5,
+											}}
+										>
 											{!notification.isRead && (
 												<IconButton
 													size="small"
@@ -254,16 +293,21 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 			</Box>
 
 			{notifications.length > 0 && (
-				<Box sx={{
-					p: 1.5,
-					textAlign: 'center',
-					borderTop: `1px solid ${theme.palette.divider}`
-				}}>
+				<Box
+					sx={{
+						p: 1.5,
+						textAlign: "center",
+						borderTop: `1px solid ${theme.palette.divider}`,
+					}}
+				>
 					<Typography
 						variant="body2"
 						color="primary.main"
 						fontFamily="'Inter', sans-serif"
-						sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+						sx={{
+							cursor: "pointer",
+							"&:hover": { textDecoration: "underline" },
+						}}
 					>
 						View all notifications
 					</Typography>

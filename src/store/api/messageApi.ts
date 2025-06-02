@@ -16,23 +16,26 @@ import {
 export const messageApi = createApi({
 	reducerPath: "messageApi",
 	baseQuery: fetchBaseQuery({
-		baseUrl: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"}/messages`,
+		baseUrl: `${
+			process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+		}/messages`,
 		prepareHeaders: (headers, { getState }) => {
 			const token = (getState() as RootState).auth.token;
 			if (token) {
 				headers.set("authorization", `Bearer ${token}`);
 			}
-			// Ensure JSON content type for non-FormData requests
-			if (!headers.get("content-type")) {
-				headers.set("content-type", "application/json");
-			}
+			// Don't set content-type for FormData requests - let the browser set it
+			// Only set JSON content type for non-FormData requests
 			return headers;
 		},
 	}),
 	tagTypes: ["Message", "Conversation", "UnreadCount"],
 	endpoints: (builder) => ({
 		// Get all conversations for the current user
-		getConversations: builder.query<ConversationsResponse, ConversationQueryParams>({
+		getConversations: builder.query<
+			ConversationsResponse,
+			ConversationQueryParams
+		>({
 			query: (params) => ({
 				url: "/conversations",
 				params: {
@@ -69,7 +72,10 @@ export const messageApi = createApi({
 		}),
 
 		// Create a new conversation
-		createConversation: builder.mutation<ConversationResponse, CreateConversationRequest>({
+		createConversation: builder.mutation<
+			ConversationResponse,
+			CreateConversationRequest
+		>({
 			query: (data) => ({
 				url: "/conversations",
 				method: "POST",
@@ -81,20 +87,31 @@ export const messageApi = createApi({
 		// Send a message
 		sendMessage: builder.mutation<MessageResponse, CreateMessageRequest>({
 			query: (data) => {
+				console.log("🚀 Sending message with data:", data);
+
 				const formData = new FormData();
 				formData.append("content", data.content);
-				if (data.conversationId) formData.append("conversationId", data.conversationId);
+				if (data.conversationId)
+					formData.append("conversationId", data.conversationId);
 				formData.append("recipientId", data.recipientId);
 				if (data.messageType) formData.append("messageType", data.messageType);
 				if (data.replyTo) formData.append("replyTo", data.replyTo);
-				if (data.relatedDonation) formData.append("relatedDonation", data.relatedDonation);
-				if (data.relatedCause) formData.append("relatedCause", data.relatedCause);
+				if (data.relatedDonation)
+					formData.append("relatedDonation", data.relatedDonation);
+				if (data.relatedCause)
+					formData.append("relatedCause", data.relatedCause);
 
 				// Handle file attachments
-				if (data.attachments) {
-					data.attachments.forEach((file, index) => {
-						formData.append(`attachments`, file);
+				if (data.attachments && data.attachments.length > 0) {
+					data.attachments.forEach((file) => {
+						formData.append("attachments", file);
 					});
+				}
+
+				// Log FormData contents for debugging
+				console.log("📝 FormData contents:");
+				for (let [key, value] of formData.entries()) {
+					console.log(`${key}:`, value);
 				}
 
 				return {
@@ -110,7 +127,10 @@ export const messageApi = createApi({
 		}),
 
 		// Mark message as read
-		markMessageAsRead: builder.mutation<{ success: boolean }, { messageId: string; conversationId: string }>({
+		markMessageAsRead: builder.mutation<
+			{ success: boolean },
+			{ messageId: string; conversationId: string }
+		>({
 			query: ({ messageId, conversationId }) => ({
 				url: `/messages/${messageId}/read`,
 				method: "PATCH",
@@ -141,7 +161,10 @@ export const messageApi = createApi({
 		}),
 
 		// Delete a message
-		deleteMessage: builder.mutation<{ success: boolean }, { messageId: string; conversationId: string }>({
+		deleteMessage: builder.mutation<
+			{ success: boolean },
+			{ messageId: string; conversationId: string }
+		>({
 			query: ({ messageId }) => ({
 				url: `/messages/${messageId}`,
 				method: "DELETE",
@@ -153,7 +176,10 @@ export const messageApi = createApi({
 		}),
 
 		// Edit a message
-		editMessage: builder.mutation<MessageResponse, { messageId: string; content: string; conversationId: string }>({
+		editMessage: builder.mutation<
+			MessageResponse,
+			{ messageId: string; content: string; conversationId: string }
+		>({
 			query: ({ messageId, content }) => ({
 				url: `/messages/${messageId}`,
 				method: "PATCH",
@@ -165,12 +191,17 @@ export const messageApi = createApi({
 		}),
 
 		// Search messages
-		searchMessages: builder.query<MessagesResponse, { query: string; conversationId?: string }>({
+		searchMessages: builder.query<
+			MessagesResponse,
+			{ query: string; conversationId?: string }
+		>({
 			query: (params) => ({
 				url: "/search",
 				params: {
 					q: params.query,
-					...(params.conversationId && { conversationId: params.conversationId }),
+					...(params.conversationId && {
+						conversationId: params.conversationId,
+					}),
 				},
 			}),
 		}),

@@ -1,27 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
 	Box,
-	Grid,
-	Paper,
-	Typography,
 	IconButton,
+	Typography,
+	Paper,
 	Badge,
 	useTheme,
 	useMediaQuery,
 	Drawer,
 } from "@mui/material";
-import {
-	MessageCircle,
-	Users,
-	Search,
-	Menu,
-	X,
-} from "lucide-react";
+import { Search, Menu, X, MessageCircle } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { useGetConversationsQuery, useGetUnreadCountQuery } from "@/store/api/messageApi";
+import {
+	useGetConversationsQuery,
+	useGetUnreadCountQuery,
+} from "@/store/api/messageApi";
 import { useMessage } from "@/contexts/MessageContext";
 import ConversationList from "./ConversationList";
 import MessageList from "./MessageList";
@@ -37,11 +33,13 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 	const { user } = useSelector((state: RootState) => state.auth);
-	
+
 	// State
-	const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+	const [selectedConversation, setSelectedConversation] =
+		useState<Conversation | null>(null);
 	const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [lastReadUpdate, setLastReadUpdate] = useState(0);
 
 	// API queries
 	const {
@@ -59,6 +57,11 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 	// Message context
 	const { onNewMessage, joinConversation, leaveConversation } = useMessage();
 
+	// Function to trigger conversation list re-render when read status changes
+	const triggerConversationUpdate = useCallback(() => {
+		setLastReadUpdate(Date.now());
+	}, []);
+
 	// Set initial conversation
 	useEffect(() => {
 		if (initialConversationId && conversationsData?.data) {
@@ -71,14 +74,15 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 		}
 	}, [initialConversationId, conversationsData]);
 
-	// Handle new messages
+	// Handle new messages - RTK Query will automatically update the cache
 	useEffect(() => {
 		const handleNewMessage = () => {
-			refetchConversations();
+			// No need to manually refetch - RTK Query handles cache updates automatically
+			// The conversation list will update automatically when new messages arrive
 		};
 
 		onNewMessage(handleNewMessage);
-	}, [onNewMessage, refetchConversations]);
+	}, [onNewMessage]);
 
 	// Join/leave conversation rooms
 	useEffect(() => {
@@ -110,6 +114,7 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 			isLoading={conversationsLoading}
 			searchQuery={searchQuery}
 			onSearchChange={setSearchQuery}
+			lastReadUpdate={lastReadUpdate}
 		/>
 	);
 
@@ -135,12 +140,13 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 						)}
 						<Typography variant="h6" sx={{ fontWeight: 600 }}>
 							{selectedConversation
-								? selectedConversation.participants
-									.find((p) => p.user._id !== user?.id)?.user.name || "Unknown"
+								? selectedConversation.participants.find(
+										(p) => p.user._id !== user?.id
+								  )?.user.name || "Unknown"
 								: "Messages"}
 						</Typography>
 					</Box>
-					
+
 					{!selectedConversation && (
 						<Badge badgeContent={unreadCountData?.count || 0} color="error">
 							<IconButton
@@ -160,8 +166,9 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 							conversation={selectedConversation}
 							onConversationUpdate={(updated) => {
 								setSelectedConversation(updated);
-								refetchConversations();
+								// RTK Query will handle cache updates automatically
 							}}
+							onMarkAsRead={triggerConversationUpdate}
 						/>
 					) : (
 						<Box
@@ -203,73 +210,120 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 
 	// Desktop Layout
 	return (
-		<Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-			{/* Desktop Header */}
-			<Paper
-				elevation={1}
+		<Box
+			sx={{
+				height: "calc(100vh - 90px)", // Account for main header
+				display: "flex",
+				background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+				overflow: "hidden", // Prevent any scrolling at this level
+			}}
+		>
+			{/* Conversation List - Always Visible and Fixed */}
+			<Box
 				sx={{
-					p: 3,
+					width: "350px",
+					minWidth: "350px",
+					maxWidth: "350px",
+					borderRight: "1px solid rgba(44, 122, 114, 0.1)",
+					background: "rgba(255,255,255,0.95)",
+					backdropFilter: "blur(20px)",
+					boxShadow: "inset -1px 0 0 rgba(44, 122, 114, 0.1)",
 					display: "flex",
-					alignItems: "center",
-					justifyContent: "space-between",
-					borderRadius: 0,
+					flexDirection: "column",
+					overflow: "hidden", // Prevent sidebar from scrolling with content
 				}}
 			>
-				<Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-					<MessageCircle size={24} color={theme.palette.primary.main} />
-					<Typography variant="h5" sx={{ fontWeight: 600 }}>
-						Messages
-					</Typography>
-				</Box>
-				
-				<Badge badgeContent={unreadCountData?.count || 0} color="error">
-					<Users size={24} color={theme.palette.grey[600]} />
-				</Badge>
-			</Paper>
+				{conversationListContent}
+			</Box>
 
-			{/* Desktop Content */}
-			<Grid container sx={{ flex: 1, overflow: "hidden" }}>
-				{/* Conversation List */}
-				<Grid item xs={4} sx={{ borderRight: 1, borderColor: "divider" }}>
-					{conversationListContent}
-				</Grid>
-
-				{/* Message Area */}
-				<Grid item xs={8}>
-					{selectedConversation ? (
-						<MessageList
-							conversation={selectedConversation}
-							onConversationUpdate={(updated) => {
-								setSelectedConversation(updated);
-								refetchConversations();
-							}}
-						/>
-					) : (
+			{/* Message Area - Takes Remaining Space */}
+			<Box
+				sx={{
+					flex: 1,
+					background: "rgba(255,255,255,0.98)",
+					backdropFilter: "blur(20px)",
+					display: "flex",
+					flexDirection: "column",
+					overflow: "hidden", // Prevent message area from scrolling as a whole
+				}}
+			>
+				{selectedConversation ? (
+					<MessageList
+						conversation={selectedConversation}
+						onConversationUpdate={(updated) => {
+							setSelectedConversation(updated);
+							// RTK Query will handle cache updates automatically
+						}}
+						onMarkAsRead={triggerConversationUpdate}
+					/>
+				) : (
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							justifyContent: "center",
+							height: "100%",
+							p: 4,
+							textAlign: "center",
+							background:
+								"linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,249,255,0.95) 100%)",
+						}}
+					>
 						<Box
 							sx={{
-								display: "flex",
-								flexDirection: "column",
-								alignItems: "center",
-								justifyContent: "center",
-								height: "100%",
 								p: 4,
-								textAlign: "center",
+								borderRadius: 4,
+								background: "linear-gradient(135deg, #2c7a72 0%, #1e5a54 100%)",
+								color: "white",
+								mb: 3,
+								boxShadow: "0 8px 32px rgba(44, 122, 114, 0.3)",
 							}}
 						>
-							<MessageCircle size={80} color={theme.palette.grey[400]} />
-							<Typography variant="h5" sx={{ mt: 3, mb: 2 }}>
-								Welcome to Messages
-							</Typography>
-							<Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-								Select a conversation from the list to start messaging with donors and organizations.
-							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								You can discuss donations, ask questions, and coordinate pickups directly here.
+							<MessageCircle size={64} />
+						</Box>
+						<Typography
+							variant="h4"
+							sx={{
+								mt: 2,
+								mb: 2,
+								fontWeight: 700,
+								background: "linear-gradient(135deg, #2c7a72 0%, #1e5a54 100%)",
+								backgroundClip: "text",
+								WebkitBackgroundClip: "text",
+								WebkitTextFillColor: "transparent",
+							}}
+						>
+							Welcome to Messages
+						</Typography>
+						<Typography
+							variant="h6"
+							color="text.secondary"
+							sx={{ mb: 3, fontWeight: 400, maxWidth: 400 }}
+						>
+							Select a conversation from the list to start messaging with donors
+							and organizations.
+						</Typography>
+						<Box
+							sx={{
+								p: 3,
+								borderRadius: 3,
+								background:
+									"linear-gradient(135deg, rgba(44, 122, 114, 0.1) 0%, rgba(30, 90, 84, 0.1) 100%)",
+								border: "1px solid rgba(44, 122, 114, 0.2)",
+							}}
+						>
+							<Typography
+								variant="body1"
+								color="text.secondary"
+								sx={{ fontWeight: 500 }}
+							>
+								💬 Discuss donations • ❓ Ask questions • 📦 Coordinate pickups
 							</Typography>
 						</Box>
-					)}
-				</Grid>
-			</Grid>
+					</Box>
+				)}
+			</Box>
 		</Box>
 	);
 };
