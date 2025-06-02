@@ -240,21 +240,16 @@ const CausesPage = () => {
 				>
 					{filteredCauses?.map((cause: Cause) => {
 						// Ensure we have valid numbers for calculation
-						const raisedAmount = typeof cause.raisedAmount === 'number' ? cause.raisedAmount : 0;
-						const targetAmount = typeof cause.targetAmount === 'number' && cause.targetAmount > 0 ? cause.targetAmount : 1;
+						const raisedAmount =
+							typeof cause.raisedAmount === "number" ? cause.raisedAmount : 0;
+						const targetAmount =
+							typeof cause.targetAmount === "number" && cause.targetAmount > 0
+								? cause.targetAmount
+								: 1;
 						const progress =
 							targetAmount > 0
 								? Math.min(100, Math.round((raisedAmount / targetAmount) * 100))
 								: 0;
-
-						// Debug logging for progress issues
-						console.log(`🔍 Cause Progress: ${cause.title}`, {
-							raisedAmount,
-							targetAmount,
-							progress,
-							originalRaised: cause.raisedAmount,
-							originalTarget: cause.targetAmount
-						});
 
 						const primaryDonationType =
 							cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
@@ -274,15 +269,6 @@ const CausesPage = () => {
 						const formatCurrency = (amount: number) => {
 							return `₹${amount.toLocaleString()}`;
 						};
-
-						// Debug logging for each cause
-						console.log('🔍 CAUSE MESSAGE BUTTON DEBUG:', {
-							causeId: cause.id,
-							organizationId: cause.organizationId,
-							organizationUserId: cause.organizationUserId,
-							organizationName: cause.organizationName,
-							strategy: "Use cause.organizationUserId (populated from organization.userId)"
-						});
 
 						return (
 							<Card
@@ -472,9 +458,13 @@ const CausesPage = () => {
 
 									{/* Action Buttons */}
 									<Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-										{/* Message Button - Use cause.organizationUserId (populated from organization.userId) */}
+										{/* Message Button */}
 										<StartConversationButton
-											recipientId={cause.organizationId.userId || "6838302f0060c3ec49a0e80e"}
+											recipientId={
+												cause.organizationUserId ||
+												cause.organizationId?.userId ||
+												cause.organizationId
+											}
 											recipientType="user"
 											recipientName={cause.organizationName || "Organization"}
 											recipientRole="organization"

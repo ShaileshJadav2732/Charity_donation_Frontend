@@ -11,16 +11,15 @@ import {
 	Typography,
 	Box,
 	CircularProgress,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 } from "@mui/material";
 import { MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { useCreateConversationMutation, useResolveParticipantIdQuery } from "@/store/api/messageApi";
+import {
+	useCreateConversationMutation,
+	useResolveParticipantIdQuery,
+} from "@/store/api/messageApi";
 import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
 import toast from "react-hot-toast";
 
@@ -48,32 +47,36 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 	fullWidth = false,
 }) => {
 	const router = useRouter();
-	const { user, token, isAuthenticated } = useSelector((state: RootState) => state.auth);
+	const { user, token } = useSelector((state: RootState) => state.auth);
 	const [open, setOpen] = useState(false);
 	const [message, setMessage] = useState("");
-	const [debugId, setDebugId] = useState(recipientId);
-	const [debugType, setDebugType] = useState(recipientType || "cause");
 
 	const [createConversation, { isLoading }] = useCreateConversationMutation();
 
 	// Use specific API for cause IDs to get organization data
-	const { data: organizationData, isLoading: loadingOrg, error: orgError } = useGetOrganizationByCauseIdQuery(
-		debugId,
-		{ skip: !debugId || debugType !== "cause" }
-	);
+	const {
+		data: organizationData,
+		isLoading: loadingOrg,
+		error: orgError,
+	} = useGetOrganizationByCauseIdQuery(recipientId, {
+		skip: !recipientId || recipientType !== "cause",
+	});
 
 	// Fallback: Use universal resolver for other ID types
-	const { data: participantData, isLoading: resolving, error: resolveError } = useResolveParticipantIdQuery(
-		debugId,
-		{ skip: !debugId || debugType === "cause" }
-	);
+	const {
+		data: participantData,
+		isLoading: resolving,
+		error: resolveError,
+	} = useResolveParticipantIdQuery(recipientId, {
+		skip: !recipientId || recipientType === "cause",
+	});
 
 	// Determine the final participant User ID
 	let finalParticipantId: string | null = null;
 	let isLoading_final = false;
 	let hasError = false;
 
-	if (debugType === "cause") {
+	if (recipientType === "cause") {
 		isLoading_final = loadingOrg;
 		hasError = !!orgError;
 		if (organizationData?.organization?.userId) {
@@ -87,40 +90,13 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 		}
 	}
 
-	// Debug logging for visibility
-	console.log('🔍 StartConversationButton Visibility Check:', {
-		currentUser: {
-			id: user?.id,
-			role: user?.role,
-			email: user?.email
-		},
-		hasToken: !!token,
-		recipientId,
-		debugId,
-		debugType,
-		finalParticipantId,
-		isLoading_final,
-		hasError,
-		willShow: !(!user || !token || !recipientId),
-		messagingSelf: finalParticipantId === user?.id
-	});
-
 	// Only hide if no user, no token, or no recipientId
 	if (!user || !token || !recipientId) {
-		console.log('❌ StartConversationButton HIDDEN because:', {
-			noUser: !user,
-			noToken: !token,
-			noRecipientId: !recipientId
-		});
 		return null;
 	}
 
 	// Don't show if trying to message yourself (only if we successfully resolved the ID)
 	if (finalParticipantId && user?.id === finalParticipantId) {
-		console.log('❌ StartConversationButton HIDDEN because messaging self:', {
-			currentUserId: user?.id,
-			finalParticipantId
-		});
 		return null;
 	}
 
@@ -130,7 +106,9 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 		if (relatedDonation) {
 			setMessage(`Hi ${recipientName}, I'd like to discuss the donation...`);
 		} else if (relatedCause) {
-			setMessage(`Hi ${recipientName}, I'm interested in your cause and would like to know more...`);
+			setMessage(
+				`Hi ${recipientName}, I'm interested in your cause and would like to know more...`
+			);
 		} else {
 			setMessage(`Hi ${recipientName}, `);
 		}
@@ -152,18 +130,8 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 			return;
 		}
 
-		// If we couldn't resolve the participant ID, try using the debug ID
-		const participantIdToUse = finalParticipantId || debugId;
-
-		console.log('=== SENDING MESSAGE DEBUG ===');
-		console.log('originalRecipientId:', recipientId);
-		console.log('debugId:', debugId);
-		console.log('debugType:', debugType);
-		console.log('finalParticipantId:', finalParticipantId);
-		console.log('participantIdToUse:', participantIdToUse);
-		console.log('isLoading_final:', isLoading_final);
-		console.log('hasError:', hasError);
-		console.log('============================');
+		// If we couldn't resolve the participant ID, try using the original recipient ID
+		const participantIdToUse = finalParticipantId || recipientId;
 
 		try {
 			const result = await createConversation({
@@ -178,9 +146,33 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 
 			// Navigate to the new conversation
 			router.push(`/dashboard/messages/${result.data._id}`);
-		} catch (error: any) {
-			console.error('Conversation creation error:', error);
-			toast.error(error?.data?.message || "Failed to start conversation");
+		} catch (error) {
+			// Handle the case where conversation already exists
+			if (
+				error &&
+				typeof error === "object" &&
+				"status" in error &&
+				error.status === 400 &&
+				"data" in error
+			) {
+				const errorData = error.data as {
+					message?: string;
+					data?: { conversationId?: string };
+				};
+
+				if (
+					errorData.message?.includes("already exists") &&
+					errorData.data?.conversationId
+				) {
+					// Show yellow warning toast and redirect to existing conversation
+					toast.warning(
+						"Conversation already exists! Redirecting to existing conversation..."
+					);
+					handleClose();
+					router.push(`/dashboard/messages/${errorData.data.conversationId}`);
+					return;
+				}
+			}
 		}
 	};
 
@@ -202,14 +194,17 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 		tooltipText = "Send message";
 	}
 
-	const buttonContent = variant === "icon" ? (
-		<MessageCircle size={size === "small" ? 16 : size === "large" ? 24 : 20} />
-	) : (
-		<>
-			<MessageCircle size={16} style={{ marginRight: 8 }} />
-			Message {recipientRole === "organization" ? "Organization" : "Donor"}
-		</>
-	);
+	const buttonContent =
+		variant === "icon" ? (
+			<MessageCircle
+				size={size === "small" ? 16 : size === "large" ? 24 : 20}
+			/>
+		) : (
+			<>
+				<MessageCircle size={16} style={{ marginRight: 8 }} />
+				Message {recipientRole === "organization" ? "Organization" : "Donor"}
+			</>
+		);
 
 	return (
 		<>
@@ -238,8 +233,10 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 				onClose={handleClose}
 				maxWidth="sm"
 				fullWidth
-				PaperProps={{
-					sx: { borderRadius: 2 },
+				sx={{
+					"& .MuiDialog-paper": {
+						borderRadius: 2,
+					},
 				}}
 			>
 				<DialogTitle>
@@ -258,54 +255,6 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 							{relatedDonation && " about this donation"}
 							{relatedCause && " about this cause"}
 						</Typography>
-					</Box>
-
-					{/* Debug Input Fields */}
-					<Box sx={{ mb: 2, p: 2, backgroundColor: "blue.50", borderRadius: 1, border: "1px solid #2196f3" }}>
-						<Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1, color: "blue.800" }}>
-							🧪 Debug Testing
-						</Typography>
-
-						<Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-							<TextField
-								size="small"
-								label="Test ID"
-								value={debugId}
-								onChange={(e) => setDebugId(e.target.value)}
-								placeholder="Paste any ID here to test"
-								sx={{ flex: 1 }}
-							/>
-							<FormControl size="small" sx={{ minWidth: 120 }}>
-								<InputLabel>Type</InputLabel>
-								<Select
-									value={debugType}
-									onChange={(e) => setDebugType(e.target.value as any)}
-									label="Type"
-								>
-									<MenuItem value="cause">Cause</MenuItem>
-									<MenuItem value="organization">Organization</MenuItem>
-									<MenuItem value="user">User</MenuItem>
-								</Select>
-							</FormControl>
-						</Box>
-
-						<Typography variant="caption" color="text.secondary">
-							💡 Paste any ID from your database to test messaging resolution
-						</Typography>
-					</Box>
-
-					{/* Debug Information */}
-					<Box sx={{ mb: 2, p: 1, backgroundColor: "grey.100", borderRadius: 1, fontSize: "12px" }}>
-						<Typography variant="caption" sx={{ fontWeight: "bold" }}>Debug Results:</Typography><br />
-						<Typography variant="caption">Current User: {user?.id} ({user?.role})</Typography><br />
-						<Typography variant="caption">Original ID: {recipientId}</Typography><br />
-						<Typography variant="caption">Test ID: {debugId}</Typography><br />
-						<Typography variant="caption">Type: {debugType}</Typography><br />
-						<Typography variant="caption">Resolved ID: {finalParticipantId || "Not resolved"}</Typography><br />
-						<Typography variant="caption">Loading: {isLoading_final ? "Yes" : "No"}</Typography><br />
-						<Typography variant="caption">Error: {hasError ? "Yes" : "No"}</Typography><br />
-						<Typography variant="caption">Status: {tooltipText}</Typography><br />
-						<Typography variant="caption">Messaging Self: {finalParticipantId === user?.id ? "Yes" : "No"}</Typography>
 					</Box>
 
 					<TextField
@@ -335,11 +284,16 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 								borderColor: "primary.200",
 							}}
 						>
-							<Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
+							<Typography
+								variant="caption"
+								color="primary.main"
+								sx={{ fontWeight: 600 }}
+							>
 								Context:
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								{relatedDonation && "This conversation is related to a donation"}
+								{relatedDonation &&
+									"This conversation is related to a donation"}
 								{relatedCause && "This conversation is related to a cause"}
 							</Typography>
 						</Box>
@@ -347,11 +301,7 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 				</DialogContent>
 
 				<DialogActions sx={{ p: 3, pt: 1 }}>
-					<Button
-						onClick={handleClose}
-						disabled={isLoading}
-						color="inherit"
-					>
+					<Button onClick={handleClose} disabled={isLoading} color="inherit">
 						Cancel
 					</Button>
 					<Button

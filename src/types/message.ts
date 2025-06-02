@@ -62,8 +62,7 @@ export interface CreateMessageRequest {
 	conversationId?: string;
 	recipientId: string;
 	content: string;
-	messageType?: "text" | "image" | "file";
-	attachments?: File[];
+	messageType?: "text"; // Only text messages supported
 	replyTo?: string;
 	relatedDonation?: string;
 	relatedCause?: string;

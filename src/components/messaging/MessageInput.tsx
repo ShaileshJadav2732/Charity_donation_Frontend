@@ -106,13 +106,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
 		try {
 			handleTypingStop();
 
-			console.log("💬 Sending message:", {
-				conversationId: conversation._id,
-				recipientId: otherParticipant.user._id,
-				content: trimmedMessage,
-				messageType: "text",
-			});
-
 			const result = await sendMessage({
 				conversationId: conversation._id,
 				recipientId: otherParticipant.user._id,
@@ -120,8 +113,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
 				messageType: "text",
 				replyTo: replyToMessage?._id,
 			}).unwrap();
-
-			console.log("✅ Message sent successfully:", result);
 
 			// Clear input
 			setMessage("");
@@ -134,7 +125,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
 			// Notify parent component
 			onMessageSent(result.data);
 		} catch (error: any) {
-			console.error("❌ Error sending message:", error);
 			const errorMessage =
 				error?.data?.message || error?.message || "Failed to send message";
 			toast.error(errorMessage);

@@ -24,8 +24,7 @@ export const messageApi = createApi({
 			if (token) {
 				headers.set("authorization", `Bearer ${token}`);
 			}
-			// Don't set content-type for FormData requests - let the browser set it
-			// Only set JSON content type for non-FormData requests
+			// Set JSON content type for all requests
 			return headers;
 		},
 	}),
@@ -87,37 +86,22 @@ export const messageApi = createApi({
 		// Send a message
 		sendMessage: builder.mutation<MessageResponse, CreateMessageRequest>({
 			query: (data) => {
-				console.log("🚀 Sending message with data:", data);
-
-				const formData = new FormData();
-				formData.append("content", data.content);
-				if (data.conversationId)
-					formData.append("conversationId", data.conversationId);
-				formData.append("recipientId", data.recipientId);
-				if (data.messageType) formData.append("messageType", data.messageType);
-				if (data.replyTo) formData.append("replyTo", data.replyTo);
-				if (data.relatedDonation)
-					formData.append("relatedDonation", data.relatedDonation);
-				if (data.relatedCause)
-					formData.append("relatedCause", data.relatedCause);
-
-				// Handle file attachments
-				if (data.attachments && data.attachments.length > 0) {
-					data.attachments.forEach((file) => {
-						formData.append("attachments", file);
-					});
-				}
-
-				// Log FormData contents for debugging
-				console.log("📝 FormData contents:");
-				for (let [key, value] of formData.entries()) {
-					console.log(`${key}:`, value);
-				}
+				const body = {
+					content: data.content,
+					recipientId: data.recipientId,
+					messageType: data.messageType || "text",
+					...(data.conversationId && { conversationId: data.conversationId }),
+					...(data.replyTo && { replyTo: data.replyTo }),
+					...(data.relatedDonation && {
+						relatedDonation: data.relatedDonation,
+					}),
+					...(data.relatedCause && { relatedCause: data.relatedCause }),
+				};
 
 				return {
 					url: "/send",
 					method: "POST",
-					body: formData,
+					body,
 				};
 			},
 			invalidatesTags: (result, error, data) => [
