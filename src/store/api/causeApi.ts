@@ -116,7 +116,7 @@ export const causeApi = createApi({
 			string
 		>({
 			query: (causeId) => `/causes/${causeId}/organization-user-id`,
-			providesTags: ["Causes"],
+			providesTags: ["Cause"],
 		}),
 
 		// Get causes for a specific campaign

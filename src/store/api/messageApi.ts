@@ -1,8 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../store";
 import {
-	Message,
-	Conversation,
 	CreateMessageRequest,
 	CreateConversationRequest,
 	MessageQueryParams,
@@ -50,7 +48,7 @@ export const messageApi = createApi({
 		// Get a specific conversation
 		getConversation: builder.query<ConversationResponse, string>({
 			query: (conversationId) => `/conversations/${conversationId}`,
-			providesTags: (result, error, conversationId) => [
+			providesTags: (_result, _error, conversationId) => [
 				{ type: "Conversation", id: conversationId },
 			],
 		}),
@@ -65,7 +63,7 @@ export const messageApi = createApi({
 					...(params.before && { before: params.before }),
 				},
 			}),
-			providesTags: (result, error, params) => [
+			providesTags: (_result, _error, params) => [
 				{ type: "Message", id: params.conversationId },
 			],
 		}),
@@ -104,7 +102,7 @@ export const messageApi = createApi({
 					body,
 				};
 			},
-			invalidatesTags: (result, error, data) => [
+			invalidatesTags: (_result, _error, data) => [
 				"Conversation",
 				{ type: "Message", id: data.conversationId },
 			],
@@ -115,11 +113,11 @@ export const messageApi = createApi({
 			{ success: boolean },
 			{ messageId: string; conversationId: string }
 		>({
-			query: ({ messageId, conversationId }) => ({
+			query: ({ messageId }) => ({
 				url: `/messages/${messageId}/read`,
 				method: "PATCH",
 			}),
-			invalidatesTags: (result, error, { conversationId }) => [
+			invalidatesTags: (_result, _error, { conversationId }) => [
 				{ type: "Message", id: conversationId },
 				"UnreadCount",
 			],
@@ -131,7 +129,7 @@ export const messageApi = createApi({
 				url: `/conversations/${conversationId}/read`,
 				method: "PATCH",
 			}),
-			invalidatesTags: (result, error, conversationId) => [
+			invalidatesTags: (_result, _error, conversationId) => [
 				{ type: "Message", id: conversationId },
 				{ type: "Conversation", id: conversationId },
 				"UnreadCount",
@@ -153,7 +151,7 @@ export const messageApi = createApi({
 				url: `/messages/${messageId}`,
 				method: "DELETE",
 			}),
-			invalidatesTags: (result, error, { conversationId }) => [
+			invalidatesTags: (_result, _error, { conversationId }) => [
 				{ type: "Message", id: conversationId },
 				"Conversation",
 			],
@@ -169,7 +167,7 @@ export const messageApi = createApi({
 				method: "PATCH",
 				body: { content },
 			}),
-			invalidatesTags: (result, error, { conversationId }) => [
+			invalidatesTags: (_result, _error, { conversationId }) => [
 				{ type: "Message", id: conversationId },
 			],
 		}),

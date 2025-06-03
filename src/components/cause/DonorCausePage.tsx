@@ -462,8 +462,11 @@ const CausesPage = () => {
 										<StartConversationButton
 											recipientId={
 												cause.organizationUserId ||
-												cause.organizationId?.userId ||
-												cause.organizationId
+												(typeof cause.organizationId === "object" &&
+												cause.organizationId &&
+												"_id" in cause.organizationId
+													? (cause.organizationId as { _id: string })._id
+													: (cause.organizationId as string))
 											}
 											recipientType="user"
 											recipientName={cause.organizationName || "Organization"}

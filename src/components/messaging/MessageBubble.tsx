@@ -10,7 +10,6 @@ import {
 	MenuItem,
 	Paper,
 	Chip,
-	Link,
 } from "@mui/material";
 import {
 	MoreVertical,
@@ -21,9 +20,7 @@ import {
 	Check,
 	CheckCheck,
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { format } from "date-fns";
 import {
 	useDeleteMessageMutation,
 	useEditMessageMutation,
@@ -44,9 +41,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 	isOwn,
 	showAvatar,
 	onMessageUpdate,
-	onReply,
 }) => {
-	const { user } = useSelector((state: RootState) => state.auth);
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState(message.content);
@@ -76,7 +71,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 				conversationId: message.conversationId,
 			}).unwrap();
 			toast.success("Message deleted");
-		} catch (error) {
+		} catch {
 			toast.error("Failed to delete message");
 		}
 		handleMenuClose();
@@ -98,7 +93,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 			onMessageUpdate(result.data);
 			toast.success("Message updated");
 			setIsEditing(false);
-		} catch (error) {
+		} catch {
 			toast.error("Failed to update message");
 		}
 		handleMenuClose();
@@ -356,8 +351,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 				anchorEl={menuAnchor}
 				open={Boolean(menuAnchor)}
 				onClose={handleMenuClose}
-				PaperProps={{
-					sx: { minWidth: 150 },
+				slotProps={{
+					paper: {
+						sx: { minWidth: 150 },
+					},
 				}}
 			>
 				<MenuItem onClick={handleCopyMessage}>
@@ -365,7 +362,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 					Copy
 				</MenuItem>
 
-				<MenuItem onClick={() => console.log("Reply to message")}>
+				<MenuItem
+					onClick={() => {
+						/* TODO: Implement reply functionality */
+					}}
+				>
 					<Reply size={16} style={{ marginRight: 8 }} />
 					Reply
 				</MenuItem>

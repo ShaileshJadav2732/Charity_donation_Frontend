@@ -1,6 +1,6 @@
 import { DonationType } from "./donation";
 
-export interface Cause {
+export interface CampaignCause {
 	id: string;
 	title: string;
 	description: string;
@@ -14,7 +14,7 @@ export interface Cause {
 	updatedAt: string;
 }
 
-export interface CreateCauseBody {
+export interface CreateCampaignCauseBody {
 	title: string;
 	description: string;
 	targetAmount: number;
@@ -42,7 +42,7 @@ export interface Campaign {
 	updatedAt: string;
 }
 
-export interface CauseResponse {
+export interface CampaignCauseResponse {
 	cause: {
 		id: string;
 		title: string;
@@ -57,8 +57,8 @@ export interface CauseResponse {
 		updatedAt: string;
 	};
 }
-export interface CausesResponse {
-	causes: Cause[];
+export interface CampaignCausesResponse {
+	causes: CampaignCause[];
 	total: number;
 	page: number;
 	limit: number;

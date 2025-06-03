@@ -89,25 +89,27 @@ const FormInput = forwardRef<HTMLDivElement, FormInputProps>(
 							}),
 							...props.sx,
 						}}
-						InputProps={{
-							...(icon && {
-								startAdornment: (
-									<Box
-										sx={{
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "center",
-											width: 48,
-											height: "100%",
-											color: hasError ? "error.main" : "text.secondary",
-											transition: "color 0.2s ease-in-out",
-										}}
-									>
-										{icon}
-									</Box>
-								),
-							}),
-							...props.InputProps,
+						slotProps={{
+							input: {
+								...(icon && {
+									startAdornment: (
+										<Box
+											sx={{
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
+												width: 48,
+												height: "100%",
+												color: hasError ? "error.main" : "text.secondary",
+												transition: "color 0.2s ease-in-out",
+											}}
+										>
+											{icon}
+										</Box>
+									),
+								}),
+								...props.InputProps,
+							},
 						}}
 						helperText={
 							hasError && helperText

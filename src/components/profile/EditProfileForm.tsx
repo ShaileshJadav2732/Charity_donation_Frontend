@@ -127,9 +127,8 @@ export default function EditProfileForm({
 					}, 500);
 				}
 			}
-		} catch (error: unknown) {
+		} catch {
 			// Silently handle the error since functionality is working properly
-			console.log("Profile update completed (ignoring API response format)");
 			// Since the functionality works, just close the modal
 			toast.success("Profile updated successfully");
 			setTimeout(() => {
@@ -155,8 +154,9 @@ export default function EditProfileForm({
 		>
 			{/* Backdrop */}
 			<div
-				className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${isVisible ? "opacity-100" : "opacity-0"
-					}`}
+				className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${
+					isVisible ? "opacity-100" : "opacity-0"
+				}`}
 				onClick={handleClose}
 				style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
 			/>
@@ -167,8 +167,9 @@ export default function EditProfileForm({
 				style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
 			>
 				<div
-					className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all duration-300 ease-in-out w-full max-w-2xl ${isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-						}`}
+					className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all duration-300 ease-in-out w-full max-w-2xl ${
+						isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+					}`}
 					style={{ maxHeight: "90vh" }}
 				>
 					<div

@@ -38,8 +38,7 @@ function SelectRoleContent() {
 			try {
 				const parsedUser = JSON.parse(storedUser);
 				setPendingUser(parsedUser);
-		
-			} catch (e) {
+			} catch {
 				toast.error("Invalid user data. Please log in again.");
 				router.push("/login");
 			}
@@ -48,24 +47,22 @@ function SelectRoleContent() {
 
 	const handleRoleSelect = async () => {
 		setIsLoading(true);
-	
+
 		try {
 			let userInfo: FirebaseUserInfo | null = null;
 
 			if (pendingUser) {
 				userInfo = pendingUser;
-			
 			} else {
 				const firebaseUser = auth.currentUser;
 
 				if (!firebaseUser) {
-				
 					toast.error("No user is signed in");
 					router.push("/login");
 					return;
 				}
 
-				if (!firebaseUser.email) {	
+				if (!firebaseUser.email) {
 					toast.error("User must have an email address");
 					return;
 				}
@@ -91,10 +88,9 @@ function SelectRoleContent() {
 
 			if (typeof window !== "undefined" && pendingUser) {
 				sessionStorage.removeItem("pendingGoogleUser");
-				
+			}
 
 			toast.success("Account created successfully!");
-		
 			router.push("/complete-profile");
 		} catch (error: unknown) {
 			const backendError = error as ApiError;

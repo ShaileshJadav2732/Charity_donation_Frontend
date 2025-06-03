@@ -103,9 +103,13 @@ const CloudinaryImageUpload: React.FC<CloudinaryImageUploadProps> = ({
 				const result = await uploadToCloudinary(file);
 				onImageUpload(result.url, result.public_id);
 				toast.success("Image uploaded successfully!");
-			} catch (error) {
-				setError("Failed to upload image. Please try again.");
-				toast.error("Failed to upload image. Please try again.");
+			} catch (error: unknown) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: "Failed to upload image. Please try again.";
+				setError(errorMessage);
+				toast.error(errorMessage);
 				setPreviewUrl(currentImageUrl || "");
 			} finally {
 				setIsUploading(false);

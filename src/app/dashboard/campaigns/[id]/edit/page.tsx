@@ -480,9 +480,7 @@ const EditCampaignPage = ({ params }: EditCampaignPageProps) => {
 							<Box display="flex" gap={2} justifyContent="flex-end" mt={2}>
 								<Button
 									variant="outlined"
-									onClick={() =>
-										router.push(`/dashboard/campaigns/${campaignId}`)
-									}
+									onClick={() => router.push("/dashboard/campaigns")}
 								>
 									Cancel
 								</Button>

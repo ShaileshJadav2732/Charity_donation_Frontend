@@ -8,7 +8,6 @@ import {
 	Alert,
 	Paper,
 	Avatar,
-	IconButton,
 	Chip,
 } from "@mui/material";
 import { Info } from "lucide-react";
@@ -52,7 +51,6 @@ const MessageList: React.FC<MessageListProps> = ({
 		data: messagesData,
 		isLoading,
 		error,
-		refetch,
 	} = useGetMessagesQuery({
 		conversationId: conversation._id,
 		page,
@@ -70,18 +68,6 @@ const MessageList: React.FC<MessageListProps> = ({
 	const isOtherUserOnline = otherParticipant
 		? onlineUsers.get(otherParticipant.user._id)?.isOnline || false
 		: false;
-
-	// Debug online status
-	console.log("🔍 MessageList Online Status Debug:", {
-		currentUserId: user?.id,
-		otherParticipantId: otherParticipant?.user._id,
-		otherParticipantName: otherParticipant?.user.name,
-		isOtherUserOnline,
-		onlineUsersMap: Array.from(onlineUsers.entries()),
-		otherUserStatus: otherParticipant
-			? onlineUsers.get(otherParticipant.user._id)
-			: null,
-	});
 
 	// Check if other user is typing
 	const isOtherUserTyping = Array.from(typingUsers.values()).some(
@@ -105,12 +91,7 @@ const MessageList: React.FC<MessageListProps> = ({
 			return true;
 		});
 
-		if (duplicates.length > 0) {
-			console.warn(
-				`🔄 Removed ${duplicates.length} duplicate messages:`,
-				duplicates
-			);
-		}
+		// Silently remove duplicates
 
 		return filtered;
 	};
@@ -137,9 +118,6 @@ const MessageList: React.FC<MessageListProps> = ({
 					// Check if message already exists
 					const exists = prev.some((m) => m._id === message._id);
 					if (exists) {
-						console.warn(
-							`🔄 Skipping duplicate real-time message: ${message._id}`
-						);
 						return prev;
 					}
 					return deduplicateMessages([...prev, message]);
@@ -253,7 +231,6 @@ const MessageList: React.FC<MessageListProps> = ({
 			// Check if message already exists
 			const exists = prev.some((m) => m._id === message._id);
 			if (exists) {
-				console.warn(`🔄 Skipping duplicate sent message: ${message._id}`);
 				return prev;
 			}
 			return deduplicateMessages([...prev, message]);

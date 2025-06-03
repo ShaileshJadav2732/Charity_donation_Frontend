@@ -3,25 +3,18 @@ import {
 	useGetOrganizationDonationsQuery,
 	useMarkDonationAsReceivedMutation,
 	useMarkDonationAsConfirmedMutation,
-	useUpdateDonationStatusMutation,
 } from "@/store/api/donationApi";
-import {
-	Donation,
-	DonationStatus,
-	organizationDonation,
-} from "@/types/donation";
+import { Donation, organizationDonation } from "@/types/donation";
 import {
 	Button,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
-	CircularProgress,
 } from "@mui/material";
 import Image from "next/image";
 import React, { useRef, useState } from "react";
 import {
-	FiCheckCircle,
 	FiChevronLeft,
 	FiChevronRight,
 	FiEye,
@@ -47,9 +40,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		useState<organizationDonation | null>(null);
 
 	// Loading states for individual actions
-	const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
-		{}
-	);
+	const [loadingStates] = useState<Record<string, boolean>>({});
 
 	const { data, isLoading, isFetching, isError, refetch } =
 		useGetOrganizationDonationsQuery({
@@ -61,7 +52,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 			},
 		});
 
-	const [updateDonationStatus] = useUpdateDonationStatusMutation();
 	const [markAsReceived] = useMarkDonationAsReceivedMutation();
 	const [markAsConfirmed] = useMarkDonationAsConfirmedMutation();
 
@@ -73,20 +63,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 
 	// Receipt upload states
 	const [showReceiptUploadModal, setShowReceiptUploadModal] = useState(false);
-	const [selectedReceipt, setSelectedReceipt] = useState<File | null>(null);
-	const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(
-		null
-	);
 	const [isMarkingConfirmed, setIsMarkingConfirmed] = useState(false);
-	const receiptInputRef = useRef<HTMLInputElement>(null);
-
-	// Helper function to set loading state for specific donation
-	const setDonationLoading = (donationId: string, loading: boolean) => {
-		setLoadingStates((prev) => ({
-			...prev,
-			[donationId]: loading,
-		}));
-	};
 
 	// Helper function to check if donation is loading
 	const isDonationLoading = (donationId: string) => {
@@ -102,39 +79,8 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		setSearchTerm(e.target.value);
 	};
 
-	const handleApproveDonation = async (donationId: string) => {
-		setDonationLoading(donationId, true);
-		try {
-			const response = await updateDonationStatus({
-				donationId,
-				status: DonationStatus.APPROVED,
-			}).unwrap();
-			toast.success(response.message || "Donation approved successfully");
-
-			// Force refetch to update the UI
-			await refetch();
-		} catch (error: unknown) {
-			let errorMessage = "Unknown error occurred";
-			if (error && typeof error === "object") {
-				if (
-					"data" in error &&
-					error.data &&
-					typeof error.data === "object" &&
-					"message" in error.data
-				) {
-					errorMessage = String(error.data.message);
-				} else if ("message" in error && typeof error.message === "string") {
-					errorMessage = error.message;
-				}
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			}
-
-			toast.error(`Error approving donation: ${errorMessage}`);
-		} finally {
-			setDonationLoading(donationId, false);
-		}
-	};
+	// Note: Approval is now handled through the "Mark as Received" workflow
+	// which automatically sets status to APPROVED and then RECEIVED with photo upload
 
 	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -187,7 +133,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 
 		try {
 			// ✅ FIXED: Actually call the API to mark as received
-			const result = await markAsReceived({
+			await markAsReceived({
 				donationId: selectedDonation._id,
 				photo: selectedPhoto,
 			}).unwrap();
@@ -257,41 +203,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		setSelectedDonation(
 			(foundDonation as unknown as organizationDonation) || null
 		);
-		setSelectedReceipt(null);
-		setReceiptPreviewUrl(null);
 		setShowReceiptUploadModal(true);
-	};
-
-	const handleReceiptFileChange = (
-		event: React.ChangeEvent<HTMLInputElement>
-	) => {
-		const file = event.target.files?.[0];
-		if (file) {
-			// Validate file type
-			if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
-				toast.error("Please select an image or PDF file");
-				return;
-			}
-
-			// Validate file size (5MB max)
-			if (file.size > 5 * 1024 * 1024) {
-				toast.error("File size must be less than 5MB");
-				return;
-			}
-
-			setSelectedReceipt(file);
-
-			// Create preview for images only
-			if (file.type.startsWith("image/")) {
-				const reader = new FileReader();
-				reader.onload = (e) => {
-					setReceiptPreviewUrl(e.target?.result as string);
-				};
-				reader.readAsDataURL(file);
-			} else {
-				setReceiptPreviewUrl(null); // No preview for PDFs
-			}
-		}
 	};
 
 	const handleMarkAsConfirmed = async () => {
@@ -306,7 +218,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		);
 
 		try {
-			const result = await markAsConfirmed({
+			await markAsConfirmed({
 				donationId: selectedDonation._id,
 			}).unwrap();
 
@@ -466,16 +378,16 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 						{searchTerm
 							? "No donations match your search criteria."
 							: status === "PENDING"
-								? "You don't have any pending donations."
-								: status === "APPROVED"
-									? "You don't have any approved donations."
-									: status === "RECEIVED"
-										? "You don't have any completed donations."
-										: status === "CONFIRMED"
-											? "You don't have any confirmed donations."
-											: status === "CANCELLED"
-												? "You don't have any cancelled donations."
-												: "You haven't received any donations yet."}
+							? "You don't have any pending donations."
+							: status === "APPROVED"
+							? "You don't have any approved donations."
+							: status === "RECEIVED"
+							? "You don't have any completed donations."
+							: status === "CONFIRMED"
+							? "You don't have any confirmed donations."
+							: status === "CANCELLED"
+							? "You don't have any cancelled donations."
+							: "You haven't received any donations yet."}
 					</p>
 					{searchTerm && (
 						<button
@@ -574,8 +486,9 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 												<div className="text-sm font-bold text-gray-900">
 													{donation.type === "MONEY"
 														? `₹${donation.amount?.toFixed(2) || "0.00"}`
-														: `${donation.quantity || 0} ${donation.unit || ""
-														}`}
+														: `${donation.quantity || 0} ${
+																donation.unit || ""
+														  }`}
 												</div>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
@@ -611,25 +524,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 													>
 														<FiEye className="h-5 w-5" />
 													</button>
-													{donation.status === "PENDING" && (
-														<button
-															className="text-green-600 hover:text-green-900 transition-colors"
-															title="Approve Donation"
-															onClick={() =>
-																handleApproveDonation(donation._id)
-															}
-															disabled={isDonationLoading(donation._id)}
-														>
-															{isDonationLoading(donation._id) ? (
-																<CircularProgress
-																	size={20}
-																	className="text-green-600"
-																/>
-															) : (
-																<FiCheckCircle className="h-5 w-5" />
-															)}
-														</button>
-													)}
+													{/* Approval is now handled through "Mark as Received" workflow */}
 													{donation.status === "APPROVED" && (
 														<button
 															className="text-orange-600 hover:text-orange-900 transition-colors"
@@ -711,8 +606,8 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								</strong>{" "}
 								{selectedDonation.scheduledDate
 									? new Date(
-										selectedDonation.scheduledDate
-									).toLocaleDateString()
+											selectedDonation.scheduledDate
+									  ).toLocaleDateString()
 									: "N/A"}{" "}
 								at {selectedDonation.scheduledTime || "N/A"}
 							</p>
@@ -726,17 +621,18 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 								<strong className="font-medium text-gray-900">Status:</strong>{" "}
 								<span
 									className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
-                    ${selectedDonation.status === "PENDING"
-											? "bg-yellow-100 text-yellow-800"
-											: selectedDonation.status === "APPROVED"
+                    ${
+											selectedDonation.status === "PENDING"
+												? "bg-yellow-100 text-yellow-800"
+												: selectedDonation.status === "APPROVED"
 												? "bg-blue-100 text-blue-800"
 												: selectedDonation.status === "RECEIVED"
-													? "bg-green-100 text-green-800"
-													: selectedDonation.status === "CONFIRMED"
-														? "bg-purple-100 text-purple-800"
-														: selectedDonation.status === "CANCELLED"
-															? "bg-green-100 text-green-800"
-															: "bg-red-100 text-red-800"
+												? "bg-green-100 text-green-800"
+												: selectedDonation.status === "CONFIRMED"
+												? "bg-purple-100 text-purple-800"
+												: selectedDonation.status === "CANCELLED"
+												? "bg-green-100 text-green-800"
+												: "bg-red-100 text-red-800"
 										}`}
 								>
 									{selectedDonation.status}
@@ -754,9 +650,11 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										Pickup Address:
 									</strong>{" "}
 									{selectedDonation.pickupAddress
-										? `${selectedDonation.pickupAddress.street || ""}, ${selectedDonation.pickupAddress.city || ""
-										}, ${selectedDonation.pickupAddress.state || ""}, ${selectedDonation.pickupAddress.zipCode || ""
-										}, ${selectedDonation.pickupAddress.country || ""}`
+										? `${selectedDonation.pickupAddress.street || ""}, ${
+												selectedDonation.pickupAddress.city || ""
+										  }, ${selectedDonation.pickupAddress.state || ""}, ${
+												selectedDonation.pickupAddress.zipCode || ""
+										  }, ${selectedDonation.pickupAddress.country || ""}`
 										: "N/A"}
 								</p>
 							)}
@@ -871,10 +769,12 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										Donation Type:
 									</strong>{" "}
 									{selectedDonation.type === "MONEY"
-										? `Money (₹${selectedDonation.amount?.toFixed(2) || "0.00"
-										})`
-										: `${selectedDonation.type} (${selectedDonation.quantity} ${selectedDonation.unit || ""
-										})`}
+										? `Money (₹${
+												selectedDonation.amount?.toFixed(2) || "0.00"
+										  })`
+										: `${selectedDonation.type} (${selectedDonation.quantity} ${
+												selectedDonation.unit || ""
+										  })`}
 								</p>
 							</div>
 						</div>
@@ -895,10 +795,11 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							onClick={handleMarkAsReceived}
 							variant="contained"
 							disabled={!selectedPhoto || isMarkingReceived}
-							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${!selectedPhoto || isMarkingReceived
-								? "opacity-50 cursor-not-allowed"
-								: ""
-								}`}
+							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${
+								!selectedPhoto || isMarkingReceived
+									? "opacity-50 cursor-not-allowed"
+									: ""
+							}`}
 						>
 							{isMarkingReceived ? "Processing..." : "Mark as Received"}
 						</Button>
@@ -912,8 +813,6 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 					open={showReceiptUploadModal}
 					onClose={() => {
 						setShowReceiptUploadModal(false);
-						setSelectedReceipt(null);
-						setReceiptPreviewUrl(null);
 					}}
 					maxWidth="sm"
 					fullWidth
@@ -930,7 +829,8 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 					<DialogContent className="p-6 bg-white">
 						<div className="space-y-4">
 							<p className="text-sm text-gray-700 mb-4">
-								Mark this donation as confirmed and completed. A PDF receipt will be automatically generated and sent to the donor.
+								Mark this donation as confirmed and completed. A PDF receipt
+								will be automatically generated and sent to the donor.
 							</p>
 
 							<div className="flex flex-col items-center justify-center border-2 border-dashed border-green-300 rounded-lg p-6 bg-green-50">
@@ -942,7 +842,8 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										Auto-Generate PDF Receipt
 									</h3>
 									<p className="text-sm text-green-700 mb-4">
-										A professional PDF receipt will be automatically generated and sent to the donor when you confirm this donation.
+										A professional PDF receipt will be automatically generated
+										and sent to the donor when you confirm this donation.
 									</p>
 									<div className="bg-white rounded-lg p-3 border border-green-200">
 										<p className="text-xs text-green-600 font-medium">
@@ -968,10 +869,12 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										Donation Type:
 									</strong>{" "}
 									{selectedDonation.type === "MONEY"
-										? `Money (₹${selectedDonation.amount?.toFixed(2) || "0.00"
-										})`
-										: `${selectedDonation.type} (${selectedDonation.quantity} ${selectedDonation.unit || ""
-										})`}
+										? `Money (₹${
+												selectedDonation.amount?.toFixed(2) || "0.00"
+										  })`
+										: `${selectedDonation.type} (${selectedDonation.quantity} ${
+												selectedDonation.unit || ""
+										  })`}
 								</p>
 							</div>
 						</div>
@@ -991,12 +894,13 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 							onClick={handleMarkAsConfirmed}
 							variant="contained"
 							disabled={isMarkingConfirmed}
-							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${isMarkingConfirmed
-								? "opacity-50 cursor-not-allowed"
-								: ""
-								}`}
+							className={`bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-4 py-2 transition-colors ${
+								isMarkingConfirmed ? "opacity-50 cursor-not-allowed" : ""
+							}`}
 						>
-							{isMarkingConfirmed ? "Generating Receipt..." : "Confirm & Generate Receipt"}
+							{isMarkingConfirmed
+								? "Generating Receipt..."
+								: "Confirm & Generate Receipt"}
 						</Button>
 					</DialogActions>
 				</Dialog>
@@ -1041,10 +945,11 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 										<button
 											key={pageNum}
 											onClick={() => setPage(pageNum)}
-											className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === pageNum
-												? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-												: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-												} transition-colors`}
+											className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+												page === pageNum
+													? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+													: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+											} transition-colors`}
 										>
 											{pageNum}
 										</button>

@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
+	Campaign,
 	CampaignsResponse,
 	CampaignResponse,
 	CampaignQueryParams,
@@ -28,33 +29,15 @@ export const campaignApi = createApi({
 	}),
 	tagTypes: ["Campaign", "Cause"],
 	endpoints: (builder) => ({
-		getCampaigns: builder.query<CampaignsResponse, CampaignQueryParams>({
-			query: (params) => ({
-				url: "/campaigns",
-				method: "GET",
-				params,
-			}),
-			transformResponse: (response: any) => {
-				// Transform backend response to match frontend expectations
-				return {
-					campaigns: response.data || [],
-					total: response.pagination?.total || 0,
-					page: response.pagination?.page || 1,
-					limit: response.pagination?.limit || 10,
-				};
-			},
-			providesTags: ["Campaign"],
-		}),
-
 		getCampaignById: builder.query<CampaignResponse, string>({
 			query: (id) => ({
 				url: `/campaigns/${id}`,
 				method: "GET",
 			}),
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
 			providesTags: (_result, _error, id) => [{ type: "Campaign", id }],
@@ -69,7 +52,10 @@ export const campaignApi = createApi({
 				method: "GET",
 				params,
 			}),
-			transformResponse: (response: any) => {
+			transformResponse: (response: {
+				data?: Campaign[];
+				pagination?: { total?: number; page?: number; limit?: number };
+			}) => {
 				// Transform backend response to match frontend expectations
 				return {
 					campaigns: response.data || [],
@@ -89,10 +75,10 @@ export const campaignApi = createApi({
 					body,
 				};
 			},
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
 			invalidatesTags: ["Campaign"],
@@ -109,13 +95,13 @@ export const campaignApi = createApi({
 					body,
 				};
 			},
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
-			invalidatesTags: (result, error, { id }) => {
+			invalidatesTags: (_result, _error, { id }) => {
 				return [{ type: "Campaign", id }];
 			},
 		}),
@@ -138,10 +124,10 @@ export const campaignApi = createApi({
 				method: "POST",
 				body: { causeId },
 			}),
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
 			invalidatesTags: (_result, _error, { campaignId }) => [
@@ -153,7 +139,6 @@ export const campaignApi = createApi({
 });
 
 export const {
-	useGetCampaignsQuery,
 	useGetCampaignByIdQuery,
 	useGetOrganizationCampaignsQuery,
 	useCreateCampaignMutation,

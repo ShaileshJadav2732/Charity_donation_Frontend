@@ -47,10 +47,11 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 	const acceptedDonationTypes = cause?.cause?.acceptedDonationTypes || [
 		DonationType.MONEY,
 	];
-	const canDonateMoney = acceptedDonationTypes.includes(DonationType.MONEY);
-	const canDonateItems = acceptedDonationTypes.some(
-		(type: DonationType) => type !== DonationType.MONEY
-	);
+	const acceptanceType = cause?.cause?.acceptanceType || "money";
+	const canDonateMoney =
+		acceptanceType === "money" || acceptanceType === "both";
+	const canDonateItems =
+		acceptanceType === "items" || acceptanceType === "both";
 	const availableItemTypes = acceptedDonationTypes.filter(
 		(type: DonationType) => type !== DonationType.MONEY
 	);
@@ -95,8 +96,8 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				// Call the payment submission handler for monetary donations
 				try {
 					await onPaymentSubmit(values);
-				} catch (error) {
-					console.error("Error in payment submission:", error);
+				} catch {
+					// Error handling is done in the parent component
 				}
 				return;
 			}
@@ -129,8 +130,8 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				// Call the regular submission handler for item donations
 				try {
 					await onSubmit(values);
-				} catch (error) {
-					console.error("Error in form submission:", error);
+				} catch {
+					// Error handling is done in the parent component
 				}
 			}
 		},
@@ -282,7 +283,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 										? "Minimum amount is ₹50"
 										: "")
 								}
-								inputProps={{ min: 50 }}
+								slotProps={{ htmlInput: { min: 50 } }}
 								sx={{ mb: 3 }}
 							/>
 						</>

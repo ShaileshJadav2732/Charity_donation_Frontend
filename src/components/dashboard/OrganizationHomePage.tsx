@@ -1,7 +1,7 @@
 "use client";
 
 import { useGetOrganizationAnalyticsQuery } from "@/store/api/analyticsApi";
-import { useGetCampaignsQuery } from "@/store/api/campaignApi";
+import { useGetOrganizationCampaignsQuery } from "@/store/api/campaignApi";
 import { useGetOrganizationCausesQuery } from "@/store/api/causeApi";
 import { useGetCurrentOrganizationQuery } from "@/store/api/organizationApi";
 import { RootState } from "@/store/store";
@@ -50,8 +50,8 @@ const OrganizationHomePage: React.FC = () => {
 	const { data: analyticsData } = useGetOrganizationAnalyticsQuery();
 
 	// Fetch campaigns data to get accurate counts
-	const { data: campaignsData } = useGetCampaignsQuery({
-		organizations: user?.id,
+	const { data: campaignsData } = useGetOrganizationCampaignsQuery({
+		organizationId: user?.id || "",
 	});
 
 	// Get organization ID from the current organization data

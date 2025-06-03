@@ -8,7 +8,6 @@ import {
 	IconButton,
 	Card,
 	CardContent,
-	Badge,
 	Divider,
 	useTheme,
 } from "@mui/material";
@@ -21,7 +20,6 @@ import { formatDistanceToNow } from "date-fns";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import {
-	Bell as BellIcon,
 	CheckCircle2 as CheckIcon,
 	Trash2 as DeleteIcon,
 	X as CloseIcon,
@@ -53,7 +51,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 		}
 	}, [user]);
 
-	const { data, isLoading, isError, error } = useGetNotificationsQuery(
+	const { data, isLoading, isError } = useGetNotificationsQuery(
 		{ userId, limit: 5, unreadOnly: true },
 		{ skip: !userId || !isAuthLoaded }
 	);
@@ -69,7 +67,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 		try {
 			await markNotificationAsRead(notificationId).unwrap();
 			setToast({ message: "Notification marked as read", type: "success" });
-		} catch (err) {
+		} catch {
 			setToast({
 				message: "Failed to mark notification as read",
 				type: "error",
@@ -81,7 +79,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
 		try {
 			await dismissNotification(notificationId).unwrap();
 			setToast({ message: "Notification dismissed", type: "success" });
-		} catch (err) {
+		} catch {
 			setToast({ message: "Failed to dismiss notification", type: "error" });
 		}
 	};

@@ -243,20 +243,22 @@ const LoginForm = () => {
 							autoComplete="current-password"
 							required
 							fullWidth
-							InputProps={{
-								endAdornment: (
-									<InputAdornment position="end">
-										<IconButton
-											onClick={togglePasswordVisibility}
-											edge="end"
-											aria-label={
-												showPassword ? "Hide password" : "Show password"
-											}
-										>
-											{showPassword ? <VisibilityOff /> : <Visibility />}
-										</IconButton>
-									</InputAdornment>
-								),
+							slotProps={{
+								input: {
+									endAdornment: (
+										<InputAdornment position="end">
+											<IconButton
+												onClick={togglePasswordVisibility}
+												edge="end"
+												aria-label={
+													showPassword ? "Hide password" : "Show password"
+												}
+											>
+												{showPassword ? <VisibilityOff /> : <Visibility />}
+											</IconButton>
+										</InputAdornment>
+									),
+								},
 							}}
 						/>
 					</Box>

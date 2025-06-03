@@ -165,7 +165,7 @@ const StartConversationButton: React.FC<StartConversationButtonProps> = ({
 					errorData.data?.conversationId
 				) {
 					// Show yellow warning toast and redirect to existing conversation
-					toast.warning(
+					toast.success(
 						"Conversation already exists! Redirecting to existing conversation..."
 					);
 					handleClose();

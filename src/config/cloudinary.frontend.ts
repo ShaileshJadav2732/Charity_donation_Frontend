@@ -59,8 +59,8 @@ export const extractPublicIdFromUrl = (url: string): string => {
 		const publicId = withoutVersion.join("/").replace(/\.[^/.]+$/, "");
 
 		return publicId;
-	} catch (error) {
-		console.error("Error extracting public ID from URL:", error);
+	} catch {
+		// Silently handle error
 		return "";
 	}
 };

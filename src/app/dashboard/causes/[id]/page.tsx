@@ -69,16 +69,14 @@ export default function CauseDetailPage({
 	const theme = useTheme();
 
 	const { data, isLoading, error } = useGetCauseByIdQuery(id);
-	const { data: organizationData, isLoading: orgLoading } =
-		useGetOrganizationByCauseIdQuery(id, {
-			skip: !id,
-		});
+	const { data: organizationData } = useGetOrganizationByCauseIdQuery(id, {
+		skip: !id,
+	});
 
 	// Get organization User ID for messaging using the new dedicated API
-	const { data: orgUserIdData, isLoading: orgUserIdLoading } =
-		useGetOrganizationUserIdByCauseIdQuery(id, {
-			skip: !id || user?.role !== "donor", // Only fetch for donors
-		});
+	const { data: orgUserIdData } = useGetOrganizationUserIdByCauseIdQuery(id, {
+		skip: !id || user?.role !== "donor", // Only fetch for donors
+	});
 
 	const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
 		setActiveTab(newValue);
@@ -895,7 +893,8 @@ export default function CauseDetailPage({
 									recipientType="user"
 									recipientName={
 										orgUserIdData.data.organizationName ||
-										cause.organizationName
+										cause.organizationName ||
+										"Organization"
 									}
 									recipientRole="organization"
 									relatedCause={cause.id}

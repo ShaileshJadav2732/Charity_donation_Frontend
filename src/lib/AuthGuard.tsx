@@ -30,7 +30,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 							token: response.token,
 						})
 					);
-				} catch (error) {
+				} catch (error: unknown) {
+					console.error("Token verification failed:", error);
 					dispatch(clearCredentials());
 					router.replace("/login");
 				}

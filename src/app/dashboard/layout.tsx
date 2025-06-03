@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
 	useGetDonorProfileQuery,
-	useGetOrganizationProfileQuery
+	useGetOrganizationProfileQuery,
 } from "@/store/api/profileApi";
 import { useGetUnreadCountQuery } from "@/store/api/messageApi";
 import { getProfileImageUrl } from "@/utils/url";
@@ -24,7 +24,6 @@ import {
 	FaHome,
 	FaSignOutAlt,
 	FaTimes,
-	FaUser,
 	FaUsers,
 	FaComments,
 } from "react-icons/fa";
@@ -58,9 +57,10 @@ export default function DashboardLayout({
 	const { data: unreadMessagesData } = useGetUnreadCountQuery();
 
 	// Get profile image
-	const profileImage = user?.role === "donor"
-		? donorData?.profile?.profileImage
-		: orgData?.profile?.logo;
+	const profileImage =
+		user?.role === "donor"
+			? donorData?.profile?.profileImage
+			: orgData?.profile?.logo;
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -93,59 +93,59 @@ export default function DashboardLayout({
 		{ icon: FaHome, text: "Home", path: "/dashboard/home" },
 		...(user?.role === "donor"
 			? [
-				{
-					icon: FaHandsHelping,
-					text: "Causes",
-					path: "/dashboard/causes",
-				},
-				{
-					icon: FaHeart,
-					text: "My Donations",
-					path: "/dashboard/donations",
-				},
-				{
-					icon: FaComments,
-					text: "Messages",
-					path: "/dashboard/messages",
-				},
-				{
-					icon: FaChartBar,
-					text: "Analytics",
-					path: "/dashboard/analytics/donations",
-				},
-			]
+					{
+						icon: FaHandsHelping,
+						text: "Causes",
+						path: "/dashboard/causes",
+					},
+					{
+						icon: FaHeart,
+						text: "My Donations",
+						path: "/dashboard/donations",
+					},
+					{
+						icon: FaComments,
+						text: "Messages",
+						path: "/dashboard/messages",
+					},
+					{
+						icon: FaChartBar,
+						text: "Analytics",
+						path: "/dashboard/analytics/donations",
+					},
+			  ]
 			: [
-				{
-					icon: FaUsers,
-					text: "Campaigns",
-					path: "/dashboard/campaigns",
-				},
-				{
-					icon: FaHandsHelping,
-					text: "Causes",
-					path: "/dashboard/causes",
-				},
-				{
-					icon: FaUsers,
-					text: "Donation",
-					path: "/dashboard/donations/pending",
-				},
-				{
-					icon: FaHeart,
-					text: "Donors",
-					path: "/dashboard/donors",
-				},
-				{
-					icon: FaComments,
-					text: "Messages",
-					path: "/dashboard/messages",
-				},
-				{
-					icon: FaChartBar,
-					text: "Analytics",
-					path: "/dashboard/analytics",
-				},
-			]),
+					{
+						icon: FaUsers,
+						text: "Campaigns",
+						path: "/dashboard/campaigns",
+					},
+					{
+						icon: FaHandsHelping,
+						text: "Causes",
+						path: "/dashboard/causes",
+					},
+					{
+						icon: FaUsers,
+						text: "Donation",
+						path: "/dashboard/donations/pending",
+					},
+					{
+						icon: FaHeart,
+						text: "Donors",
+						path: "/dashboard/donors",
+					},
+					{
+						icon: FaComments,
+						text: "Messages",
+						path: "/dashboard/messages",
+					},
+					{
+						icon: FaChartBar,
+						text: "Analytics",
+						path: "/dashboard/analytics",
+					},
+			  ]),
 	];
 
 	return (
@@ -153,8 +153,9 @@ export default function DashboardLayout({
 			<div className="min-h-screen bg-gradient-to-br from-teal-100 via-teal-50 to-teal-200">
 				{/* Top Navigation Bar */}
 				<div
-					className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${scrolled ? "shadow-lg" : ""
-						}`}
+					className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
+						scrolled ? "shadow-lg" : ""
+					}`}
 				>
 					{/* Left side: Hamburger menu (mobile only) + Logo */}
 					<div className="flex items-center space-x-4">
@@ -200,7 +201,7 @@ export default function DashboardLayout({
 								) : (
 									<div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-teal-400 to-green-500">
 										<span className="text-white text-xs font-bold">
-											{user?.email?.[0]?.toUpperCase() || '?'}
+											{user?.email?.[0]?.toUpperCase() || "?"}
 										</span>
 									</div>
 								)}
@@ -233,41 +234,35 @@ export default function DashboardLayout({
 
 				{/* Sidebar */}
 				<aside
-					className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-						} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16 overflow-y-auto`}
+					className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${
+						isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+					} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16 overflow-y-auto`}
 				>
 					<div className="h-full flex flex-col">
-						{/* Sidebar header */}
-						<div className="px-6 py-8 border-b border-gray-200">
-							<h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-							<p className="mt-2 text-sm text-gray-600">
-								{user?.role === "donor"
-									? "Donor Dashboard"
-									: "Organization Dashboard"}
-							</p>
-						</div>
-
 						{/* Sidebar navigation */}
 						<nav className="flex-1 px-4 py-6 space-y-2">
 							{menuItems.map((item) => (
 								<Link
 									key={item.path}
 									href={item.path}
-									className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors duration-200 ${pathname === item.path
-										? "bg-teal-50 text-teal-600"
-										: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
-										}`}
+									className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors duration-200 ${
+										pathname === item.path
+											? "bg-teal-50 text-teal-600"
+											: "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
+									}`}
 									onClick={() => setIsMobileMenuOpen(false)}
 								>
 									<div className="flex items-center">
 										<item.icon className="mr-3 h-5 w-5" />
 										{item.text}
 									</div>
-									{item.text === "Messages" && unreadMessagesData?.count > 0 && (
-										<span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-											{unreadMessagesData.count}
-										</span>
-									)}
+									{item.text === "Messages" &&
+										unreadMessagesData?.count &&
+										unreadMessagesData.count > 0 && (
+											<span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+												{unreadMessagesData.count}
+											</span>
+										)}
 								</Link>
 							))}
 						</nav>

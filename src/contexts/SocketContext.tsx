@@ -17,7 +17,7 @@ interface Notification {
 	type: string;
 	title: string;
 	message: string;
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 	isRead: boolean;
 	createdAt: string;
 }
@@ -121,7 +121,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 		});
 
 		setSocket(newSocket);
-		return () => newSocket.close();
+		return () => {
+			newSocket.close();
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [token, user]);
 
 	const markNotificationAsRead = useCallback(

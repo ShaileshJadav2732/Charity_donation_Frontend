@@ -79,7 +79,10 @@ const BarChart: React.FC<BarChartProps> = ({
 				cornerRadius: 8,
 				displayColors: true,
 				callbacks: {
-					label: function (context: any) {
+					label: function (context: {
+						dataset: { label?: string };
+						parsed: { x: number; y: number };
+					}) {
 						const label = context.dataset.label || "";
 						const value = context.parsed[horizontal ? "x" : "y"];
 						const formattedValue = currency
@@ -102,11 +105,13 @@ const BarChart: React.FC<BarChartProps> = ({
 					font: {
 						size: 11,
 					},
-					callback: function (value: any) {
+					callback: function (value: string | number) {
+						const numValue =
+							typeof value === "string" ? parseFloat(value) : value;
 						if (horizontal && currency) {
-							return `₹${value.toLocaleString()}`;
+							return `₹${numValue.toLocaleString()}`;
 						}
-						return horizontal ? value.toLocaleString() : this.getLabelForValue(value);
+						return numValue.toLocaleString();
 					},
 				},
 				beginAtZero: horizontal,
@@ -122,11 +127,13 @@ const BarChart: React.FC<BarChartProps> = ({
 					font: {
 						size: 11,
 					},
-					callback: function (value: any) {
+					callback: function (value: string | number) {
+						const numValue =
+							typeof value === "string" ? parseFloat(value) : value;
 						if (!horizontal && currency) {
-							return `₹${value.toLocaleString()}`;
+							return `₹${numValue.toLocaleString()}`;
 						}
-						return !horizontal ? value.toLocaleString() : this.getLabelForValue(value);
+						return numValue.toLocaleString();
 					},
 				},
 				beginAtZero: !horizontal,

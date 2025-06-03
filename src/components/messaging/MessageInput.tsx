@@ -5,7 +5,6 @@ import {
 	Box,
 	TextField,
 	IconButton,
-	Paper,
 	Typography,
 	CircularProgress,
 } from "@mui/material";
@@ -124,9 +123,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
 			// Notify parent component
 			onMessageSent(result.data);
-		} catch (error: any) {
+		} catch (error: unknown) {
+			const apiError = error as {
+				data?: { message?: string };
+				message?: string;
+			};
 			const errorMessage =
-				error?.data?.message || error?.message || "Failed to send message";
+				apiError?.data?.message ||
+				apiError?.message ||
+				"Failed to send message";
 			toast.error(errorMessage);
 		}
 	};
@@ -223,7 +228,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
 					}...`}
 					value={message}
 					onChange={handleMessageChange}
-					onKeyPress={handleKeyPress}
+					onKeyDown={handleKeyPress}
 					disabled={isSending}
 					variant="outlined"
 					size="medium"

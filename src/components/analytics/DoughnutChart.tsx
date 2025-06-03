@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import {
+	Chart as ChartJS,
+	ArcElement,
+	Tooltip,
+	Legend,
+	TooltipItem,
+} from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { Paper, Typography, Box } from "@mui/material";
 
@@ -52,36 +58,43 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({
 					font: {
 						size: 12,
 					},
-					generateLabels: function (chart: any) {
+					generateLabels: function (chart: ChartJS) {
 						const data = chart.data;
-						if (data.labels.length && data.datasets.length) {
+						if (data.labels && data.labels.length && data.datasets.length) {
 							const dataset = data.datasets[0];
-							const total = dataset.data.reduce(
+							const dataValues = dataset.data as number[];
+							const total = dataValues.reduce(
 								(sum: number, value: number) => sum + value,
 								0
 							);
 
-							return data.labels.map((label: string, index: number) => {
-								const value = dataset.data[index];
-								const percentage =
-									total > 0 ? ((value / total) * 100).toFixed(1) : "0";
-								const formattedValue = currency
-									? `₹${value.toLocaleString()}`
-									: value.toLocaleString();
+							return (data.labels as string[]).map(
+								(label: string, index: number) => {
+									const value = dataValues[index];
+									const percentage =
+										total > 0 ? ((value / total) * 100).toFixed(1) : "0";
+									const formattedValue = currency
+										? `₹${value.toLocaleString()}`
+										: value.toLocaleString();
 
-								return {
-									text: showPercentage
-										? `${label}: ${percentage}%`
-										: `${label}: ${formattedValue}`,
-									fillStyle: dataset.backgroundColor[index],
-									strokeStyle:
-										dataset.borderColor?.[index] ||
-										dataset.backgroundColor[index],
-									lineWidth: dataset.borderWidth || 0,
-									hidden: false,
-									index: index,
-								};
-							});
+									const backgroundColors = dataset.backgroundColor as string[];
+									const borderColors = dataset.borderColor as string[];
+
+									return {
+										text: showPercentage
+											? `${label}: ${percentage}%`
+											: `${label}: ${formattedValue}`,
+										fillStyle: backgroundColors?.[index] || "#000",
+										strokeStyle:
+											borderColors?.[index] ||
+											backgroundColors?.[index] ||
+											"#000",
+										lineWidth: (dataset.borderWidth as number) || 0,
+										hidden: false,
+										index: index,
+									};
+								}
+							);
 						}
 						return [];
 					},
@@ -96,10 +109,11 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({
 				cornerRadius: 8,
 				displayColors: true,
 				callbacks: {
-					label: function (context: any) {
+					label: function (context: TooltipItem<"doughnut">) {
 						const label = context.label || "";
 						const value = context.parsed;
-						const total = context.dataset.data.reduce(
+						const dataValues = context.dataset.data as number[];
+						const total = dataValues.reduce(
 							(sum: number, val: number) => sum + val,
 							0
 						);
@@ -126,7 +140,7 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({
 	// Plugin to draw center text
 	const centerTextPlugin = {
 		id: "centerText",
-		beforeDraw: function (chart: any) {
+		beforeDraw: function (chart: ChartJS) {
 			if (centerText) {
 				const { width, height, ctx } = chart;
 				ctx.restore();

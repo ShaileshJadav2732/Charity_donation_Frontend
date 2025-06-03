@@ -51,7 +51,7 @@ export const notificationApi = createApi({
 		>({
 			query: ({ userId, limit = 50, unreadOnly = false }) =>
 				`/notifications/${userId}?limit=${limit}&unreadOnly=${unreadOnly}`,
-			providesTags: (result, error, { userId }) =>
+			providesTags: (result, _error, { userId }) =>
 				result
 					? [
 							{ type: "Notifications", id: userId },
@@ -77,7 +77,7 @@ export const notificationApi = createApi({
 				url: `/notifications/${notificationId}/read`,
 				method: "PATCH",
 			}),
-			invalidatesTags: (result, error, notificationId) => [
+			invalidatesTags: (_result, _error, notificationId) => [
 				{ type: "Notifications", id: notificationId },
 			],
 		}),
@@ -86,7 +86,7 @@ export const notificationApi = createApi({
 				url: `/notifications/${notificationId}`,
 				method: "DELETE",
 			}),
-			invalidatesTags: (result, error, notificationId) => [
+			invalidatesTags: (_result, _error, notificationId) => [
 				{ type: "Notifications", id: notificationId },
 			],
 		}),

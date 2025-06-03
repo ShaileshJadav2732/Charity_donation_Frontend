@@ -1,4 +1,7 @@
-import { DonationType } from "./donation";
+import { DonationType, ImprovedDonationFormValues } from "./donation";
+
+// Re-export to maintain compatibility
+export type { ImprovedDonationFormValues };
 
 // Event handler types
 export interface SelectChangeEvent {
@@ -39,8 +42,14 @@ export interface CauseWithDetails {
 		tags: string[];
 		organizationId: string;
 		organizationName?: string;
+		organizationUserId?: string;
 		createdAt: string;
 		updatedAt: string;
+		donorCount?: number;
+		itemDonations?: number;
+		acceptedDonationTypes: DonationType[];
+		acceptanceType: "money" | "items" | "both";
+		donationItems: string[];
 	};
 	campaign?: {
 		_id: string;
@@ -51,26 +60,7 @@ export interface CauseWithDetails {
 	};
 }
 
-// Import the form values interface
-export interface ImprovedDonationFormValues {
-	type: DonationType;
-	amount: string | number;
-	description: string;
-	quantity: number;
-	unit: string;
-	scheduledDate: string;
-	scheduledTime: string;
-	isPickup: boolean;
-	contactPhone: string;
-	contactEmail: string;
-	pickupAddress: {
-		street: string;
-		city: string;
-		state: string;
-		zipCode: string;
-		country: string;
-	};
-}
+// Import the form values interface from donation.ts to avoid duplication
 
 // Campaign selection types
 export interface CampaignOption {

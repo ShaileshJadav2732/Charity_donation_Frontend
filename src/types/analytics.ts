@@ -2,7 +2,7 @@
 
 // Chart.js callback function types
 export interface ChartTooltipContext {
-	chart: any;
+	chart: unknown;
 	label: string;
 	parsed: {
 		x: number;
@@ -20,8 +20,8 @@ export interface ChartTooltipContext {
 }
 
 export interface ChartScaleContext {
-	chart: any;
-	scale: any;
+	chart: unknown;
+	scale: unknown;
 	index: number;
 	tick: {
 		value: number;
@@ -30,7 +30,7 @@ export interface ChartScaleContext {
 }
 
 export interface ChartCallbackFunction {
-	(value: number | string, index?: number, ticks?: any[]): string;
+	(value: number | string, index?: number, ticks?: unknown[]): string;
 }
 
 export interface ChartLabelCallbackFunction {

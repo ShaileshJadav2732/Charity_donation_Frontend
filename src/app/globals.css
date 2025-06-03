@@ -1,14 +1,13 @@
-@tailwind base;
-@tailwind components;
+@import "tailwindcss/preflight";
 @tailwind utilities;
 @import "tailwindcss";
 
-body{
-   margin:0;
-   padding:0;
-   width:100%;
-   height:100%;
-   /* overflow :hidden; */
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	/* overflow :hidden; */
 }
 
 /* Add cursor pointer to all buttons and clickable elements */
@@ -24,7 +23,7 @@ a,
 .group:hover .group-hover\:opacity-100,
 motion-button,
 .motion-button {
-   cursor: pointer !important;
+	cursor: pointer !important;
 }
 
 /* Add cursor pointer to interactive elements */
@@ -34,5 +33,5 @@ motion-button,
 .transition-all,
 .transition-colors,
 .transition-opacity {
-   cursor: pointer !important;
+	cursor: pointer !important;
 }

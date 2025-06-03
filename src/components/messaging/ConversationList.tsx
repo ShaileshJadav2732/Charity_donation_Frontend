@@ -1,36 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import { useMessage } from "@/contexts/MessageContext";
+import { RootState } from "@/store/store";
+import { Conversation } from "@/types/message";
 import {
+	Avatar,
+	Badge,
 	Box,
+	CircularProgress,
+	IconButton,
+	InputAdornment,
 	List,
 	ListItem,
 	ListItemAvatar,
 	ListItemText,
-	Avatar,
-	Typography,
-	TextField,
-	InputAdornment,
-	Badge,
-	Chip,
-	CircularProgress,
-	IconButton,
 	Menu,
 	MenuItem,
+	TextField,
+	Typography,
 } from "@mui/material";
+import { formatDistanceToNow } from "date-fns";
 import {
-	Search,
-	MessageCircle,
-	MoreVertical,
 	Archive,
 	Delete,
-	Circle,
+	MessageCircle,
+	MoreVertical,
+	Search,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { useMessage } from "@/contexts/MessageContext";
-import { Conversation } from "@/types/message";
 
 interface ConversationListProps {
 	conversations: Conversation[];
@@ -49,13 +47,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
 	isLoading,
 	searchQuery,
 	onSearchChange,
-	lastReadUpdate,
 }) => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const { onlineUsers } = useMessage();
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-	const [selectedConvForMenu, setSelectedConvForMenu] =
-		useState<Conversation | null>(null);
+	const [, setSelectedConvForMenu] = useState<Conversation | null>(null);
 
 	const handleMenuOpen = (
 		event: React.MouseEvent<HTMLElement>,
@@ -151,14 +147,16 @@ const ConversationList: React.FC<ConversationListProps> = ({
 					placeholder="Search conversations..."
 					value={searchQuery}
 					onChange={(e) => onSearchChange(e.target.value)}
-					InputProps={{
-						startAdornment: (
-							<InputAdornment position="start">
-								<Box sx={{ color: "#2c7a72" }}>
-									<Search size={20} />
-								</Box>
-							</InputAdornment>
-						),
+					slotProps={{
+						input: {
+							startAdornment: (
+								<InputAdornment position="start">
+									<Box sx={{ color: "#2c7a72" }}>
+										<Search size={20} />
+									</Box>
+								</InputAdornment>
+							),
+						},
 					}}
 					sx={{
 						"& .MuiOutlinedInput-root": {
@@ -481,11 +479,23 @@ const ConversationList: React.FC<ConversationListProps> = ({
 				open={Boolean(menuAnchor)}
 				onClose={handleMenuClose}
 			>
-				<MenuItem onClick={handleMenuClose}>
+				<MenuItem
+					onClick={() => {
+						// Handle archive action for selectedConvForMenu
+						// TODO: Implement archive functionality
+						handleMenuClose();
+					}}
+				>
 					<Archive size={16} style={{ marginRight: 8 }} />
 					Archive
 				</MenuItem>
-				<MenuItem onClick={handleMenuClose}>
+				<MenuItem
+					onClick={() => {
+						// Handle delete action for selectedConvForMenu
+						// TODO: Implement delete functionality
+						handleMenuClose();
+					}}
+				>
 					<Delete size={16} style={{ marginRight: 8 }} />
 					Delete
 				</MenuItem>

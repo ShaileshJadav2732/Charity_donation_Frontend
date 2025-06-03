@@ -100,8 +100,7 @@ const CausesPage = () => {
 				await deleteCause(id).unwrap();
 				toast.success("Cause deleted successfully!");
 				refetch();
-			} catch (err) {
-				console.error("Failed to delete cause:", err);
+			} catch {
 				toast.error("Failed to delete cause. Please try again.");
 			} finally {
 				setIsDeleting(false);
@@ -296,9 +295,9 @@ const CausesPage = () => {
 							const progress =
 								targetAmount > 0
 									? Math.min(
-										100,
-										Math.round((raisedAmount / targetAmount) * 100)
-									)
+											100,
+											Math.round((raisedAmount / targetAmount) * 100)
+									  )
 									: 0;
 
 							const acceptanceType = cause.acceptanceType || "money";
@@ -396,8 +395,8 @@ const CausesPage = () => {
 														acceptanceType === "money"
 															? "Funding"
 															: acceptanceType === "items"
-																? "Items"
-																: "Mixed"
+															? "Items"
+															: "Mixed"
 													}
 													size="small"
 													sx={{
@@ -522,7 +521,7 @@ const CausesPage = () => {
 															Needed Items:
 														</Typography>
 														{cause.donationItems &&
-															cause.donationItems.length > 0 ? (
+														cause.donationItems.length > 0 ? (
 															<Box display="flex" gap={0.5} flexWrap="wrap">
 																{cause.donationItems
 																	.slice(0, 2)
@@ -543,8 +542,9 @@ const CausesPage = () => {
 																	))}
 																{cause.donationItems.length > 2 && (
 																	<Chip
-																		label={`+${cause.donationItems.length - 2
-																			} more`}
+																		label={`+${
+																			cause.donationItems.length - 2
+																		} more`}
 																		size="small"
 																		variant="outlined"
 																		sx={{

@@ -9,7 +9,6 @@ import {
 	Box,
 	IconButton,
 	Card,
-	CardContent,
 	Badge,
 	Divider,
 	useTheme,
@@ -20,7 +19,6 @@ import { formatDistanceToNow } from "date-fns";
 import {
 	Bell as BellIcon,
 	CheckCircle2 as CheckIcon,
-	Trash2 as DeleteIcon,
 	X as CloseIcon,
 	AlertCircle as ErrorIcon,
 	CheckCircle2 as SuccessIcon,
@@ -50,8 +48,6 @@ const RealTimeNotificationList: React.FC<RealTimeNotificationListProps> = ({
 		connectionStatus,
 		markAsRead,
 		markAllAsRead,
-		isLoading,
-		error,
 	} = useRealTimeNotifications();
 
 	const displayNotifications = recentNotifications.slice(0, maxItems);
@@ -61,7 +57,7 @@ const RealTimeNotificationList: React.FC<RealTimeNotificationListProps> = ({
 			markAsRead(notificationId);
 			setToast({ message: "Notification marked as read", type: "success" });
 			setTimeout(() => setToast(null), 3000);
-		} catch (error) {
+		} catch {
 			setToast({
 				message: "Failed to mark notification as read",
 				type: "error",
@@ -78,7 +74,7 @@ const RealTimeNotificationList: React.FC<RealTimeNotificationListProps> = ({
 				type: "success",
 			});
 			setTimeout(() => setToast(null), 3000);
-		} catch (error) {
+		} catch {
 			setToast({
 				message: "Failed to mark all notifications as read",
 				type: "error",
@@ -108,52 +104,6 @@ const RealTimeNotificationList: React.FC<RealTimeNotificationListProps> = ({
 				return "🔔";
 		}
 	};
-
-	const getNotificationColor = (type: string) => {
-		switch (type) {
-			case "DONATION_RECEIVED":
-				return theme.palette.success.main;
-			case "DONATION_STATUS_UPDATED":
-				return theme.palette.info.main;
-			case "CAMPAIGN_CREATED":
-			case "CAMPAIGN_UPDATED":
-				return theme.palette.primary.main;
-			case "FEEDBACK_RECEIVED":
-			case "FEEDBACK_RESPONSE":
-				return theme.palette.warning.main;
-			case "MESSAGE_RECEIVED":
-			case "CONVERSATION_STARTED":
-				return "#2f8077"; // Teal color for message notifications
-			case "SYSTEM_NOTIFICATION":
-				return theme.palette.secondary.main;
-			default:
-				return theme.palette.grey[500];
-		}
-	};
-
-	if (isLoading) {
-		return (
-			<Card sx={{ width: 400, maxHeight: 500 }}>
-				<CardContent>
-					<Typography variant="h6" gutterBottom>
-						Loading notifications...
-					</Typography>
-				</CardContent>
-			</Card>
-		);
-	}
-
-	if (error) {
-		return (
-			<Card sx={{ width: 400, maxHeight: 500 }}>
-				<CardContent>
-					<Typography variant="h6" color="error" gutterBottom>
-						Error loading notifications
-					</Typography>
-				</CardContent>
-			</Card>
-		);
-	}
 
 	return (
 		<Card sx={{ width: 400, maxHeight: 500, overflow: "hidden" }}>

@@ -4,7 +4,6 @@ import {
 	DonationFormData,
 	DonationResponse,
 	DonorDonationsResponse,
-	UpdateDonationStatusRequest,
 	UpdateDonationStatusResponse,
 } from "@/types/donation";
 import apiSlice from "./apiSlice";
@@ -23,9 +22,13 @@ export const donationApi = apiSlice.injectEndpoints({
 					body: data,
 				};
 			},
-			transformErrorResponse: (response: any) => {
+			transformErrorResponse: (response: unknown) => {
 				console.error("Donation creation error response:", response);
-				if (response.status === 401) {
+				const errorResponse = response as {
+					status?: number;
+					data?: { message?: string };
+				};
+				if (errorResponse.status === 401) {
 					console.error("Authentication failed - user not authenticated");
 				}
 				return response;
@@ -80,18 +83,6 @@ export const donationApi = apiSlice.injectEndpoints({
 			}),
 		}),
 
-		updateDonationStatus: builder.mutation<
-			UpdateDonationStatusResponse,
-			UpdateDonationStatusRequest
-		>({
-			query: ({ donationId, status }) => ({
-				url: `/donations/${donationId}/status`,
-				method: "PATCH",
-				body: { status },
-			}),
-			invalidatesTags: ["Donations"],
-		}),
-
 		// Mark donation as received with photo upload
 		markDonationAsReceived: builder.mutation<
 			UpdateDonationStatusResponse,
@@ -117,7 +108,8 @@ export const donationApi = apiSlice.injectEndpoints({
 					// Don't set Content-Type - let the browser set it for FormData
 
 					const response = await fetch(
-						`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+						`${
+							process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
 						}/donations/${donationId}/received`,
 						{
 							method: "PATCH",
@@ -190,7 +182,6 @@ export const {
 	useGetDonorStatsQuery,
 	useGetItemDonationAnalyticsQuery,
 	useGetItemDonationTypeAnalyticsQuery,
-	useUpdateDonationStatusMutation,
 	useMarkDonationAsReceivedMutation,
 	useConfirmDonationReceiptMutation,
 	useMarkDonationAsConfirmedMutation,

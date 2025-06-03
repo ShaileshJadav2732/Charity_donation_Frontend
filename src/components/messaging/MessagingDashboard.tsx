@@ -11,7 +11,7 @@ import {
 	useMediaQuery,
 	Drawer,
 } from "@mui/material";
-import { Search, Menu, X, MessageCircle } from "lucide-react";
+import { Menu, X, MessageCircle } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import {
@@ -42,15 +42,12 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 	const [lastReadUpdate, setLastReadUpdate] = useState(0);
 
 	// API queries
-	const {
-		data: conversationsData,
-		isLoading: conversationsLoading,
-		refetch: refetchConversations,
-	} = useGetConversationsQuery({
-		page: 1,
-		limit: 50,
-		search: searchQuery || undefined,
-	});
+	const { data: conversationsData, isLoading: conversationsLoading } =
+		useGetConversationsQuery({
+			page: 1,
+			limit: 50,
+			search: searchQuery || undefined,
+		});
 
 	const { data: unreadCountData } = useGetUnreadCountQuery();
 
@@ -198,8 +195,10 @@ const MessagingDashboard: React.FC<MessagingDashboardProps> = ({
 					anchor="left"
 					open={mobileDrawerOpen}
 					onClose={() => setMobileDrawerOpen(false)}
-					PaperProps={{
-						sx: { width: "80%", maxWidth: 400 },
+					slotProps={{
+						paper: {
+							sx: { width: "80%", maxWidth: 400 },
+						},
 					}}
 				>
 					{conversationListContent}

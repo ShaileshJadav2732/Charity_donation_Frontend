@@ -12,12 +12,10 @@ import { RootState } from "@/store/store";
 import { useSocket } from "./SocketContext";
 import {
 	Message,
-	Conversation,
 	TypingIndicator,
 	OnlineStatus,
 	MessageReadReceipt,
 } from "@/types/message";
-import toast from "react-hot-toast";
 
 interface MessageContextType {
 	// Real-time message state

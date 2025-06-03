@@ -64,9 +64,8 @@ export default function ProfileImageUpload({
 				onImageUpdate?.(result.profileImage);
 				setPreviewImage(null);
 			}
-		} catch (error) {
+		} catch {
 			// Silently handle the error - just reset the preview
-			console.log("Upload failed, keeping preview image for now");
 			// Don't show error toast, just keep the preview
 			// setPreviewImage(null); // Keep the preview so user can see their selection
 		} finally {

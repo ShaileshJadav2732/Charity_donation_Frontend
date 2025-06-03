@@ -2,7 +2,7 @@
 
 import {
 	useDeleteCampaignMutation,
-	useGetCampaignsQuery,
+	useGetOrganizationCampaignsQuery,
 } from "@/store/api/campaignApi";
 import { RootState } from "@/store/store";
 import { Campaign, CampaignStatus } from "@/types/campaings";
@@ -97,8 +97,8 @@ const CampaignsPage = () => {
 	const [deleteError, setDeleteError] = useState<string | null>(null);
 
 	// Fetch campaigns
-	const { data, isLoading, error, refetch } = useGetCampaignsQuery({
-		organizations: user?.id,
+	const { data, isLoading, error, refetch } = useGetOrganizationCampaignsQuery({
+		organizationId: user?.id || "",
 	});
 
 	const [deleteCampaign, { isLoading: isDeleting }] =

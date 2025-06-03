@@ -11,6 +11,7 @@ import {
 	Tooltip,
 	Legend,
 	Filler,
+	TooltipItem,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Paper, Typography, Box } from "@mui/material";
@@ -79,7 +80,7 @@ const LineChart: React.FC<LineChartProps> = ({
 				cornerRadius: 8,
 				displayColors: true,
 				callbacks: {
-					label: function (context: any) {
+					label: function (context: TooltipItem<"line">) {
 						const label = context.dataset.label || "";
 						const value = context.parsed.y;
 						const formattedValue = currency
@@ -115,11 +116,13 @@ const LineChart: React.FC<LineChartProps> = ({
 					font: {
 						size: 11,
 					},
-					callback: function (value: any) {
+					callback: function (value: string | number) {
+						const numValue =
+							typeof value === "string" ? parseFloat(value) : value;
 						if (currency) {
-							return `₹${value.toLocaleString()}`;
+							return `₹${numValue.toLocaleString()}`;
 						}
-						return value.toLocaleString();
+						return numValue.toLocaleString();
 					},
 				},
 				beginAtZero: true,

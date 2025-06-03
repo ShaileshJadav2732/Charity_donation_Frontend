@@ -6,13 +6,7 @@ import { useParams } from "next/navigation";
 import MessagingDashboard from "@/components/messaging/MessagingDashboard";
 import { MessageProvider } from "@/contexts/MessageContext";
 
-interface ConversationPageProps {
-	params: {
-		conversationId: string;
-	};
-}
-
-const ConversationPage: React.FC<ConversationPageProps> = () => {
+const ConversationPage: React.FC = () => {
 	const params = useParams();
 	const conversationId = params?.conversationId as string;
 

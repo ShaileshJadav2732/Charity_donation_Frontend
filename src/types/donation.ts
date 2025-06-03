@@ -123,7 +123,7 @@ export interface Donor {
 	email?: string;
 }
 
-export interface Cause {
+export interface DonationCause {
 	title?: string;
 }
 
@@ -152,7 +152,7 @@ export interface organizationDonation {
 	unit?: string;
 	amount?: number;
 	type?: string;
-	cause?: Cause;
+	cause?: DonationCause;
 	description?: string;
 	scheduledDate?: string; // ISO date string (e.g., "2025-05-20T00:00:00.000Z")
 	scheduledTime?: string;
@@ -205,8 +205,8 @@ export interface Donation {
 		title: string;
 	};
 	amount?: number;
-	type: string;
-	status: string;
+	type: DonationType; // Use enum for type safety
+	status: DonationStatus; // Use enum for type safety
 	quantity?: number;
 	unit?: string;
 	description: string;

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { FiHeart, FiUser, FiGlobe, FiArrowRight } from "react-icons/fi";
 import { useAuth } from "@/hooks/useAuth";
+import { RootState } from "@/store/store";
+import { ArrowRight, Globe, Heart, Users } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
 
 export default function HomePage() {
 	const router = useRouter();
@@ -34,35 +34,66 @@ export default function HomePage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50">
 			{/* Hero Section */}
-			<div className="relative bg-gradient-to-br from-teal-600 to-teal-800 py-24 overflow-hidden">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-					<div className="flex justify-center mb-6">
-						<FiHeart className="h-16 w-16 text-white" aria-hidden="true" />
-					</div>
-					<h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
-						Make a Difference with GreenGive
-					</h1>
-					<p className="mt-6 max-w-2xl mx-auto text-xl text-teal-100">
-						Connect with charitable organizations and support causes that matter
-						to you.
-					</p>
-					<div className="mt-10 flex justify-center space-x-4">
-						<Link
-							href="/signup"
-							className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-teal-900 bg-white hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 md:py-4 md:text-lg md:px-10"
-							aria-label="Get started with GreenGive"
-						>
-							Get Started
-						</Link>
-						<Link
-							href="/login"
-							className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-teal-900 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 md:py-4 md:text-lg md:px-10"
-							aria-label="Log in to GreenGive"
-						>
-							Log In
-						</Link>
+			<div className="relative bg-gradient-to-br from-[#2f8077] via-[#287068] to-[#2c7a72] py-32 overflow-hidden">
+				{/* Background Pattern */}
+				<div className="absolute inset-0 opacity-10">
+					<div
+						className="absolute top-0 left-0 w-full h-full"
+						style={{
+							backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+						}}
+					></div>
+				</div>
+
+				<div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="text-center">
+						{/* Logo/Icon */}
+						<div className="flex justify-center mb-8">
+							<div className="relative">
+								<div className="absolute inset-0 bg-white/20 rounded-full blur-xl"></div>
+								<div className="relative bg-white/10 backdrop-blur-sm rounded-full p-6 border border-white/20">
+									<Heart className="h-16 w-16 text-white" strokeWidth={1.5} />
+								</div>
+							</div>
+						</div>
+
+						{/* Main Heading */}
+						<h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6">
+							Make a Difference with{" "}
+							<span className="bg-gradient-to-r from-white to-teal-100 bg-clip-text text-transparent">
+								GreenGive
+							</span>
+						</h1>
+
+						{/* Subtitle */}
+						<p className="mt-6 max-w-3xl mx-auto text-xl md:text-2xl text-teal-100 leading-relaxed">
+							Connect with charitable organizations and support causes that
+							matter to you. Every donation creates ripples of positive change
+							in our world.
+						</p>
+
+						{/* CTA Buttons */}
+						<div className="mt-12 flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
+							<Link
+								href="/signup"
+								className="group relative px-8 py-4 bg-white text-[#287068] font-semibold rounded-xl hover:bg-teal-50 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+								aria-label="Get started with GreenGive"
+							>
+								<span className="relative z-10 flex items-center justify-center">
+									Get Started
+									<ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+								</span>
+							</Link>
+							<Link
+								href="/login"
+								className="group px-8 py-4 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-300 backdrop-blur-sm"
+								aria-label="Log in to GreenGive"
+							>
+								Log In
+							</Link>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -84,10 +115,7 @@ export default function HomePage() {
 						{/* Feature 1 */}
 						<div className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
 							<div className="flex justify-center mb-4">
-								<FiUser
-									className="h-12 w-12 text-teal-600"
-									aria-hidden="true"
-								/>
+								<Users className="h-12 w-12 text-teal-600" strokeWidth={1.5} />
 							</div>
 							<div className="text-center">
 								<h3 className="text-xl font-medium text-gray-900">
@@ -102,10 +130,7 @@ export default function HomePage() {
 						{/* Feature 2 */}
 						<div className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
 							<div className="flex justify-center mb-4">
-								<FiGlobe
-									className="h-12 w-12 text-teal-600"
-									aria-hidden="true"
-								/>
+								<Globe className="h-12 w-12 text-teal-600" strokeWidth={1.5} />
 							</div>
 							<div className="text-center">
 								<h3 className="text-xl font-medium text-gray-900">
@@ -120,10 +145,7 @@ export default function HomePage() {
 						{/* Feature 3 */}
 						<div className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
 							<div className="flex justify-center mb-4">
-								<FiHeart
-									className="h-12 w-12 text-teal-600"
-									aria-hidden="true"
-								/>
+								<Heart className="h-12 w-12 text-teal-600" aria-hidden="true" />
 							</div>
 							<div className="text-center">
 								<h3 className="text-xl font-medium text-gray-900">
@@ -154,7 +176,7 @@ export default function HomePage() {
 							aria-label="Sign up for GreenGive"
 						>
 							Sign Up Now
-							<FiArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+							<ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
 						</Link>
 					</div>
 				</div>
