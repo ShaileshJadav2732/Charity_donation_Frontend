@@ -54,8 +54,7 @@ const StatusChip = ({ status }: { status: string }) => {
 				return "warning";
 			case CampaignStatus.COMPLETED:
 				return "info";
-			case CampaignStatus.CANCELLED:
-				return "error";
+
 			default:
 				return "default";
 		}
@@ -152,7 +151,7 @@ const CampaignsPage = () => {
 					p: 2,
 					mb: 2,
 					borderRadius: 0,
-					backgroundImage: "linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%)",
+					backgroundImage: "linear-gradient(#287068, #2f8077)",
 					color: "white",
 				}}
 			>
@@ -197,7 +196,6 @@ const CampaignsPage = () => {
 									<MenuItem value="all">All</MenuItem>
 									<MenuItem value="active">Active</MenuItem>
 									<MenuItem value="draft">Draft</MenuItem>
-									<MenuItem value="paused">Paused</MenuItem>
 									<MenuItem value="completed">Completed</MenuItem>
 								</Select>
 							</FormControl>
@@ -266,7 +264,30 @@ const CampaignsPage = () => {
 											height: "100%",
 											display: "flex",
 											flexDirection: "column",
+											cursor: "pointer",
+											transition: "all 0.2s ease",
+											position: "relative",
+											"&:hover": {
+												transform: "translateY(-2px)",
+												boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+												"&::after": {
+													content: '"Click to view details"',
+													position: "absolute",
+													top: 10,
+													right: 10,
+													backgroundColor: "rgba(40, 112, 104, 0.9)",
+													color: "white",
+													padding: "4px 8px",
+													borderRadius: 1,
+													fontSize: "0.75rem",
+													fontWeight: 500,
+													zIndex: 2,
+												},
+											},
 										}}
+										onClick={() =>
+											router.push(`/dashboard/campaigns/${campaignId}`)
+										}
 									>
 										{/* Campaign Image */}
 										<CardMedia
@@ -315,57 +336,166 @@ const CampaignsPage = () => {
 												{campaign.description?.substring(0, 100)}...
 											</Typography>
 
-											{/* Progress Bar */}
-											<Box sx={{ mb: 2 }}>
-												<Box
-													display="flex"
-													justifyContent="space-between"
-													mb={0.5}
-												>
-													<Typography variant="body2" color="text.secondary">
-														Progress
-													</Typography>
-													<Typography variant="body2" fontWeight="bold">
-														{progress.toFixed(0)}%
-													</Typography>
-												</Box>
-												<LinearProgress
-													variant="determinate"
-													value={progress}
-													sx={{ height: 6, borderRadius: 3 }}
-												/>
-											</Box>
+											{/* Progress Bar - only show for campaigns with monetary targets */}
+											{campaign.totalTargetAmount > 0 ? (
+												<>
+													<Box sx={{ mb: 2 }}>
+														<Box
+															display="flex"
+															justifyContent="space-between"
+															mb={0.5}
+														>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Progress
+															</Typography>
+															<Typography variant="body2" fontWeight="bold">
+																{progress.toFixed(0)}%
+															</Typography>
+														</Box>
+														<LinearProgress
+															variant="determinate"
+															value={progress}
+															sx={{ height: 6, borderRadius: 3 }}
+														/>
+													</Box>
 
-											{/* Raised vs Goal */}
-											<Box
-												sx={{
-													display: "grid",
-													gridTemplateColumns: "1fr 1fr",
-													gap: 1,
-													mb: 1,
-												}}
-											>
-												<Box>
-													<Typography variant="body2" color="text.secondary">
-														Raised
-													</Typography>
-													<Typography
-														variant="body2"
-														fontWeight="bold"
-														color="primary"
+													{/* Raised vs Goal */}
+													<Box
+														sx={{
+															display: "grid",
+															gridTemplateColumns: "1fr 1fr",
+															gap: 1,
+															mb: 1,
+														}}
 													>
-														${campaign.totalRaisedAmount.toLocaleString()}
-													</Typography>
+														<Box>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Raised
+															</Typography>
+															<Typography
+																variant="body2"
+																fontWeight="bold"
+																color="primary"
+															>
+																₹{campaign.totalRaisedAmount.toLocaleString()}
+															</Typography>
+														</Box>
+														<Box sx={{ textAlign: "right" }}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Goal
+															</Typography>
+															<Typography variant="body2" fontWeight="bold">
+																₹{campaign.totalTargetAmount.toLocaleString()}
+															</Typography>
+														</Box>
+													</Box>
+												</>
+											) : (
+												<Box sx={{ mb: 2 }}>
+													<Alert severity="info" sx={{ py: 1 }}>
+														<Typography variant="body2">
+															<strong>Items-only campaign</strong> - No monetary
+															target set
+														</Typography>
+													</Alert>
 												</Box>
-												<Box sx={{ textAlign: "right" }}>
-													<Typography variant="body2" color="text.secondary">
-														Goal
-													</Typography>
-													<Typography variant="body2" fontWeight="bold">
-														${campaign.totalTargetAmount.toLocaleString()}
-													</Typography>
-												</Box>
-											</Box>
+											)}
+
+											{/* Campaign Donation Items - show aggregated items from all causes */}
+											{(() => {
+												// Aggregate all donation items from all causes in this campaign
+												const allDonationItems =
+													campaign.causes
+														?.filter(
+															(cause) =>
+																cause.donationItems &&
+																Array.isArray(cause.donationItems) &&
+																cause.donationItems.length > 0
+														)
+														?.flatMap((cause) => cause.donationItems || [])
+														?.filter(
+															(item, index, array) =>
+																item && // Ensure item is not null/undefined
+																typeof item === "string" && // Ensure item is a string
+																array.indexOf(item) === index // Remove duplicates
+														) || [];
+
+												if (allDonationItems.length > 0) {
+													return (
+														<Box sx={{ mb: 2 }}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+																sx={{ fontWeight: 500, mb: 1 }}
+															>
+																Needed Items from Campaign Causes:
+															</Typography>
+															<Box display="flex" gap={0.5} flexWrap="wrap">
+																{allDonationItems
+																	.slice(0, 3)
+																	.map((item, index) => (
+																		<Chip
+																			key={index}
+																			label={item}
+																			size="small"
+																			variant="outlined"
+																			sx={{
+																				borderRadius: 1,
+																				fontSize: "0.7rem",
+																				height: 22,
+																				borderColor: "#287068",
+																				color: "#287068",
+																			}}
+																		/>
+																	))}
+																{allDonationItems.length > 3 && (
+																	<Chip
+																		label={`+${
+																			allDonationItems.length - 3
+																		} more`}
+																		size="small"
+																		variant="outlined"
+																		sx={{
+																			borderRadius: 1,
+																			fontSize: "0.7rem",
+																			height: 22,
+																			borderColor: "#6c757d",
+																			color: "#6c757d",
+																		}}
+																	/>
+																)}
+															</Box>
+														</Box>
+													);
+												}
+
+												// Show debug info if no items found but causes exist
+												if (campaign.causes && campaign.causes.length > 0) {
+													return (
+														<Box sx={{ mb: 2 }}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+																sx={{ fontStyle: "italic" }}
+															>
+																Campaign has {campaign.causes.length} cause(s)
+																but no donation items configured.
+															</Typography>
+														</Box>
+													);
+												}
+
+												return null;
+											})()}
 
 											{/* Metadata */}
 											<Box display="flex" justifyContent="space-between" mt={1}>
@@ -393,11 +523,17 @@ const CampaignsPage = () => {
 										</CardContent>
 
 										{/* Actions */}
-										<CardActions sx={{ justifyContent: "space-between" }}>
+										<CardActions
+											sx={{ justifyContent: "space-between" }}
+											onClick={(e) => e.stopPropagation()} // Prevent card click when clicking buttons
+										>
 											<Button
 												size="small"
 												startIcon={<EditIcon />}
-												onClick={() => handleEditCampaign(campaignId)}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleEditCampaign(campaignId);
+												}}
 											>
 												Edit
 											</Button>
@@ -405,7 +541,10 @@ const CampaignsPage = () => {
 												size="small"
 												color="error"
 												startIcon={<DeleteIcon />}
-												onClick={() => handleDeleteClick(campaignId)}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDeleteClick(campaignId);
+												}}
 												disabled={isDeleting}
 											>
 												Delete

@@ -6,6 +6,7 @@ import {
 import { UpdateCauseBody } from "@/types/cause";
 import { DonationType } from "@/types/donation";
 import {
+	Alert,
 	Box,
 	Button,
 	Chip,
@@ -304,19 +305,16 @@ const UpdateCauseForm = () => {
 								</Box>
 							)}
 
-							{/* Optional target for items-only causes */}
+							{/* Info message for items-only causes */}
 							{acceptanceType === "items" && (
 								<Box sx={{ maxWidth: { xs: "100%", md: "50%" } }}>
-									<Field
-										as={TextField}
-										fullWidth
-										name="targetAmount"
-										label="Target Description (Optional)"
-										type="text"
-										variant="outlined"
-										placeholder="e.g., 100 units of food, 50 books, etc."
-										helperText="Describe your target goal for item donations (optional)"
-									/>
+									<Alert severity="info" sx={{ mt: 1 }}>
+										<Typography variant="body2">
+											<strong>Items-only causes</strong> don&apos;t require a
+											monetary target amount. The target is based on the
+											specific items you&apos;re collecting.
+										</Typography>
+									</Alert>
 								</Box>
 							)}
 

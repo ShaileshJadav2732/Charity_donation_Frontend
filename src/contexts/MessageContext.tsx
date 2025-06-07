@@ -92,7 +92,6 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({
 		const handleNewMessage = (message: Message) => {
 			// Don't show toast here - let the notification system handle it
 			// This prevents duplicate notifications
-			console.log("📨 New message received via socket:", message);
 
 			// Call all registered callbacks
 			messageCallbacks.newMessage.forEach((callback) => callback(message));
@@ -103,21 +102,19 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({
 		};
 
 		const handleUserOnline = (status: OnlineStatus) => {
-			console.log("🟢 User came online:", status);
 			setOnlineUsers((prev) => {
 				const newMap = new Map(prev.set(status.userId, status));
-				console.log("📊 Updated online users:", Array.from(newMap.entries()));
+
 				return newMap;
 			});
 			messageCallbacks.userOnline.forEach((callback) => callback(status));
 		};
 
 		const handleUserOffline = (status: OnlineStatus) => {
-			console.log("🔴 User went offline:", status);
 			setOnlineUsers((prev) => {
 				const newMap = new Map(prev);
 				newMap.set(status.userId, { ...status, isOnline: false });
-				console.log("📊 Updated online users:", Array.from(newMap.entries()));
+
 				return newMap;
 			});
 			messageCallbacks.userOffline.forEach((callback) => callback(status));
@@ -148,16 +145,11 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({
 		};
 
 		const handleOnlineUsersList = (usersList: OnlineStatus[]) => {
-			console.log("📋 Received online users list:", usersList);
 			const onlineMap = new Map<string, OnlineStatus>();
 			usersList.forEach((user) => {
 				onlineMap.set(user.userId, user);
 			});
 			setOnlineUsers(onlineMap);
-			console.log(
-				"📊 Initialized online users:",
-				Array.from(onlineMap.entries())
-			);
 		};
 
 		// Register socket listeners

@@ -10,6 +10,7 @@ import {
 	FaCouch,
 	FaHome,
 	FaQuestion,
+	FaTaxi,
 	FaTshirt,
 	FaUtensils,
 } from "react-icons/fa";
@@ -54,6 +55,11 @@ export default function DonationAnalyticsLayout({
 			type: DonationType.HOUSEHOLD,
 			icon: <FaHome className="h-4 w-4" />,
 			label: "Household",
+		},
+		{
+			type: DonationType.TOYS,
+			icon: <FaTaxi className="h-4 w-4" />,
+			label: "Toys",
 		},
 		{
 			type: DonationType.OTHER,

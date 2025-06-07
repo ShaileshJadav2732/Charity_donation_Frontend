@@ -55,7 +55,7 @@ export default function EditProfileForm({
 		// Prevent scrolling when modal is open
 		document.body.style.overflow = "hidden";
 		document.body.style.position = "fixed";
-		document.body.style.width = "100%";
+		document.body.style.width = "120%";
 		document.body.style.top = `-${window.scrollY}px`;
 
 		const timer = setTimeout(() => setIsVisible(true), 50);
@@ -149,7 +149,7 @@ export default function EditProfileForm({
 
 	return (
 		<div
-			className="fixed inset-0 z-50"
+			className="fixed inset-0 z-50 w-10"
 			style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
 		>
 			{/* Backdrop */}
@@ -163,7 +163,7 @@ export default function EditProfileForm({
 
 			{/* Modal */}
 			<div
-				className="fixed inset-0 flex items-center justify-center p-4"
+				className="fixed inset-0 flex items-center justify-center p-7"
 				style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
 			>
 				<div
@@ -178,7 +178,7 @@ export default function EditProfileForm({
 					>
 						<div className="flex justify-between items-center mb-8">
 							<div className="flex items-center space-x-3">
-								<FiEdit2 className="w-6 h-6 text-blue-600" />
+								<FiEdit2 className="w-7 h-6 text-blue-600" />
 								<h2 className="text-2xl font-bold text-gray-900">
 									Edit Profile
 								</h2>
@@ -204,7 +204,7 @@ export default function EditProfileForm({
 
 							{isDonor ? (
 								<>
-									<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+									<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 space-x-1.5">
 										<div className="space-y-2">
 											<label
 												htmlFor="firstName"
@@ -228,7 +228,6 @@ export default function EditProfileForm({
 												htmlFor="lastName"
 												className="text-sm font-medium text-gray-700 items-center space-x-2"
 											>
-												<FiUser className="w-4 h-4" />
 												<span>Last Name</span>
 											</label>
 											<input
@@ -247,7 +246,6 @@ export default function EditProfileForm({
 											htmlFor="bio"
 											className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 										>
-											<FiEdit2 className="w-4 h-4" />
 											<span>Bio</span>
 										</label>
 										<textarea
@@ -268,7 +266,6 @@ export default function EditProfileForm({
 											htmlFor="name"
 											className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 										>
-											<FiUser className="w-4 h-4" />
 											<span>Organization Name</span>
 										</label>
 										<input
@@ -286,7 +283,6 @@ export default function EditProfileForm({
 											htmlFor="description"
 											className="text-sm font-medium text-gray-700 flex items-center space-x-2"
 										>
-											<FiEdit2 className="w-4 h-4" />
 											<span>Description</span>
 										</label>
 										<textarea
@@ -421,8 +417,7 @@ export default function EditProfileForm({
 										htmlFor="country"
 										className=" text-sm font-medium text-gray-700 items-center space-x-2"
 									>
-										<FiGlobe className="w-4 h-4" />
-										<span>Country</span>
+										<div>Country</div>
 									</label>
 									<input
 										type="text"

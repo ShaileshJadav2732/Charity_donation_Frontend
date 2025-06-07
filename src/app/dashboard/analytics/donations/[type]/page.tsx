@@ -60,6 +60,8 @@ const getDonationTypeColor = (type: string) => {
 			return "bg-purple-100 text-purple-600";
 		case DonationType.HOUSEHOLD:
 			return "bg-teal-100 text-teal-600";
+		case DonationType.TOYS:
+			return "bg-teal-100 text-teal-600";
 		case DonationType.OTHER:
 			return "bg-gray-100 text-gray-600";
 		default:

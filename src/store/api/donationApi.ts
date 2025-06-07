@@ -170,6 +170,22 @@ export const donationApi = apiSlice.injectEndpoints({
 				{ type: "Donations", id: donationId },
 			],
 		}),
+
+		// Update donation status (for organizations to approve/reject donations)
+		updateDonationStatus: builder.mutation<
+			UpdateDonationStatusResponse,
+			{ donationId: string; status: string }
+		>({
+			query: ({ donationId, status }) => ({
+				url: `/donations/${donationId}/status`,
+				method: "PATCH",
+				body: { status },
+			}),
+			invalidatesTags: (_result, _error, { donationId }) => [
+				"Donations",
+				{ type: "Donations", id: donationId },
+			],
+		}),
 	}),
 	overrideExisting: true,
 });
@@ -185,4 +201,5 @@ export const {
 	useMarkDonationAsReceivedMutation,
 	useConfirmDonationReceiptMutation,
 	useMarkDonationAsConfirmedMutation,
+	useUpdateDonationStatusMutation,
 } = donationApi;

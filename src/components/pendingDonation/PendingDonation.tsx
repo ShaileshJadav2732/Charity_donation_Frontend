@@ -3,6 +3,7 @@ import {
 	useGetOrganizationDonationsQuery,
 	useMarkDonationAsReceivedMutation,
 	useMarkDonationAsConfirmedMutation,
+	useUpdateDonationStatusMutation,
 } from "@/store/api/donationApi";
 import { Donation, organizationDonation } from "@/types/donation";
 import {
@@ -54,6 +55,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 
 	const [markAsReceived] = useMarkDonationAsReceivedMutation();
 	const [markAsConfirmed] = useMarkDonationAsConfirmedMutation();
+	const [updateDonationStatus] = useUpdateDonationStatusMutation();
 
 	const [showPhotoUploadModal, setShowPhotoUploadModal] = useState(false);
 	const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
@@ -79,8 +81,41 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		setSearchTerm(e.target.value);
 	};
 
-	// Note: Approval is now handled through the "Mark as Received" workflow
-	// which automatically sets status to APPROVED and then RECEIVED with photo upload
+	// Handle donation approval
+	const handleApproveDonation = async (donationId: string) => {
+		const loadingToast = toast.loading("Approving donation...");
+
+		try {
+			await updateDonationStatus({
+				donationId,
+				status: "APPROVED",
+			}).unwrap();
+
+			toast.dismiss(loadingToast);
+			toast.success("Donation approved successfully!");
+
+			// Refetch to update the UI
+			await refetch();
+		} catch (error: unknown) {
+			toast.dismiss(loadingToast);
+
+			let errorMessage = "Failed to approve donation";
+			if (error && typeof error === "object") {
+				if (
+					"data" in error &&
+					error.data &&
+					typeof error.data === "object" &&
+					"message" in error.data
+				) {
+					errorMessage = String(error.data.message);
+				} else if ("message" in error) {
+					errorMessage = String(error.message);
+				}
+			}
+
+			toast.error(errorMessage);
+		}
+	};
 
 	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -524,7 +559,20 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 													>
 														<FiEye className="h-5 w-5" />
 													</button>
-													{/* Approval is now handled through "Mark as Received" workflow */}
+													{/* Approve button for PENDING donations */}
+													{donation.status === "PENDING" && (
+														<button
+															className="text-green-600 hover:text-green-900 transition-colors"
+															title="Approve Donation"
+															onClick={() =>
+																handleApproveDonation(donation._id)
+															}
+															disabled={isDonationLoading(donation._id)}
+														>
+															✅
+														</button>
+													)}
+													{/* Mark as Received button for APPROVED donations */}
 													{donation.status === "APPROVED" && (
 														<button
 															className="text-orange-600 hover:text-orange-900 transition-colors"
@@ -537,6 +585,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 															<FiCamera className="h-5 w-5" />
 														</button>
 													)}
+													{/* Mark as Confirmed button for RECEIVED donations */}
 													{donation.status === "RECEIVED" && (
 														<button
 															className="text-purple-600 hover:text-purple-900 transition-colors"

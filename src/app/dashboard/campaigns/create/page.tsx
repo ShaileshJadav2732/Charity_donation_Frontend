@@ -126,13 +126,24 @@ const CreateCampaignPage = () => {
 	// Calculate total target amount based on selected causes
 	useEffect(() => {
 		if (formData.selectedCauses.length > 0 && causesData?.causes) {
-			const total = causesData.causes
-				.filter((cause: Cause) => formData.selectedCauses.includes(cause.id))
+			const selectedCausesData = causesData.causes.filter((cause: Cause) =>
+				formData.selectedCauses.includes(cause.id)
+			);
+
+			// Calculate total from causes that accept money (money or both)
+			const total = selectedCausesData
+				.filter((cause: Cause) => cause.acceptanceType !== "items")
 				.reduce((sum: number, cause: Cause) => sum + cause.targetAmount, 0);
 
 			setFormData((prev) => ({
 				...prev,
 				totalTargetAmount: total.toString(),
+			}));
+		} else {
+			// Reset to 0 if no causes selected
+			setFormData((prev) => ({
+				...prev,
+				totalTargetAmount: "0",
 			}));
 		}
 	}, [formData.selectedCauses, causesData]);
@@ -412,7 +423,24 @@ const CreateCampaignPage = () => {
 							label={
 								<ListItemText
 									primary={cause.title}
-									secondary={`Target: $${cause.targetAmount.toLocaleString()}`}
+									secondary={
+										<Box>
+											<Typography variant="body2" color="text.secondary">
+												Target: ₹{cause.targetAmount.toLocaleString()} • Type:{" "}
+												{cause.acceptanceType === "money"
+													? "Money"
+													: cause.acceptanceType === "items"
+													? "Items Only"
+													: "Money & Items"}
+											</Typography>
+											{cause.acceptanceType === "items" && (
+												<Typography variant="caption" color="warning.main">
+													Items-only causes don&apos;t contribute to monetary
+													target
+												</Typography>
+											)}
+										</Box>
+									}
 								/>
 							}
 							sx={{ width: "100%", m: 0, p: 1 }}
@@ -643,8 +671,8 @@ const CreateCampaignPage = () => {
 							}}
 							helperText={
 								formData.selectedCauses.length > 0
-									? "Automatically calculated from selected causes"
-									: "Enter the total target amount"
+									? "Automatically calculated from selected causes that accept money. Items-only causes don't contribute to this amount."
+									: "Enter the total target amount for monetary donations"
 							}
 						/>
 

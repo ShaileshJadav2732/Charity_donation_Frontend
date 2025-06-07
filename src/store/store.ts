@@ -13,6 +13,9 @@ import { organizationApi } from "./api/organizationApi";
 import { notificationApi } from "./api/notificationApi";
 import { messageApi } from "./api/messageApi";
 
+// Import authApi to ensure it's injected into apiSlice
+import "./api/authApi";
+
 // Configure Redux store
 export const store = configureStore({
 	reducer: {
@@ -37,7 +40,6 @@ export const store = configureStore({
 			.concat(dashboardApi.middleware)
 			.concat(uploadApi.middleware)
 			.concat(organizationApi.middleware)
-
 			.concat(notificationApi.middleware)
 			.concat(messageApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",

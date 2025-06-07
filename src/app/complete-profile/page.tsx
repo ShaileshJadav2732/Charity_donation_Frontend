@@ -5,10 +5,12 @@ import DonorProfileForm from "@/components/profile/DonorProfileForm";
 import OrganizationProfileForm from "@/components/profile/OrganizationProfileForm";
 import { RootState } from "@/store/store";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+
 import { useEffect, useState } from "react";
-import { FiAlertCircle, FiUser } from "react-icons/fi";
+import { FiAlertCircle, FiUser, FiLogOut } from "react-icons/fi";
 import { useSelector } from "react-redux";
+import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 
 export default function CompleteProfilePage() {
 	return (
@@ -19,42 +21,33 @@ export default function CompleteProfilePage() {
 		</div>
 	);
 }
-
 function CompleteProfileContent() {
-	const router = useRouter();
-	const { user, isAuthenticated, isLoading } = useSelector(
-		(state: RootState) => state.auth
-	);
+	const { user, isLoading } = useSelector((state: RootState) => state.auth);
+	const { logout } = useAuth();
 	const [isClient, setIsClient] = useState(false);
 
 	useEffect(() => {
 		setIsClient(true);
 	}, []);
 
-	// Redirect logic
-	useEffect(() => {
-		if (!isClient || isLoading) return;
+	// Authentication and redirect logic handled by AuthContext
 
-		if (!isAuthenticated) {
-			router.push("/login");
-			return;
+	const handleLogout = async () => {
+		try {
+			await logout();
+		} catch (error) {
+			console.error("Logout error:", error);
 		}
+	};
 
-		if (user?.profileCompleted) {
-			router.push("/dashboard/home");
-		}
-	}, [isAuthenticated, user, router, isClient, isLoading]);
-
-	// Loading state
-	if (!isClient || isLoading) {
+	// ✅ Show loading until client + auth is ready
+	if (!isClient || isLoading || !user) {
 		return (
 			<motion.div
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				transition={{ duration: 0.5 }}
 				className="flex items-center justify-center"
-				role="status"
-				aria-label="Loading profile"
 			>
 				<div className="bg-white shadow-2xl rounded-2xl p-8 text-center max-w-sm w-full">
 					<svg
@@ -78,20 +71,13 @@ function CompleteProfileContent() {
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						/>
 					</svg>
-					<p className="mt-4 text-lg font-medium text-gray-600">
-						Loading your profile...
-					</p>
+					<p className="mt-4 text-lg font-medium text-gray-600"></p>
 				</div>
 			</motion.div>
 		);
 	}
 
-	// Handle unauthenticated or missing user
-	if (!isAuthenticated || !user) {
-		return null; // Will be redirected by useEffect
-	}
-
-	// Error state: Invalid or missing role
+	// ✅ Error state: invalid user role
 	if (!user.role || !["donor", "organization"].includes(user.role)) {
 		return (
 			<motion.div
@@ -99,7 +85,6 @@ function CompleteProfileContent() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.5 }}
 				className="bg-white shadow-2xl rounded-2xl p-8 text-center max-w-md w-full"
-				role="alert"
 			>
 				<FiAlertCircle
 					className="h-12 w-12 text-red-500 mx-auto"
@@ -107,19 +92,14 @@ function CompleteProfileContent() {
 				/>
 				<h1 className="mt-4 text-2xl font-bold text-gray-900">Profile Error</h1>
 				<p className="mt-2 text-gray-600">
-					We couldn’t find your user role. Please try logging in again.
+					We couldn’t find your user role. Please refresh the page or try
+					logging in again.
 				</p>
-				<button
-					onClick={() => router.push("/login")}
-					className="mt-6 w-full flex justify-center items-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-300"
-					aria-label="Return to login page"
-				>
-					Back to Login
-				</button>
 			</motion.div>
 		);
 	}
 
+	// ✅ Main content
 	return (
 		<motion.div
 			initial={{ opacity: 0, y: 20 }}
@@ -128,9 +108,31 @@ function CompleteProfileContent() {
 			className="w-full max-w-lg"
 		>
 			<div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
+				{/* Header with logout button */}
+				<div className="px-8 py-4 border-b border-gray-100 bg-gray-50">
+					<div className="flex justify-between items-center">
+						<div className="flex items-center space-x-2">
+							<FiUser className="h-5 w-5 text-teal-600" />
+							<span className="text-sm font-medium text-gray-600">
+								Profile Setup
+							</span>
+						</div>
+						<div className="flex items-center space-x-3">
+							<span className="text-gray-300">|</span>
+							<button
+								onClick={handleLogout}
+								className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-600 transition-colors"
+							>
+								<FiLogOut className="h-4 w-4" />
+								<span>Logout</span>
+							</button>
+						</div>
+					</div>
+				</div>
+
 				<div className="px-8 py-10 text-center">
 					<div className="flex justify-center mb-6">
-						<FiUser className="h-16 w-16 text-teal-600" aria-hidden="true" />
+						<FiUser className="h-16 w-16 text-teal-600" />
 					</div>
 					<h1 className="text-3xl font-bold text-gray-900">
 						Complete Your {user.role === "donor" ? "Donor" : "Organization"}{" "}

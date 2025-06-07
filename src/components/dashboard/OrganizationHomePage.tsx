@@ -6,6 +6,7 @@ import { useGetOrganizationCausesQuery } from "@/store/api/causeApi";
 import { useGetCurrentOrganizationQuery } from "@/store/api/organizationApi";
 import { RootState } from "@/store/store";
 import {
+	Alert,
 	Avatar,
 	Box,
 	Button,
@@ -41,6 +42,7 @@ interface CauseData {
 	raisedAmount: number;
 	status?: string;
 	urgency?: "low" | "medium" | "high";
+	acceptanceType?: "money" | "items" | "both";
 	createdAt: string;
 }
 
@@ -455,69 +457,84 @@ const OrganizationHomePage: React.FC = () => {
 											: cause.description}
 									</Typography>
 
-									<Box sx={{ mb: 2 }}>
-										<Box
-											sx={{
-												display: "flex",
-												justifyContent: "space-between",
-												mb: 1,
-											}}
-										>
-											<Typography variant="body2" color="text.secondary">
-												Progress
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{getProgressPercentage(
-													cause.raisedAmount,
-													cause.targetAmount
-												).toFixed(1)}
-												%
-											</Typography>
-										</Box>
-										<LinearProgress
-											variant="determinate"
-											value={getProgressPercentage(
-												cause.raisedAmount,
-												cause.targetAmount
-											)}
-											sx={{
-												height: 8,
-												borderRadius: 4,
-												backgroundColor: "#f0f0f0",
-												"& .MuiLinearProgress-bar": {
-													backgroundColor: getUrgencyColor(
-														cause.urgency || "low"
-													),
-													borderRadius: 4,
-												},
-											}}
-										/>
-									</Box>
+									{/* Progress Section - only show for causes with monetary targets */}
+									{cause.acceptanceType !== "items" &&
+									cause.targetAmount > 0 ? (
+										<>
+											<Box sx={{ mb: 2 }}>
+												<Box
+													sx={{
+														display: "flex",
+														justifyContent: "space-between",
+														mb: 1,
+													}}
+												>
+													<Typography variant="body2" color="text.secondary">
+														Progress
+													</Typography>
+													<Typography variant="body2" sx={{ fontWeight: 600 }}>
+														{getProgressPercentage(
+															cause.raisedAmount,
+															cause.targetAmount
+														).toFixed(1)}
+														%
+													</Typography>
+												</Box>
+												<LinearProgress
+													variant="determinate"
+													value={getProgressPercentage(
+														cause.raisedAmount,
+														cause.targetAmount
+													)}
+													sx={{
+														height: 8,
+														borderRadius: 4,
+														backgroundColor: "#f0f0f0",
+														"& .MuiLinearProgress-bar": {
+															backgroundColor: getUrgencyColor(
+																cause.urgency || "low"
+															),
+															borderRadius: 4,
+														},
+													}}
+												/>
+											</Box>
 
-									<Box
-										sx={{
-											display: "flex",
-											justifyContent: "space-between",
-											alignItems: "center",
-										}}
-									>
-										<Box>
-											<Typography variant="body2" color="text.secondary">
-												Raised
-											</Typography>
-											<Typography variant="h6" sx={{ fontWeight: 600 }}>
-												{formatCurrency(cause.raisedAmount)}
-											</Typography>
+											<Box
+												sx={{
+													display: "flex",
+													justifyContent: "space-between",
+													alignItems: "center",
+												}}
+											>
+												<Box>
+													<Typography variant="body2" color="text.secondary">
+														Raised
+													</Typography>
+													<Typography variant="h6" sx={{ fontWeight: 600 }}>
+														{formatCurrency(cause.raisedAmount)}
+													</Typography>
+												</Box>
+												<Box sx={{ textAlign: "right" }}>
+													<Typography variant="body2" color="text.secondary">
+														Goal
+													</Typography>
+													<Typography variant="h6" sx={{ fontWeight: 600 }}>
+														{formatCurrency(cause.targetAmount)}
+													</Typography>
+												</Box>
+											</Box>
+										</>
+									) : (
+										<Box sx={{ mb: 2 }}>
+											<Alert severity="info" sx={{ py: 1 }}>
+												<Typography variant="body2">
+													<strong>Items-only cause</strong> - No monetary target
+													set
+												</Typography>
+											</Alert>
 										</Box>
-										<Box sx={{ textAlign: "right" }}>
-											<Typography variant="body2" color="text.secondary">
-												Goal
-											</Typography>
-											<Typography variant="h6" sx={{ fontWeight: 600 }}>
-												{formatCurrency(cause.targetAmount)}
-											</Typography>
-										</Box>
-									</Box>
+									)}
 								</CardContent>
 							</Card>
 						))

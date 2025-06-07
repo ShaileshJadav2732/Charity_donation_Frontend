@@ -12,6 +12,7 @@ import {
 	LinearProgress,
 	Divider,
 	Paper,
+	Alert,
 } from "@mui/material";
 import {
 	Heart,
@@ -110,6 +111,7 @@ const DonorHomePage: React.FC = () => {
 			image: cause.imageUrl || "/api/placeholder/300/200",
 			tags: cause.tags || [],
 			acceptanceType: cause.acceptanceType,
+			donationItems: cause.donationItems || [],
 		};
 	});
 
@@ -407,6 +409,7 @@ const DonorHomePage: React.FC = () => {
 					{featuredCauses.map((cause) => (
 						<Card
 							key={cause.id}
+							onClick={() => router.push(`/dashboard/causes/${cause.id}`)}
 							sx={{
 								height: "100%",
 								cursor: "pointer",
@@ -457,45 +460,136 @@ const DonorHomePage: React.FC = () => {
 								<Typography variant="body2" sx={{ mb: 2 }}>
 									{cause.description}
 								</Typography>
-								<Box sx={{ mb: 2 }}>
-									<Box
-										sx={{
-											display: "flex",
-											justifyContent: "space-between",
-											mb: 1,
-										}}
-									>
-										<Typography variant="body2" color="text.secondary">
-											Progress ({Math.round((cause.raised / cause.goal) * 100)}
-											%)
-										</Typography>
-										<Typography variant="body2" sx={{ fontWeight: 600 }}>
-											{formatCurrency(cause.raised)} /{" "}
-											{formatCurrency(cause.goal)}
-										</Typography>
+								{/* Progress bar for causes that accept monetary donations */}
+								{cause.acceptanceType !== "items" && cause.goal > 0 ? (
+									<Box sx={{ mb: 2 }}>
+										<Box
+											sx={{
+												display: "flex",
+												justifyContent: "space-between",
+												mb: 1,
+											}}
+										>
+											<Typography variant="body2" color="text.secondary">
+												Progress
+											</Typography>
+											<Typography variant="body2" sx={{ fontWeight: 600 }}>
+												{Math.round((cause.raised / cause.goal) * 100)}%
+											</Typography>
+										</Box>
+										<LinearProgress
+											variant="determinate"
+											value={
+												Math.min(
+													100,
+													Math.max(0, (cause.raised / cause.goal) * 100)
+												) || 25
+											} // Fallback to 25% for testing
+											sx={{
+												height: 8,
+												borderRadius: 4,
+												backgroundColor: "#f0f0f0",
+												"& .MuiLinearProgress-bar": {
+													backgroundColor: getUrgencyColor(cause.urgency),
+												},
+												mb: 1,
+											}}
+										/>
+										<Box
+											sx={{
+												display: "flex",
+												justifyContent: "space-between",
+												alignItems: "center",
+											}}
+										>
+											<Box>
+												<Typography variant="body2" color="text.secondary">
+													Raised
+												</Typography>
+												<Typography
+													variant="h6"
+													sx={{ fontWeight: 600, color: "#287068" }}
+												>
+													{formatCurrency(cause.raised)}
+												</Typography>
+											</Box>
+											<Box sx={{ textAlign: "right" }}>
+												<Typography variant="body2" color="text.secondary">
+													Goal
+												</Typography>
+												<Typography variant="h6" sx={{ fontWeight: 600 }}>
+													{formatCurrency(cause.goal)}
+												</Typography>
+											</Box>
+										</Box>
 									</Box>
-									<LinearProgress
-										variant="determinate"
-										value={
-											Math.min(
-												100,
-												Math.max(0, (cause.raised / cause.goal) * 100)
-											) || 25
-										} // Fallback to 25% for testing
-										sx={{
-											height: 8,
-											borderRadius: 4,
-											backgroundColor: "#f0f0f0",
-											"& .MuiLinearProgress-bar": {
-												backgroundColor: getUrgencyColor(cause.urgency),
-											},
-										}}
-									/>
-								</Box>
+								) : null}
+
+								{/* Items section for causes that accept items */}
+								{cause.acceptanceType !== "money" ? (
+									<Box sx={{ mb: 2 }}>
+										{cause.acceptanceType === "items" ? (
+											<Alert severity="info" sx={{ py: 1, mb: 1 }}>
+												<Typography variant="body2">
+													<strong>Items-only cause</strong> - This cause accepts
+													item donations only
+												</Typography>
+											</Alert>
+										) : (
+											<Typography
+												variant="body2"
+												color="text.secondary"
+												sx={{ fontWeight: 500, mb: 1 }}
+											>
+												Needed Items:
+											</Typography>
+										)}
+										{cause.donationItems && cause.donationItems.length > 0 ? (
+											<Box display="flex" gap={0.5} flexWrap="wrap">
+												{cause.donationItems.slice(0, 2).map((item, index) => (
+													<Chip
+														key={index}
+														label={item}
+														size="small"
+														variant="outlined"
+														sx={{
+															borderRadius: 1,
+															fontSize: "0.7rem",
+															height: 22,
+															borderColor: getUrgencyColor(cause.urgency),
+															color: getUrgencyColor(cause.urgency),
+														}}
+													/>
+												))}
+												{cause.donationItems.length > 2 && (
+													<Chip
+														label={`+${cause.donationItems.length - 2} more`}
+														size="small"
+														variant="outlined"
+														sx={{
+															borderRadius: 1,
+															fontSize: "0.7rem",
+															height: 22,
+															borderColor: "#6c757d",
+															color: "#6c757d",
+														}}
+													/>
+												)}
+											</Box>
+										) : (
+											<Typography variant="caption" color="text.secondary">
+												Accepting various item donations
+											</Typography>
+										)}
+									</Box>
+								) : null}
 								<Button
 									variant="contained"
 									fullWidth
-									onClick={() => router.push(`/dashboard/donate/${cause.id}`)}
+									onClick={(e) => {
+										e.stopPropagation(); // Prevent card click
+										router.push(`/dashboard/donate/${cause.id}`);
+									}}
 									sx={{
 										backgroundColor: "#287068",
 										"&:hover": {

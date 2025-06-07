@@ -32,7 +32,7 @@ export default function DonationForm() {
 			skip: !causeId,
 		}
 	);
-	const [, { isLoading: creating }] = useCreateDonationMutation();
+	const [createDonation, { isLoading: creating }] = useCreateDonationMutation();
 
 	const handleDonationSubmit = async (values: {
 		type: string;
@@ -87,6 +87,10 @@ export default function DonationForm() {
 
 			console.log("Submitting donation with payload:", payload);
 
+			// Actually call the API to create the donation
+			const result = await createDonation(payload).unwrap();
+
+			console.log("Donation created successfully:", result);
 			toast.success("Donation created successfully!");
 
 			// Redirect to donations page after successful creation

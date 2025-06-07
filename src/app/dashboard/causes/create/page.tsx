@@ -31,7 +31,6 @@ interface FormData {
 	title: string;
 	description: string;
 	targetAmount: string;
-	targetDescription?: string;
 	imageUrl: string;
 	tags: string[];
 	acceptanceType: "money" | "items" | "both";
@@ -212,17 +211,17 @@ const CreateCausePage = () => {
 		} catch (apiError: unknown) {
 			const errorMessage =
 				typeof apiError === "object" &&
-					apiError !== null &&
-					"data" in apiError &&
-					typeof apiError.data === "object" &&
-					apiError.data !== null &&
-					"message" in apiError.data
+				apiError !== null &&
+				"data" in apiError &&
+				typeof apiError.data === "object" &&
+				apiError.data !== null &&
+				"message" in apiError.data
 					? apiError.data.message
 					: typeof apiError === "object" &&
-						apiError !== null &&
-						"error" in apiError
-						? (apiError as { error: string }).error
-						: "Failed to create cause. Please try again.";
+					  apiError !== null &&
+					  "error" in apiError
+					? (apiError as { error: string }).error
+					: "Failed to create cause. Please try again.";
 			toast.error(`Error: ${errorMessage}`);
 		}
 	};
@@ -289,18 +288,15 @@ const CreateCausePage = () => {
 							/>
 						)}
 
-						{/* Optional target for items-only causes */}
+						{/* Info message for items-only causes */}
 						{formData.acceptanceType === "items" && (
-							<TextField
-								fullWidth
-								label="Target Description (Optional)"
-								name="targetDescription"
-								type="text"
-								value={formData.targetDescription || ""}
-								onChange={handleChange}
-								placeholder="e.g., 100 units of food, 50 books, etc."
-								helperText="Describe your target goal for item donations (optional)"
-							/>
+							<Alert severity="info">
+								<Typography variant="body2">
+									<strong>Items-only causes</strong> don&apos;t require a
+									monetary target amount. The target is based on the specific
+									items you&apos;re collecting.
+								</Typography>
+							</Alert>
 						)}
 
 						<CloudinaryImageUpload

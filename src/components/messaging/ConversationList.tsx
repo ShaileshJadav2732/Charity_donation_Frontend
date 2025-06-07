@@ -140,51 +140,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
 						"linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(240,249,255,0.98) 100%)",
 					backdropFilter: "blur(20px)",
 				}}
-			>
-				<TextField
-					fullWidth
-					size="medium"
-					placeholder="Search conversations..."
-					value={searchQuery}
-					onChange={(e) => onSearchChange(e.target.value)}
-					slotProps={{
-						input: {
-							startAdornment: (
-								<InputAdornment position="start">
-									<Box sx={{ color: "#2c7a72" }}>
-										<Search size={20} />
-									</Box>
-								</InputAdornment>
-							),
-						},
-					}}
-					sx={{
-						"& .MuiOutlinedInput-root": {
-							borderRadius: 3,
-							background: "rgba(255,255,255,0.9)",
-							border: "1px solid rgba(44, 122, 114, 0.2)",
-							"&:hover": {
-								borderColor: "#2c7a72",
-							},
-							"&.Mui-focused": {
-								borderColor: "#2c7a72",
-								boxShadow: "0 0 0 3px rgba(44, 122, 114, 0.1)",
-							},
-							"& fieldset": {
-								border: "none",
-							},
-						},
-						"& .MuiInputBase-input": {
-							fontSize: "1rem",
-							fontWeight: 400,
-							"&::placeholder": {
-								color: "rgba(44, 122, 114, 0.6)",
-								opacity: 1,
-							},
-						},
-					}}
-				/>
-			</Box>
+			></Box>
 
 			{/* Conversation List */}
 			<Box

@@ -1,8 +1,25 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AuthState, User } from "@/types";
-import { authApi } from "../api/authApi";
+import { CookieManager } from "@/utils/cookieManager";
 
-// Get token safely (only in browser)
+const getStoredUser = (): User | null => {
+	if (typeof window !== "undefined") {
+		try {
+			const userData = localStorage.getItem("user");
+			const user = userData ? JSON.parse(userData) : null;
+
+			// Validate that the user object has required fields to prevent flash of wrong content
+			if (user && user.firebaseUid && user.email && user.role) {
+				return user;
+			}
+			return null;
+		} catch {
+			return null;
+		}
+	}
+	return null;
+};
+
 const getStoredToken = (): string | null => {
 	if (typeof window !== "undefined") {
 		return localStorage.getItem("token");
@@ -12,9 +29,9 @@ const getStoredToken = (): string | null => {
 
 // Initial state
 const initialState: AuthState = {
-	user: null,
+	user: getStoredUser(),
 	token: getStoredToken(),
-	isAuthenticated: false,
+	isAuthenticated: !!getStoredToken() && !!getStoredUser(),
 	isLoading: false,
 	error: null,
 };
@@ -24,7 +41,6 @@ const authSlice = createSlice({
 	name: "auth",
 	initialState,
 	reducers: {
-		// Set credentials manually
 		setCredentials: (
 			state,
 			action: PayloadAction<{ user: User; token: string }>
@@ -33,86 +49,36 @@ const authSlice = createSlice({
 			state.user = user;
 			state.token = token;
 			state.isAuthenticated = true;
+			state.isLoading = false;
+			state.error = null;
 
-			// Save token to localStorage
+			// Persist to localStorage
 			if (typeof window !== "undefined") {
 				localStorage.setItem("token", token);
+				localStorage.setItem("user", JSON.stringify(user));
 			}
 		},
-
-		// Clear credentials (logout)
 		clearCredentials: (state) => {
 			state.user = null;
 			state.token = null;
 			state.isAuthenticated = false;
+			state.isLoading = false;
+			state.error = null;
 
-			// Remove token from localStorage
+			// Clear both localStorage and cookies
 			if (typeof window !== "undefined") {
 				localStorage.removeItem("token");
+				localStorage.removeItem("user");
+				CookieManager.removeAuthToken();
 			}
 		},
-
-		// Set loading state
 		setLoading: (state, action: PayloadAction<boolean>) => {
 			state.isLoading = action.payload;
 		},
-
-		// Set error message
 		setError: (state, action: PayloadAction<string | null>) => {
 			state.error = action.payload;
+			state.isLoading = false;
 		},
-	},
-	extraReducers: (builder) => {
-		// Handle register success
-		builder.addMatcher(
-			authApi.endpoints.register.matchFulfilled,
-			(state, { payload }) => {
-				state.user = payload.user;
-				state.token = payload.token;
-				state.isAuthenticated = true;
-				state.isLoading = false;
-				state.error = null;
-
-				// Save token to localStorage
-				if (typeof window !== "undefined") {
-					localStorage.setItem("token", payload.token);
-				}
-			}
-		);
-
-		// Handle login success
-		builder.addMatcher(
-			authApi.endpoints.login.matchFulfilled,
-			(state, { payload }) => {
-				state.user = payload.user;
-				state.token = payload.token;
-				state.isAuthenticated = true;
-				state.isLoading = false;
-				state.error = null;
-
-				// Save token to localStorage
-				if (typeof window !== "undefined") {
-					localStorage.setItem("token", payload.token);
-				}
-			}
-		);
-
-		// Handle verify token success
-		builder.addMatcher(
-			authApi.endpoints.verifyToken.matchFulfilled,
-			(state, { payload }) => {
-				state.user = payload.user;
-				state.token = payload.token;
-				state.isAuthenticated = true;
-				state.isLoading = false;
-				state.error = null;
-
-				// Save token to localStorage
-				if (typeof window !== "undefined") {
-					localStorage.setItem("token", payload.token);
-				}
-			}
-		);
 	},
 });
 

@@ -80,7 +80,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
 		newSocket.on("disconnect", () => {
 			setIsConnected(false);
-			toast.error("Disconnected from notifications", { position: "top-right" });
 		});
 
 		newSocket.on("connect_error", (err) => {

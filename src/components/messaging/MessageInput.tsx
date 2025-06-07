@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import { useMessage } from "@/contexts/MessageContext";
+import { useSendMessageMutation } from "@/store/api/messageApi";
+import { RootState } from "@/store/store";
+import { Conversation, Message } from "@/types/message";
 import {
 	Box,
-	TextField,
-	IconButton,
-	Typography,
 	CircularProgress,
+	IconButton,
+	TextField,
+	Typography,
 } from "@mui/material";
-import { Send, Smile, X } from "lucide-react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { useSendMessageMutation } from "@/store/api/messageApi";
-import { useMessage } from "@/contexts/MessageContext";
-import { Conversation, Message } from "@/types/message";
+import { Send, X } from "lucide-react";
+import React, { useCallback, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 interface MessageInputProps {
 	conversation: Conversation;
@@ -258,33 +258,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
 						},
 					}}
 				/>
-
-				{/* Emoji Button */}
-				<IconButton
-					size="small"
-					disabled={isSending}
-					sx={{
-						p: 1.5,
-						borderRadius: 2,
-						background:
-							"linear-gradient(135deg, rgba(44, 122, 114, 0.1) 0%, rgba(30, 90, 84, 0.1) 100%)",
-						border: "1px solid rgba(44, 122, 114, 0.2)",
-						color: "#2c7a72",
-						"&:hover": {
-							background:
-								"linear-gradient(135deg, rgba(44, 122, 114, 0.2) 0%, rgba(30, 90, 84, 0.2) 100%)",
-							transform: "translateY(-1px)",
-							boxShadow: "0 4px 12px rgba(44, 122, 114, 0.3)",
-						},
-						"&:disabled": {
-							opacity: 0.5,
-							transform: "none",
-						},
-						transition: "all 0.2s ease-in-out",
-					}}
-				>
-					<Smile size={18} />
-				</IconButton>
 
 				{/* Send Button */}
 				<IconButton

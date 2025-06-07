@@ -1,31 +1,32 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { RootState } from "@/store/store";
 import { ArrowRight, Globe, Heart, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
+import { ROUTES } from "@/config/routes";
 
 export default function HomePage() {
 	const router = useRouter();
 	const { isAuthenticated, user } = useSelector(
 		(state: RootState) => state.auth
 	);
-	const { authInitialized } = useAuth();
+	const { isInitialized } = useAuthContext();
 
 	useEffect(() => {
-		if (isAuthenticated) {
-			if (user?.profileCompleted) {
-				router.push("/dashboard/home");
+		if (isAuthenticated && user) {
+			if (user.profileCompleted) {
+				router.push(ROUTES.DASHBOARD.HOME);
 			} else {
-				router.push("/complete-profile");
+				router.push(ROUTES.COMPLETE_PROFILE);
 			}
 		}
 	}, [isAuthenticated, user, router]);
 
-	if (!authInitialized) {
+	if (!isInitialized) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50">
 				<div className="text-teal-600">Loading...</div>

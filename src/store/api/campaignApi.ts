@@ -7,6 +7,64 @@ import {
 	CreateCampaignBody,
 	UpdateCampaignBody,
 } from "@/types/campaings";
+
+// Types for the new detailed campaign endpoint
+interface CauseWithStats {
+	_id: string;
+	title: string;
+	description: string;
+	targetAmount: number;
+	donationItems: string[];
+	acceptanceType: "money" | "items" | "both";
+	raisedAmount: number;
+	progressPercentage: number;
+	donorCount: number;
+	totalDonations: number;
+	itemDonationsCount: number;
+	recentDonations: Array<{
+		id: string;
+		donor: { name: string; email: string };
+		type: string;
+		amount?: number;
+		description: string;
+		status: string;
+		createdAt: string;
+	}>;
+}
+
+interface CampaignWithStats extends Omit<Campaign, "causes"> {
+	totalRaisedAmount: number;
+	donorCount: number;
+	progressPercentage: number;
+	daysRemaining: number;
+	allDonationItems: string[];
+	causes: CauseWithStats[];
+}
+
+interface CampaignStatistics {
+	totalDonations: number;
+	totalMoneyDonations: number;
+	totalItemDonations: number;
+	averageDonationAmount: number;
+	causesWithProgress: number;
+	causesCompleted: number;
+}
+
+interface RecentActivity {
+	id: string;
+	donor: { name: string; email: string };
+	type: string;
+	amount?: number;
+	description: string;
+	status: string;
+	createdAt: string;
+}
+
+export interface CampaignDetailsWithDonationsResponse {
+	campaign: CampaignWithStats;
+	statistics: CampaignStatistics;
+	recentActivity: RecentActivity[];
+}
 import { RootState } from "../store";
 
 export const campaignApi = createApi({
@@ -135,6 +193,25 @@ export const campaignApi = createApi({
 				"Cause",
 			],
 		}),
+
+		// Get campaign details with comprehensive donation data
+		getCampaignDetailsWithDonations: builder.query<
+			CampaignDetailsWithDonationsResponse,
+			string
+		>({
+			query: (campaignId) => ({
+				url: `/campaigns/${campaignId}/details-with-donations`,
+				method: "GET",
+			}),
+			transformResponse: (response: {
+				data?: CampaignDetailsWithDonationsResponse;
+			}) => {
+				return response.data || ({} as CampaignDetailsWithDonationsResponse);
+			},
+			providesTags: (_result, _error, campaignId) => [
+				{ type: "Campaign", id: campaignId },
+			],
+		}),
 	}),
 });
 
@@ -145,4 +222,5 @@ export const {
 	useUpdateCampaignMutation,
 	useDeleteCampaignMutation,
 	useAddCauseToCampaignMutation,
+	useGetCampaignDetailsWithDonationsQuery,
 } = campaignApi;

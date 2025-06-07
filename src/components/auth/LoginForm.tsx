@@ -1,54 +1,47 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { LoginFormData, parseError } from "@/types";
-import Link from "next/link";
-import { useState } from "react";
-import { toast } from "react-hot-toast";
-import { FcGoogle } from "react-icons/fc";
-import {
-	Box,
-	Typography,
-	Divider,
-	IconButton,
-	InputAdornment,
-	// Alert, // Unused
-} from "@mui/material";
-import {
-	Email as EmailIcon,
-	Lock as LockIcon,
-	Visibility,
-	VisibilityOff,
-	ArrowForward as ArrowForwardIcon,
-} from "@mui/icons-material";
+import FormButton from "@/components/ui/FormButton";
 import FormContainer from "@/components/ui/FormContainer";
 import FormInput from "@/components/ui/FormInput";
-import FormButton from "@/components/ui/FormButton";
+import { useAuth } from "@/hooks/useAuth";
+import { LoginFormData, parseError } from "@/types";
+import {
+	ArrowForward as ArrowForwardIcon,
+	Email as EmailIcon,
+	Lock as LockIcon,
+} from "@mui/icons-material";
+import {
+	Box,
+	Checkbox,
+	Divider,
+	FormControlLabel,
+	Typography,
+} from "@mui/material";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { useRef, useState } from "react";
+import { toast } from "react-hot-toast";
+import { FcGoogle } from "react-icons/fc";
 
 const LoginForm = () => {
-	const { loginWithEmail, loginWithGoogle, isLoading, authInitialized } =
-		useAuth();
+	const { loginWithEmail, loginWithGoogle, isInitialized } = useAuth();
 
 	const [formData, setFormData] = useState<LoginFormData>({
 		email: "",
 		password: "",
 	});
 
-	const [showPassword, setShowPassword] = useState(false);
 	const [errors, setErrors] = useState<{ [key: string]: string }>({});
+	const [emailLoading, setEmailLoading] = useState(false);
+	const [googleLoading, setGoogleLoading] = useState(false);
+	const emailInputRef = useRef<HTMLInputElement>(null);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
 		setFormData((prev) => ({ ...prev, [name]: value }));
-		// Clear error when user starts typing
 		if (errors[name]) {
 			setErrors((prev) => ({ ...prev, [name]: "" }));
 		}
-	};
-
-	const togglePasswordVisibility = () => {
-		setShowPassword((prev) => !prev);
 	};
 
 	const validateForm = () => {
@@ -56,7 +49,7 @@ const LoginForm = () => {
 
 		if (!formData.email.trim()) {
 			newErrors.email = "Email is required";
-		} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
 			newErrors.email = "Please enter a valid email address";
 		}
 
@@ -73,25 +66,25 @@ const LoginForm = () => {
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
-		if (!validateForm()) {
-			return;
-		}
+		if (!validateForm()) return;
 
 		try {
+			setEmailLoading(true);
 			await loginWithEmail(formData);
-
 			toast.success("Welcome back!");
 		} catch (error: unknown) {
 			const parsedError = parseError(error);
 			toast.error(parsedError.message || "Failed to log in");
+		} finally {
+			setEmailLoading(false);
 		}
 	};
 
 	const handleGoogleLogin = async () => {
 		try {
+			setGoogleLoading(true);
 			toast.loading("Signing in with Google...", { id: "google-login" });
 
-			// Check if browser supports popups
 			const popupBlocked = window.innerWidth < 1 || window.innerHeight < 1;
 			if (popupBlocked) {
 				toast.dismiss("google-login");
@@ -107,24 +100,21 @@ const LoginForm = () => {
 			toast.dismiss("google-login");
 			const parsedError = parseError(error);
 
-			// Provide more user-friendly error messages
 			if (parsedError.message?.includes("popup")) {
-				toast.error(
-					"Google login popup was blocked. Please allow popups for this site."
-				);
+				toast.error("Google login popup was blocked. Please allow popups.");
 			} else if (parsedError.message?.includes("network")) {
-				toast.error(
-					"Network error. Please check your internet connection and try again."
-				);
+				toast.error("Check your internet connection and try again.");
 			} else if (parsedError.message?.includes("cancelled")) {
-				toast.error("Google login was cancelled. Please try again.");
+				toast.error("Google login was cancelled.");
 			} else {
 				toast.error(parsedError.message || "Failed to log in with Google");
 			}
+		} finally {
+			setGoogleLoading(false);
 		}
 	};
 
-	if (!authInitialized) {
+	if (!isInitialized) {
 		return (
 			<Box
 				sx={{
@@ -186,6 +176,7 @@ const LoginForm = () => {
 				<Box
 					component="form"
 					onSubmit={handleSubmit}
+					noValidate // Prevents browser validation from interfering with styling
 					sx={{ display: "flex", flexDirection: "column", gap: 3 }}
 				>
 					{/* Email Field */}
@@ -200,39 +191,15 @@ const LoginForm = () => {
 						icon={<EmailIcon />}
 						placeholder="you@example.com"
 						autoComplete="email"
-						required
 						fullWidth
+						inputRef={emailInputRef}
 					/>
 
 					{/* Password Field */}
 					<Box>
-						<Box
-							sx={{
-								display: "flex",
-								justifyContent: "space-between",
-								alignItems: "center",
-								mb: 1,
-							}}
-						>
-							<Typography variant="body2" sx={{ fontWeight: 500 }}>
-								Password
-							</Typography>
-							<Link href="/forgot-password" style={{ textDecoration: "none" }}>
-								<Typography
-									variant="body2"
-									sx={{
-										color: "primary.main",
-										"&:hover": { color: "primary.dark" },
-										transition: "color 0.2s",
-									}}
-								>
-									Forgot password?
-								</Typography>
-							</Link>
-						</Box>
 						<FormInput
 							name="password"
-							type={showPassword ? "text" : "password"}
+							type={"password"}
 							label="Password"
 							value={formData.password}
 							onChange={handleChange}
@@ -241,50 +208,33 @@ const LoginForm = () => {
 							icon={<LockIcon />}
 							placeholder="••••••••"
 							autoComplete="current-password"
-							required
 							fullWidth
-							slotProps={{
-								input: {
-									endAdornment: (
-										<InputAdornment position="end">
-											<IconButton
-												onClick={togglePasswordVisibility}
-												edge="end"
-												aria-label={
-													showPassword ? "Hide password" : "Show password"
-												}
-											>
-												{showPassword ? <VisibilityOff /> : <Visibility />}
-											</IconButton>
-										</InputAdornment>
-									),
-								},
-							}}
 						/>
 					</Box>
 
 					{/* Remember Me */}
-					<div className="flex items-center">
-						<input
-							id="remember-me"
-							name="remember-me"
-							type="checkbox"
-							className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-							aria-describedby="remember-me"
-						/>
-						<label
-							htmlFor="remember-me"
-							className="ml-2 block text-sm text-gray-600"
-						>
-							Remember me
-						</label>
-					</div>
+					<FormControlLabel
+						control={
+							<Checkbox
+								id="remember-me"
+								name="remember-me"
+								color="primary"
+								sx={{ "& .MuiSvgIcon-root": { fontSize: 20 } }}
+							/>
+						}
+						label={
+							<Typography variant="body2" color="text.secondary">
+								Remember me
+							</Typography>
+						}
+						sx={{ alignSelf: "flex-start" }}
+					/>
 
 					{/* Submit Button */}
 					<FormButton
 						type="submit"
 						variant="primary"
-						loading={isLoading}
+						loading={emailLoading}
 						loadingText="Signing in..."
 						fullWidth
 						icon={<ArrowForwardIcon />}
@@ -306,7 +256,7 @@ const LoginForm = () => {
 				<FormButton
 					variant="outlined"
 					onClick={handleGoogleLogin}
-					loading={isLoading}
+					loading={googleLoading}
 					loadingText="Connecting..."
 					fullWidth
 					icon={<FcGoogle style={{ fontSize: 20 }} />}
