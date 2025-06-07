@@ -33,6 +33,7 @@ import {
 	InputLabel,
 	LinearProgress,
 	MenuItem,
+	Pagination,
 	Paper,
 	Select,
 	Stack,
@@ -95,26 +96,26 @@ const CampaignsPage = () => {
 	);
 	const [deleteError, setDeleteError] = useState<string | null>(null);
 
-	// Fetch campaigns
+	// Pagination state
+	const [page, setPage] = useState(1);
+	const limit = 10;
+
+	// Fetch campaigns with pagination
 	const { data, isLoading, error, refetch } = useGetOrganizationCampaignsQuery({
 		organizationId: user?.id || "",
+		page,
+		limit,
+		search: searchTerm.trim() || undefined,
+		status: statusFilter !== "all" ? statusFilter : undefined,
 	});
 
 	const [deleteCampaign, { isLoading: isDeleting }] =
 		useDeleteCampaignMutation();
 
-	// Process campaigns data - Fixed to handle the data structure properly
+	// Process campaigns data - server-side filtering is now handled by API
 	const campaigns: Campaign[] = data?.campaigns || [];
-
-	const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
-		const matchesSearch = campaign.title
-			?.toLowerCase()
-			.includes(searchTerm.toLowerCase());
-		const matchesStatus =
-			statusFilter === "all" ||
-			campaign.status?.toLowerCase() === statusFilter.toLowerCase();
-		return matchesSearch && matchesStatus;
-	});
+	const totalCampaigns = data?.total || 0;
+	const totalPages = Math.ceil(totalCampaigns / limit);
 
 	// Handlers
 	const handleCreateCampaign = () => router.push("/dashboard/campaigns/create");
@@ -126,6 +127,23 @@ const CampaignsPage = () => {
 	const handleDeleteClick = (id: string) => {
 		setSelectedCampaignId(id);
 		setDeleteDialogOpen(true);
+	};
+
+	const handlePageChange = (
+		_event: React.ChangeEvent<unknown>,
+		newPage: number
+	) => {
+		setPage(newPage);
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+		setPage(1); // Reset to first page when searching
+	};
+
+	const handleStatusFilterChange = (value: string) => {
+		setStatusFilter(value);
+		setPage(1); // Reset to first page when filtering
 	};
 
 	const handleDeleteConfirm = async () => {
@@ -176,7 +194,7 @@ const CampaignsPage = () => {
 						<TextField
 							placeholder="Search campaigns..."
 							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							onChange={handleSearchChange}
 							size="small"
 							slotProps={{
 								input: {
@@ -190,7 +208,7 @@ const CampaignsPage = () => {
 								<InputLabel>Status</InputLabel>
 								<Select
 									value={statusFilter}
-									onChange={(e) => setStatusFilter(e.target.value)}
+									onChange={(e) => handleStatusFilterChange(e.target.value)}
 									label="Status"
 								>
 									<MenuItem value="all">All</MenuItem>
@@ -212,6 +230,17 @@ const CampaignsPage = () => {
 					</Stack>
 				</Paper>
 
+				{/* Results Summary */}
+				{!isLoading && !error && totalCampaigns > 0 && (
+					<Box sx={{ mb: 2 }}>
+						<Typography variant="body2" color="text.secondary">
+							Showing {(page - 1) * limit + 1}-
+							{Math.min(page * limit, totalCampaigns)} of {totalCampaigns}{" "}
+							campaigns
+						</Typography>
+					</Box>
+				)}
+
 				{/* Campaign List */}
 				{isLoading ? (
 					<Box display="flex" justifyContent="center" p={4}>
@@ -219,7 +248,7 @@ const CampaignsPage = () => {
 					</Box>
 				) : error ? (
 					<Alert severity="error">Failed to load campaigns</Alert>
-				) : filteredCampaigns.length === 0 ? (
+				) : campaigns.length === 0 ? (
 					<Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
 						<Typography variant="h6" gutterBottom>
 							No campaigns found
@@ -248,7 +277,7 @@ const CampaignsPage = () => {
 							gap: 2,
 						}}
 					>
-						{filteredCampaigns.map((campaign) => {
+						{campaigns.map((campaign) => {
 							const progress = getProgressPercentage(
 								campaign.totalRaisedAmount,
 								campaign.totalTargetAmount
@@ -554,6 +583,21 @@ const CampaignsPage = () => {
 								</Box>
 							);
 						})}
+					</Box>
+				)}
+
+				{/* Pagination */}
+				{totalPages > 1 && (
+					<Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+						<Pagination
+							count={totalPages}
+							page={page}
+							onChange={handlePageChange}
+							color="primary"
+							size="large"
+							showFirstButton
+							showLastButton
+						/>
 					</Box>
 				)}
 			</Box>

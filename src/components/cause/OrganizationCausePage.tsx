@@ -41,6 +41,7 @@ import {
 	DialogTitle,
 	IconButton,
 	LinearProgress,
+	Pagination,
 	Paper,
 	Stack,
 	TextField,
@@ -73,35 +74,52 @@ const CausesPage = () => {
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [createCauseDialogOpen, setCreateCauseDialogOpen] = useState(false);
 
+	// Pagination state
+	const [page, setPage] = useState(1);
+	const limit = 10;
+
 	const {
 		data: causesData,
 		isLoading,
 		error,
 		refetch,
-	} = useGetCausesQuery({ organizationId: user?.id });
+	} = useGetCausesQuery({
+		organizationId: user?.id,
+		page,
+		limit,
+		search: searchTerm.trim() || undefined,
+		acceptanceType:
+			donationTypeFilter !== "all" ? donationTypeFilter : undefined,
+	});
 
 	const [deleteCause] = useDeleteCauseMutation();
 
-	const filteredCauses = causesData?.causes?.filter((cause: Cause) => {
-		// Search filter
-		const matchesSearch =
-			!searchTerm ||
-			cause.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.tags?.some((tag) =>
-				tag?.toLowerCase().includes(searchTerm.toLowerCase())
-			);
-
-		// Donation type filter
-		const matchesDonationType =
-			donationTypeFilter === "all" ||
-			cause.acceptanceType === donationTypeFilter;
-
-		return matchesSearch && matchesDonationType;
-	});
+	// Server-side filtering is now handled by API
+	const causes = causesData?.causes || [];
+	const totalCauses = causesData?.total || 0;
+	const totalPages = Math.ceil(totalCauses / limit);
 
 	const handleCreateCause = () => {
 		router.push("/dashboard/causes/create");
+	};
+
+	const handlePageChange = (
+		_event: React.ChangeEvent<unknown>,
+		newPage: number
+	) => {
+		setPage(newPage);
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+		setPage(1); // Reset to first page when searching
+	};
+
+	const handleDonationTypeFilterChange = (newValue: string | null) => {
+		if (newValue !== null) {
+			setDonationTypeFilter(newValue);
+			setPage(1); // Reset to first page when filtering
+		}
 	};
 
 	const handleEditCause = (id: string) => {
@@ -179,9 +197,7 @@ const CausesPage = () => {
 						<TextField
 							placeholder="Search causes..."
 							value={searchTerm}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-								setSearchTerm(e.target.value)
-							}
+							onChange={handleSearchChange}
 							size="medium"
 							slotProps={{
 								input: {
@@ -226,11 +242,9 @@ const CausesPage = () => {
 						<ToggleButtonGroup
 							value={donationTypeFilter}
 							exclusive
-							onChange={(_, newValue) => {
-								if (newValue !== null) {
-									setDonationTypeFilter(newValue);
-								}
-							}}
+							onChange={(_, newValue) =>
+								handleDonationTypeFilterChange(newValue)
+							}
 							sx={{
 								gap: 1,
 								flexWrap: "wrap",
@@ -360,30 +374,27 @@ const CausesPage = () => {
 				</Paper>
 
 				{/* Campaign Reminder */}
-				{!isLoading &&
-					!error &&
-					filteredCauses &&
-					filteredCauses.length > 0 && (
-						<Alert
-							severity="info"
-							sx={{
-								mb: 4,
-								borderRadius: 2,
-								border: "1px solid #e3f2fd",
-								backgroundColor: "#f8faff",
-							}}
-						>
-							<Typography variant="subtitle2" fontWeight="600" sx={{ mb: 1 }}>
-								Important: Causes must be added to active campaigns to be
-								visible to donors
-							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								After creating a cause, make sure to add it to an active
-								campaign from the cause detail page. Donors can only see causes
-								that are part of active campaigns.
-							</Typography>
-						</Alert>
-					)}
+				{!isLoading && !error && causes && causes.length > 0 && (
+					<Alert
+						severity="info"
+						sx={{
+							mb: 4,
+							borderRadius: 2,
+							border: "1px solid #e3f2fd",
+							backgroundColor: "#f8faff",
+						}}
+					>
+						<Typography variant="subtitle2" fontWeight="600" sx={{ mb: 1 }}>
+							Important: Causes must be added to active campaigns to be visible
+							to donors
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							After creating a cause, make sure to add it to an active campaign
+							from the cause detail page. Donors can only see causes that are
+							part of active campaigns.
+						</Typography>
+					</Alert>
+				)}
 
 				{/* Causes List */}
 				{isLoading ? (
@@ -401,7 +412,7 @@ const CausesPage = () => {
 					>
 						Failed to load causes
 					</Alert>
-				) : filteredCauses?.length === 0 ? (
+				) : causes?.length === 0 ? (
 					<Paper
 						sx={{
 							p: 6,
@@ -446,7 +457,7 @@ const CausesPage = () => {
 							gap: 3,
 						}}
 					>
-						{filteredCauses?.map((cause: Cause) => {
+						{causes?.map((cause: Cause) => {
 							// Fix progress calculation with safe defaults
 							const raisedAmount = cause.raisedAmount || 0;
 							const targetAmount = cause.targetAmount || 1; // Prevent division by zero
@@ -802,6 +813,51 @@ const CausesPage = () => {
 								</Box>
 							);
 						})}
+					</Box>
+				)}
+
+				{/* Results Summary */}
+				{!isLoading && !error && totalCauses > 0 && (
+					<Box sx={{ mt: 4, mb: 2 }}>
+						<Typography
+							variant="body2"
+							color="text.secondary"
+							sx={{ textAlign: "center" }}
+						>
+							Showing {(page - 1) * limit + 1}-
+							{Math.min(page * limit, totalCauses)} of {totalCauses} causes
+						</Typography>
+					</Box>
+				)}
+
+				{/* Pagination */}
+				{totalPages > 1 && (
+					<Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+						<Pagination
+							count={totalPages}
+							page={page}
+							onChange={handlePageChange}
+							color="primary"
+							size="large"
+							showFirstButton
+							showLastButton
+							sx={{
+								"& .MuiPaginationItem-root": {
+									color: "#287068",
+									borderColor: "#287068",
+									"&:hover": {
+										backgroundColor: "rgba(40, 112, 104, 0.1)",
+									},
+									"&.Mui-selected": {
+										backgroundColor: "#287068",
+										color: "white",
+										"&:hover": {
+											backgroundColor: "#1f5a52",
+										},
+									},
+								},
+							}}
+						/>
 					</Box>
 				)}
 			</Box>

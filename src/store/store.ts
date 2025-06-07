@@ -9,7 +9,6 @@ import { uploadApi } from "./api/uploadApi";
 import { causeApi } from "./api/causeApi";
 import { dashboardApi } from "./api/dashboardApi";
 import { organizationApi } from "./api/organizationApi";
-
 import { notificationApi } from "./api/notificationApi";
 import { messageApi } from "./api/messageApi";
 
@@ -26,7 +25,6 @@ export const store = configureStore({
 		[causeApi.reducerPath]: causeApi.reducer,
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
 		[organizationApi.reducerPath]: organizationApi.reducer,
-
 		[notificationApi.reducerPath]: notificationApi.reducer,
 		[messageApi.reducerPath]: messageApi.reducer,
 		auth: authReducer,

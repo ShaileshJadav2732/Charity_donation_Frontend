@@ -241,7 +241,7 @@ export default function DashboardLayout({
 	}, [isInitialized, user?.role, menuItems.length]);
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-teal-100 via-teal-50 to-teal-200">
+		<div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-50 to-blue-200">
 			{/* Top Navigation Bar */}
 			<div
 				className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
@@ -278,29 +278,19 @@ export default function DashboardLayout({
 						title="Profile"
 					>
 						<div className="h-8 w-8 rounded-full border-2 border-teal-200 overflow-hidden bg-gray-200">
-							{/* {profileImage ? (
-								// <Image
-								// 	src={getProfileImageUrl(profileImage)}  
-								// 	alt="Profile"
-								// 	className="h-full w-full object-cover"
-								// 	width={32}
-								// 	height={32}
-								// 	onError={(e) => {
-								// 		console.log("❌ Profile image failed to load:", {
-								// 			originalSrc: getProfileImageUrl(profileImage),
-								// 			profileImage: profileImage,
-								// 		});
-								// 		// Fallback to default avatar on error
-								// 		e.currentTarget.src = "/default-avatar.svg";
-								// 	}}
-								// />
-							) : (
-								<div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-teal-400 to-green-500">
-									<span className="text-white text-xs font-bold">
-										{getFallbackAvatarText()}
-									</span>
-								</div>
-							)} */}
+							{profileImage && (
+								<Image
+									src={getProfileImageUrl(profileImage)}
+									alt="Profile"
+									className="h-full w-full object-cover"
+									width={32}
+									height={32}
+									onError={(e) => {
+										// Fallback to default avatar on error
+										e.currentTarget.src = "/default-avatar.svg";
+									}}
+								/>
+							)}
 						</div>
 					</Link>
 

@@ -102,15 +102,11 @@ export default function ProfileDashboard() {
 	const profile = isDonor ? donorProfile : orgProfile;
 	const recentDonations = donorData?.recentDonations || [];
 
-
-
 	// Filter active campaigns
 	const activeCampaigns =
 		campaignsData?.campaigns?.filter(
 			(campaign) => campaign.status?.toLowerCase() === "active"
 		) || [];
-
-
 
 	// Calculate membership duration
 	const [membershipDuration, setMembershipDuration] = useState("");
@@ -171,8 +167,6 @@ export default function ProfileDashboard() {
 		}
 	}, [profile, donorProfile, orgProfile, user, isDonor]);
 
-
-
 	if (!profile) {
 		return (
 			<div className="flex items-center justify-center h-screen">
@@ -180,8 +174,6 @@ export default function ProfileDashboard() {
 			</div>
 		);
 	}
-
-
 
 	// Generate badges based on donor stats
 	const generateBadges = () => {
@@ -540,14 +532,37 @@ export default function ProfileDashboard() {
 														<div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
 															<div>
 																<p className="text-sm text-gray-700">
-																	Donated{" "}
-																	<span className="font-medium text-gray-900">
-																		${donation.amount}
-																	</span>{" "}
-																	to{" "}
-																	<span className="font-medium text-gray-900">
-																		{donation.cause?.title || donation.cause}
-																	</span>
+																	{donation.type === "MONEY" ? (
+																		<>
+																			Donated{" "}
+																			<span className="font-medium text-gray-900">
+																				₹{donation.amount || 0}
+																			</span>{" "}
+																			to{" "}
+																			<span className="font-medium text-gray-900">
+																				{donation.cause?.title ||
+																					donation.cause ||
+																					"Unknown Cause"}
+																			</span>
+																		</>
+																	) : (
+																		<>
+																			Donated{" "}
+																			<span className="font-medium text-gray-900">
+																				{donation.quantity || 1}{" "}
+																				{donation.unit || "item"}
+																				{donation.description
+																					? ` of ${donation.description}`
+																					: ""}
+																			</span>{" "}
+																			to{" "}
+																			<span className="font-medium text-gray-900">
+																				{donation.cause?.title ||
+																					donation.cause ||
+																					"Unknown Cause"}
+																			</span>
+																		</>
+																	)}
 																</p>
 															</div>
 															<div className="text-right text-sm whitespace-nowrap text-gray-500">
@@ -624,14 +639,35 @@ export default function ProfileDashboard() {
 																<div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
 																	<div>
 																		<p className="text-sm text-gray-700">
-																			Received{" "}
-																			<span className="font-medium text-gray-900">
-																				₹{activity.amount}
-																			</span>{" "}
-																			donation for{" "}
-																			<span className="font-medium text-gray-900">
-																				{activity.campaignName}
-																			</span>
+																			{activity.type === "MONEY" ? (
+																				<>
+																					Received{" "}
+																					<span className="font-medium text-gray-900">
+																						₹{activity.amount || 0}
+																					</span>{" "}
+																					donation for{" "}
+																					<span className="font-medium text-gray-900">
+																						{activity.campaignName ||
+																							"Unknown Campaign"}
+																					</span>
+																				</>
+																			) : (
+																				<>
+																					Received{" "}
+																					<span className="font-medium text-gray-900">
+																						{activity.quantity || 1}{" "}
+																						{activity.unit || "item"}
+																						{activity.description
+																							? ` of ${activity.description}`
+																							: ""}
+																					</span>{" "}
+																					donation for{" "}
+																					<span className="font-medium text-gray-900">
+																						{activity.campaignName ||
+																							"Unknown Campaign"}
+																					</span>
+																				</>
+																			)}
 																		</p>
 																	</div>
 																	<div className="text-right text-sm whitespace-nowrap text-gray-500">

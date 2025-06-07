@@ -33,6 +33,7 @@ import {
 	Chip,
 	InputAdornment,
 	LinearProgress,
+	Pagination,
 	Skeleton,
 	TextField,
 	ToggleButton,
@@ -61,8 +62,8 @@ const CausesPage = () => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [donationTypeFilter, setDonationTypeFilter] = useState<string>("all");
-
 	const [page, setPage] = useState(1);
+	const limit = 10;
 
 	const {
 		data: organizationCausesData,
@@ -78,7 +79,13 @@ const CausesPage = () => {
 		data: activeCampaignCausesData,
 		isLoading: isLoadingActiveCauses,
 		error: activeCausesError,
-	} = useGetActiveCampaignCausesQuery({});
+	} = useGetActiveCampaignCausesQuery({
+		page,
+		limit,
+		search: searchTerm.trim() || undefined,
+		acceptanceType:
+			donationTypeFilter !== "all" ? donationTypeFilter : undefined,
+	});
 
 	// Determine which data to use based on user role
 	const causesData =
@@ -90,27 +97,32 @@ const CausesPage = () => {
 	const error =
 		user?.role === "organization" ? orgCausesError : activeCausesError;
 
-	// Client-side filtering for search and donation type
-	const filteredCauses = causesData?.causes?.filter((cause: Cause) => {
-		// Search filter
-		const matchesSearch =
-			!searchTerm ||
-			cause.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.tags?.some((tag) =>
-				tag?.toLowerCase().includes(searchTerm.toLowerCase())
-			);
-
-		// Donation type filter
-		const matchesDonationType =
-			donationTypeFilter === "all" ||
-			cause.acceptanceType === donationTypeFilter;
-
-		return matchesSearch && matchesDonationType;
-	});
+	// Server-side filtering is now handled by API
+	const causes = causesData?.causes || [];
+	const totalCauses = causesData?.total || 0;
+	const totalPages = Math.ceil(totalCauses / limit);
 
 	const handleViewCause = (id: string) => {
 		router.push(`/dashboard/causes/${id}`);
+	};
+
+	const handlePageChange = (
+		_event: React.ChangeEvent<unknown>,
+		newPage: number
+	) => {
+		setPage(newPage);
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+		setPage(1); // Reset to first page when searching
+	};
+
+	const handleDonationTypeFilterChange = (newValue: string | null) => {
+		if (newValue !== null) {
+			setDonationTypeFilter(newValue);
+			setPage(1); // Reset to first page when filtering
+		}
 	};
 
 	// Collect all unique tags for filtering
@@ -145,7 +157,7 @@ const CausesPage = () => {
 							fullWidth
 							placeholder="Search causes by title, description, or tags..."
 							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							onChange={handleSearchChange}
 							slotProps={{
 								input: {
 									startAdornment: (
@@ -192,11 +204,7 @@ const CausesPage = () => {
 					<ToggleButtonGroup
 						value={donationTypeFilter}
 						exclusive
-						onChange={(_, newValue) => {
-							if (newValue !== null) {
-								setDonationTypeFilter(newValue);
-							}
-						}}
+						onChange={(_, newValue) => handleDonationTypeFilterChange(newValue)}
 						sx={{
 							gap: 1,
 							flexWrap: "wrap",
@@ -368,7 +376,7 @@ const CausesPage = () => {
 				>
 					Failed to load causes. Please try again later.
 				</Alert>
-			) : filteredCauses?.length === 0 ? (
+			) : causes?.length === 0 ? (
 				<Alert
 					severity="info"
 					sx={{
@@ -393,7 +401,7 @@ const CausesPage = () => {
 						gap: 3,
 					}}
 				>
-					{filteredCauses?.map((cause: Cause) => {
+					{causes?.map((cause: Cause) => {
 						// Ensure we have valid numbers for calculation
 						const raisedAmount =
 							typeof cause.raisedAmount === "number" ? cause.raisedAmount : 0;
@@ -750,76 +758,48 @@ const CausesPage = () => {
 				</Box>
 			)}
 
-			{/* Pagination - Update to use filteredCauses */}
-			{causesData && causesData.totalPages > 1 && !searchTerm && (
-				<Box display="flex" justifyContent="center" mt={5} gap={3}>
-					<Button
-						disabled={page === 1}
-						onClick={() => setPage((p) => Math.max(1, p - 1))}
-						variant="outlined"
-						sx={{
-							borderRadius: 3,
-							textTransform: "none",
-							fontWeight: 600,
-							px: 3,
-							py: 1.5,
-							borderColor: "#287068",
-							color: "#287068",
-							borderWidth: 2,
-							transition: "all 0.3s ease",
-							"&:hover": {
-								backgroundColor: "#287068",
-								color: "white",
-								borderColor: "#287068",
-							},
-							"&:disabled": {
-								borderColor: "#e0e0e0",
-								color: "#9e9e9e",
-							},
-						}}
-					>
-						Previous
-					</Button>
+			{/* Results Summary */}
+			{!isLoading && !error && totalCauses > 0 && (
+				<Box sx={{ mt: 4, mb: 2 }}>
 					<Typography
-						variant="body1"
-						sx={{
-							alignSelf: "center",
-							fontWeight: 500,
-							color: "#287068",
-							px: 2,
-						}}
+						variant="body2"
+						color="text.secondary"
+						sx={{ textAlign: "center" }}
 					>
-						Page {page} of {causesData.totalPages}
+						Showing {(page - 1) * limit + 1}-
+						{Math.min(page * limit, totalCauses)} of {totalCauses} causes
 					</Typography>
-					<Button
-						disabled={page === causesData.totalPages}
-						onClick={() =>
-							setPage((p) => Math.min(causesData.totalPages, p + 1))
-						}
-						variant="outlined"
+				</Box>
+			)}
+
+			{/* Pagination */}
+			{totalPages > 1 && (
+				<Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+					<Pagination
+						count={totalPages}
+						page={page}
+						onChange={handlePageChange}
+						color="primary"
+						size="large"
+						showFirstButton
+						showLastButton
 						sx={{
-							borderRadius: 3,
-							textTransform: "none",
-							fontWeight: 600,
-							px: 3,
-							py: 1.5,
-							borderColor: "#287068",
-							color: "#287068",
-							borderWidth: 2,
-							transition: "all 0.3s ease",
-							"&:hover": {
-								backgroundColor: "#287068",
-								color: "white",
+							"& .MuiPaginationItem-root": {
+								color: "#287068",
 								borderColor: "#287068",
-							},
-							"&:disabled": {
-								borderColor: "#e0e0e0",
-								color: "#9e9e9e",
+								"&:hover": {
+									backgroundColor: "rgba(40, 112, 104, 0.1)",
+								},
+								"&.Mui-selected": {
+									backgroundColor: "#287068",
+									color: "white",
+									"&:hover": {
+										backgroundColor: "#1f5a52",
+									},
+								},
 							},
 						}}
-					>
-						Next
-					</Button>
+					/>
 				</Box>
 			)}
 		</Box>
