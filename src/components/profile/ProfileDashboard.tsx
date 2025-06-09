@@ -234,8 +234,6 @@ export default function ProfileDashboard() {
 
 	const badges = generateBadges();
 
-	//=================*********=================
-
 	// Format date for display
 	const formatDate = (dateString: string) => {
 		try {
@@ -244,8 +242,6 @@ export default function ProfileDashboard() {
 			return "Invalid date";
 		}
 	};
-
-	//=================*********=================
 
 	return (
 		<div className="min-h-screen bg-gray-50">
@@ -356,18 +352,7 @@ export default function ProfileDashboard() {
 									Badges & Achievements
 								</button>
 							)}
-							{!isDonor && (
-								<button
-									onClick={() => setActiveTab("campaigns")}
-									className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
-										activeTab === "campaigns"
-											? "border-b-2 border-teal-500 text-teal-600"
-											: "text-gray-500 hover:text-gray-700"
-									}`}
-								>
-									Active Campaigns
-								</button>
-							)}
+
 							<button
 								onClick={() => setActiveTab("details")}
 								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
@@ -655,10 +640,12 @@ export default function ProfileDashboard() {
 																				<>
 																					Received{" "}
 																					<span className="font-medium text-gray-900">
-																						{activity.quantity || 1}{" "}
-																						{activity.unit || "item"}
-																						{activity.description
-																							? ` of ${activity.description}`
+																						{(activity as any).quantity || 1}{" "}
+																						{(activity as any).unit || "item"}
+																						{(activity as any).description
+																							? ` of ${
+																									(activity as any).description
+																							  }`
 																							: ""}
 																					</span>{" "}
 																					donation for{" "}

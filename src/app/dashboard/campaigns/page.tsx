@@ -106,7 +106,7 @@ const CampaignsPage = () => {
 		page,
 		limit,
 		search: searchTerm.trim() || undefined,
-		status: statusFilter !== "all" ? statusFilter : undefined,
+		status: statusFilter !== "all" ? (statusFilter as any) : undefined,
 	});
 
 	const [deleteCampaign, { isLoading: isDeleting }] =

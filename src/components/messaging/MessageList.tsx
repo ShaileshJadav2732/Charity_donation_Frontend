@@ -138,9 +138,7 @@ const MessageList: React.FC<MessageListProps> = ({
 				if (onMarkAsRead) {
 					onMarkAsRead();
 				}
-			} catch (error) {
-				console.error("Failed to mark conversation as read:", error);
-			}
+			} catch (error) {}
 		};
 
 		markConversationAsRead();

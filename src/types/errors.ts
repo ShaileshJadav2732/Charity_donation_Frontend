@@ -21,11 +21,6 @@ export interface ApiError extends BaseError {
 // Parse error function to convert unknown errors to typed errors
 export function parseError(error: unknown): BaseError {
 	// Debug logging in development
-	if (process.env.NODE_ENV === "development") {
-		console.log("🔍 Parsing error:", error);
-		console.log("🔍 Error type:", typeof error);
-		console.log("🔍 Error constructor:", error?.constructor?.name);
-	}
 
 	// If it's already a BaseError, return it
 	if (typeof error === "object" && error !== null && "message" in error) {

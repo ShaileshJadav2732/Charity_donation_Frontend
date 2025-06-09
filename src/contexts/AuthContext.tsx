@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 			try {
 				if (firebaseUser) {
 					// Check if we already have valid user data for this Firebase user
-					if (user && user.firebaseUid === firebaseUser.uid && token) {
+					if (user && (user as any).firebaseUid === firebaseUser.uid && token) {
 						// User data is already valid, but still verify token freshness
 						try {
 							const idToken = await firebaseUser.getIdToken();
@@ -68,11 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 								return;
 							}
 						} catch (tokenError) {
-							console.warn(
-								"Token validation failed, re-authenticating...",
-								tokenError
-							);
-							// Continue to re-authenticate below
+							console.log("tokenerror", tokenError);
 						}
 					}
 
@@ -129,8 +125,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 					}
 				}
 			} catch (error) {
-				console.error("Auth error:", error);
-
 				if (isMounted) {
 					dispatch(clearCredentials());
 					CookieManager.removeAuthToken();

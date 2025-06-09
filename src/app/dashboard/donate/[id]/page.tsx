@@ -55,9 +55,10 @@ export default function DonationForm() {
 	}) => {
 		try {
 			const payload = {
-				cause: causeId,
+				donor: user?.id || "", // Add the donor field
+				cause: causeId as string,
 				organization: cause?.cause?.organizationId || "",
-				type: values.type,
+				type: values.type as any,
 				amount: values.type === "MONEY" ? Number(values.amount) : undefined,
 				description: values.description,
 				quantity: values.type !== "MONEY" ? Number(values.quantity) : undefined,
@@ -85,12 +86,9 @@ export default function DonationForm() {
 						: undefined,
 			};
 
-			console.log("Submitting donation with payload:", payload);
-
 			// Actually call the API to create the donation
 			const result = await createDonation(payload).unwrap();
 
-			console.log("Donation created successfully:", result);
 			toast.success("Donation created successfully!");
 
 			// Redirect to donations page after successful creation
@@ -174,8 +172,6 @@ export default function DonationForm() {
 						  }
 						: undefined,
 			};
-
-			console.log("Creating Stripe checkout session with:", donationPayload);
 
 			const res = await axios.post(
 				"http://localhost:8080/api/payments/create-checkout-session",

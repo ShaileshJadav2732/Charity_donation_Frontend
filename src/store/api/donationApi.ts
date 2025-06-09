@@ -15,7 +15,6 @@ export const donationApi = apiSlice.injectEndpoints({
 			DonationFormData
 		>({
 			query: (data) => {
-				console.log("Creating donation with data:", data);
 				return {
 					url: "/donations",
 					method: "POST",

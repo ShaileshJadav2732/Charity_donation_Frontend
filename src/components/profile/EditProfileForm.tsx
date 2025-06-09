@@ -17,6 +17,7 @@ import {
 	FiMail,
 } from "react-icons/fi";
 import ProfileImageUpload from "./ProfileImageUpload";
+import OrganizationLogoUpload from "./OrganizationLogoUpload";
 
 interface EditProfileFormProps {
 	profile: DonorProfile | OrganizationProfile;
@@ -40,6 +41,7 @@ export default function EditProfileForm({
 		state: profile.state || "",
 		country: profile.country || "",
 		profileImage: isDonor ? (profile as DonorProfile).profileImage || "" : "",
+		logo: !isDonor ? (profile as OrganizationProfile).logo || "" : "",
 		bio: isDonor ? (profile as DonorProfile).bio || "" : "",
 		description: !isDonor
 			? (profile as OrganizationProfile).description || ""
@@ -81,6 +83,10 @@ export default function EditProfileForm({
 		setFormData((prev) => ({ ...prev, profileImage: imageUrl }));
 	};
 
+	const handleLogoUpdate = (logoUrl: string) => {
+		setFormData((prev) => ({ ...prev, logo: logoUrl }));
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		try {
@@ -118,6 +124,7 @@ export default function EditProfileForm({
 					country: formData.country,
 					email: formData.email,
 					website: formData.website,
+					logo: formData.logo,
 				};
 				const result = await updateOrganizationProfile(orgData).unwrap();
 				if (result) {
@@ -198,6 +205,16 @@ export default function EditProfileForm({
 									<ProfileImageUpload
 										currentImage={formData.profileImage}
 										onImageUpdate={handleImageUpdate}
+									/>
+								</div>
+							)}
+
+							{/* Organization Logo Upload - Only for organizations */}
+							{!isDonor && (
+								<div className="flex justify-center">
+									<OrganizationLogoUpload
+										currentLogo={formData.logo}
+										onLogoUpdate={handleLogoUpdate}
 									/>
 								</div>
 							)}

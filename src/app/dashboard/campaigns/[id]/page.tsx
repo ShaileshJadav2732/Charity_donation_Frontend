@@ -50,25 +50,10 @@ const StatusChip = ({ status }: { status: string }) => {
 	);
 };
 
-// Helper functions (commented out as they're not currently used)
-// const getDaysLeft = (endDate: string): number => {
-// 	const end = new Date(endDate);
-// 	const today = new Date();
-// 	const diffTime = end.getTime() - today.getTime();
-// 	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-// 	return diffDays > 0 ? diffDays : 0;
-// };
-
-// const getProgressPercentage = (raised: number, target: number): number => {
-// 	if (target === 0) return 0;
-// 	const percentage = (raised / target) * 100;
-// 	return Math.min(percentage, 100);
-// };
-
 const CampaignDetailPage = () => {
 	const params = useParams();
 	const router = useRouter();
-	// const { user } = useSelector((state: RootState) => state.auth); // Commented out as not used
+
 	const campaignId = params.id as string;
 
 	const {
@@ -78,8 +63,6 @@ const CampaignDetailPage = () => {
 	} = useGetCampaignDetailsWithDonationsQuery(campaignId);
 
 	const campaign = campaignDetailsData?.campaign;
-	// const statistics = campaignDetailsData?.statistics; // Commented out as not used
-	// const recentActivity = campaignDetailsData?.recentActivity; // Commented out as not used
 
 	if (isLoading) {
 		return (
@@ -706,7 +689,7 @@ const CampaignDetailPage = () => {
 															},
 														}}
 														onClick={() =>
-															router.push(`/dashboard/causes/${cause.id}`)
+															router.push(`/dashboard/causes/${cause._id}`)
 														}
 													>
 														View Details

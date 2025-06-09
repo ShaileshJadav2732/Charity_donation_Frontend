@@ -335,7 +335,6 @@ const EditCampaignPage = ({ params }: EditCampaignPageProps) => {
 			toast.success("Campaign updated successfully!");
 			router.push(`/dashboard/campaigns/${campaignId}`);
 		} catch (err) {
-			console.error("Failed to update campaign:", err);
 			toast.error("Failed to update campaign. Please try again.");
 		}
 	};

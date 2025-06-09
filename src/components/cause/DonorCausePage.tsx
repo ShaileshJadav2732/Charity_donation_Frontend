@@ -70,7 +70,10 @@ const CausesPage = () => {
 		isLoading: isLoadingOrgCauses,
 		error: orgCausesError,
 	} = useGetCausesQuery(
-		{ organizationId: user?.id },
+		{
+			organizationId: user?.id,
+			acceptanceTypes: "both", // Adding the required field
+		},
 		{ skip: user?.role !== "organization" }
 	);
 

@@ -63,7 +63,11 @@ export default function DashboardLayout({
 		skip: user?.role !== "donor",
 	});
 
-	const { data: orgData } = useGetOrganizationProfileQuery(undefined, {
+	const {
+		data: orgData,
+		error: orgError,
+		isLoading: orgLoading,
+	} = useGetOrganizationProfileQuery(undefined, {
 		skip: user?.role !== "organization",
 	});
 
@@ -241,7 +245,7 @@ export default function DashboardLayout({
 	}, [isInitialized, user?.role, menuItems.length]);
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-50 to-blue-200">
+		<div className="min-h-screen bg-blue-50">
 			{/* Top Navigation Bar */}
 			<div
 				className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
@@ -321,7 +325,7 @@ export default function DashboardLayout({
 			{/* Sidebar */}
 			<aside
 				id="mobile-sidebar"
-				className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${
+				className={`fixed inset-y-0 left-0 z-30 w-72 bg-white- shadow-2xl transform ${
 					isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
 				} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16 overflow-y-auto`}
 			>

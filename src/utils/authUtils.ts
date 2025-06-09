@@ -28,7 +28,6 @@ export class AuthUtils {
 			const currentUser = auth.currentUser;
 
 			if (!currentUser) {
-				console.warn("No Firebase user found for token refresh");
 				this.clearAuth();
 				return null;
 			}
@@ -65,7 +64,6 @@ export class AuthUtils {
 
 			return data.token;
 		} catch (error) {
-			console.error("Token refresh failed:", error);
 			this.clearAuth();
 			return null;
 		}

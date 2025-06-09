@@ -56,6 +56,7 @@ export interface CauseQueryParams {
 	minRaised?: number;
 	maxRaised?: number;
 	donationType?: DonationType;
+	// acceptanceType: "money" | "items" | "both";
 }
 
 export interface CauseResponse {

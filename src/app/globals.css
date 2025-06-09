@@ -35,3 +35,70 @@ motion-button,
 .transition-opacity {
 	cursor: pointer !important;
 }
+
+html {
+	scroll-behavior: smooth;
+}
+
+/* Base body styles */
+body {
+	font-family: "Inter", sans-serif;
+	line-height: 1.5;
+	background-color: #fff;
+	color: #111;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Default link styles */
+a {
+	color: inherit;
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+a:hover {
+	text-decoration: underline;
+}
+
+/* Button Reset */
+button {
+	border: none;
+	outline: none;
+	background: none;
+	font: inherit;
+}
+
+*:focus {
+	outline: 2px solid #38bdf8;
+	outline-offset: 2px;
+}
+
+img,
+svg,
+video,
+canvas {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+::placeholder {
+	color: #9ca3af;
+	opacity: 1;
+}
+
+.noselect {
+	user-select: none;
+}
+
+.body-no-scroll {
+	overflow: hidden;
+}
+
+.hidden-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+.hidden-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
