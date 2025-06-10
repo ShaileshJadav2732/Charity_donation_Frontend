@@ -144,6 +144,7 @@ const OrganizationAnalyticsPage: React.FC = () => {
 						(trend: Trend) => trend.count
 					),
 					borderColor: "#14b8a6",
+
 					backgroundColor: "rgba(20, 184, 166, 0.2)",
 					fill: true,
 					tension: 0.4,
@@ -163,7 +164,6 @@ const OrganizationAnalyticsPage: React.FC = () => {
 
 		// Enhanced color palette with better visual appeal and distinction
 		const donationTypeColors: { [key: string]: string } = {
-			MONEY: "#287068",
 			CLOTHES: "#3b82f6",
 			FOOD: "#10b981",
 			BOOKS: "#8b5cf6",
@@ -177,7 +177,6 @@ const OrganizationAnalyticsPage: React.FC = () => {
 
 		// Get colors for each donation type, fallback to default colors if type not found
 		const defaultColors = [
-			"#287068",
 			"#3b82f6",
 			"#10b981",
 			"#8b5cf6",
@@ -424,9 +423,9 @@ const OrganizationAnalyticsPage: React.FC = () => {
 							<DoughnutChart
 								title="Donation Types Distribution"
 								data={formatDonationTypesData}
-								height={400}
+								height={500}
 								currency={true}
-								cutout="50%"
+								cutout="60%"
 								centerText={`₹${stats.donations.totalAmount.toLocaleString()}`}
 								aria-label="Donation types distribution chart"
 							/>

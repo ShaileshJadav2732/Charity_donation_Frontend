@@ -89,7 +89,9 @@ const CausesPage = () => {
 		limit,
 		search: searchTerm.trim() || undefined,
 		acceptanceType:
-			donationTypeFilter !== "all" ? donationTypeFilter : undefined,
+			donationTypeFilter !== "all"
+				? (donationTypeFilter as "money" | "items" | "both")
+				: undefined,
 	});
 
 	const [deleteCause] = useDeleteCauseMutation();

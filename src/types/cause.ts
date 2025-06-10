@@ -49,6 +49,7 @@ export interface CauseQueryParams {
 	page?: number;
 	limit?: number;
 	search?: string;
+	tag?: string;
 	tags?: string[];
 	organizationId?: string;
 	minTarget?: number;
@@ -56,7 +57,8 @@ export interface CauseQueryParams {
 	minRaised?: number;
 	maxRaised?: number;
 	donationType?: DonationType;
-	// acceptanceType: "money" | "items" | "both";
+	acceptanceType?: "money" | "items" | "both";
+	acceptanceTypes?: "money" | "items" | "both";
 }
 
 export interface CauseResponse {

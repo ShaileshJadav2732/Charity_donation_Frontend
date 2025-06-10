@@ -38,7 +38,7 @@ interface DoughnutChartProps {
 const DoughnutChart: React.FC<DoughnutChartProps> = ({
 	title,
 	data,
-	height = 300,
+	height = 800,
 	showLegend = true,
 	currency = false,
 	showPercentage = true,

@@ -81,13 +81,13 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 			if (isMonetary) {
 				if (
 					!values.amount ||
-					Number(values.amount) < 50 ||
+					Number(values.amount) < 10 ||
 					!values.description ||
 					!values.contactPhone ||
 					!values.contactEmail
 				) {
-					if (Number(values.amount) < 50) {
-						toast.error("Minimum donation amount is ₹50");
+					if (Number(values.amount) < 10) {
+						toast.error("Minimum donation amount is ₹10");
 					} else {
 						toast.error("Please fill in all required fields");
 					}

@@ -56,9 +56,6 @@ a {
 	text-decoration: none;
 	transition: color 0.2s ease;
 }
-a:hover {
-	text-decoration: underline;
-}
 
 /* Button Reset */
 button {
@@ -83,7 +80,7 @@ canvas {
 }
 
 ::placeholder {
-	color: #9ca3af;
+	color: ##2c7a72;
 	opacity: 1;
 }
 

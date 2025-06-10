@@ -87,7 +87,7 @@ export default function DonationForm() {
 			};
 
 			// Actually call the API to create the donation
-			const result = await createDonation(payload).unwrap();
+			await createDonation(payload).unwrap();
 
 			toast.success("Donation created successfully!");
 
@@ -174,7 +174,7 @@ export default function DonationForm() {
 			};
 
 			const res = await axios.post(
-				"http://localhost:8080/api/payments/create-checkout-session",
+				"https://charity-donation-backend.onrender.com/api/payments/create-checkout-session",
 				{
 					amount: donationPayload.amount,
 					organizationId: donationPayload.organization,
