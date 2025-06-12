@@ -71,9 +71,6 @@ export default function DashboardLayout({
 		skip: user?.role !== "organization",
 	});
 
-	// Get unread message count
-	const { data: unreadMessagesData } = useGetUnreadCountQuery();
-
 	// Get profile image
 	const profileImage =
 		user?.role === "donor"
@@ -157,10 +154,7 @@ export default function DashboardLayout({
 		setShowNotifications(!showNotifications);
 	};
 
-	// Generate menu items based on user role - only when user data is fully loaded
-	// This prevents showing wrong menu items during authentication initialization
 	const getMenuItems = () => {
-		// Don't show role-specific menu items until authentication is fully initialized
 		if (!isInitialized || !user || !user.role || !user.email) {
 			return [{ icon: FaHome, text: "Home", path: "/dashboard/home" }];
 		}
@@ -231,13 +225,11 @@ export default function DashboardLayout({
 		return baseItems;
 	};
 
-	// Memoize menu items to prevent infinite re-renders
 	const menuItems = useMemo(
 		() => getMenuItems(),
 		[isInitialized, user?.role, user?.email, isLoading]
 	);
 
-	// Track when we have valid menu items to prevent skeleton flashing
 	useEffect(() => {
 		if (isInitialized && user && user.role && menuItems.length > 1) {
 			setHasValidMenuItems(true);
@@ -245,16 +237,14 @@ export default function DashboardLayout({
 	}, [isInitialized, user?.role, menuItems.length]);
 
 	return (
-		<div className="min-h-screen bg-blue-200">
+		<div className="min-h-screen bg-green-50">
 			{/* Top Navigation Bar */}
 			<div
 				className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
 					scrolled ? "shadow-lg" : ""
 				}`}
 			>
-				{/* Left side: Hamburger menu (mobile only) + Logo */}
 				<div className="flex items-center space-x-4">
-					{/* Mobile Hamburger Menu Button */}
 					<button
 						id="hamburger-button"
 						onClick={toggleMobileMenu}
@@ -361,13 +351,6 @@ export default function DashboardLayout({
 										<item.icon className="mr-3 h-5 w-5" />
 										{item.text}
 									</div>
-									{item.text === "Messages" &&
-										unreadMessagesData?.count &&
-										unreadMessagesData.count > 0 && (
-											<span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-												{unreadMessagesData.count}
-											</span>
-										)}
 								</Link>
 							))
 						)}

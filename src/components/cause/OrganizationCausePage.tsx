@@ -278,19 +278,6 @@ const CausesPage = () => {
 									<Typography variant="body2" sx={{ fontWeight: 500 }}>
 										All Types
 									</Typography>
-									<Chip
-										label={causesData?.causes?.length || 0}
-										size="small"
-										sx={{
-											backgroundColor:
-												donationTypeFilter === "all"
-													? "rgba(255,255,255,0.2)"
-													: "#f0f9ff",
-											color: donationTypeFilter === "all" ? "white" : "#287068",
-											fontSize: "0.7rem",
-											height: 20,
-										}}
-									/>
 								</Box>
 							</ToggleButton>
 							<ToggleButton value="money">
@@ -299,24 +286,6 @@ const CausesPage = () => {
 									<Typography variant="body2" sx={{ fontWeight: 500 }}>
 										Money Only
 									</Typography>
-									<Chip
-										label={
-											causesData?.causes?.filter(
-												(c: Cause) => c.acceptanceType === "money"
-											).length || 0
-										}
-										size="small"
-										sx={{
-											backgroundColor:
-												donationTypeFilter === "money"
-													? "rgba(255,255,255,0.2)"
-													: "#f0fdf4",
-											color:
-												donationTypeFilter === "money" ? "white" : "#16a34a",
-											fontSize: "0.7rem",
-											height: 20,
-										}}
-									/>
 								</Box>
 							</ToggleButton>
 							<ToggleButton value="items">
@@ -325,24 +294,6 @@ const CausesPage = () => {
 									<Typography variant="body2" sx={{ fontWeight: 500 }}>
 										Items Only
 									</Typography>
-									<Chip
-										label={
-											causesData?.causes?.filter(
-												(c: Cause) => c.acceptanceType === "items"
-											).length || 0
-										}
-										size="small"
-										sx={{
-											backgroundColor:
-												donationTypeFilter === "items"
-													? "rgba(255,255,255,0.2)"
-													: "#fef3c7",
-											color:
-												donationTypeFilter === "items" ? "white" : "#d97706",
-											fontSize: "0.7rem",
-											height: 20,
-										}}
-									/>
 								</Box>
 							</ToggleButton>
 							<ToggleButton value="both">
@@ -351,24 +302,6 @@ const CausesPage = () => {
 									<Typography variant="body2" sx={{ fontWeight: 500 }}>
 										Both
 									</Typography>
-									<Chip
-										label={
-											causesData?.causes?.filter(
-												(c: Cause) => c.acceptanceType === "both"
-											).length || 0
-										}
-										size="small"
-										sx={{
-											backgroundColor:
-												donationTypeFilter === "both"
-													? "rgba(255,255,255,0.2)"
-													: "#ede9fe",
-											color:
-												donationTypeFilter === "both" ? "white" : "#7c3aed",
-											fontSize: "0.7rem",
-											height: 20,
-										}}
-									/>
 								</Box>
 							</ToggleButton>
 						</ToggleButtonGroup>
@@ -487,7 +420,7 @@ const CausesPage = () => {
 							const getUrgencyColor = (urgency: string) => {
 								switch (urgency) {
 									case "high":
-										return "#ef4444";
+										return "#0000009";
 									case "medium":
 										return "#f59e0b";
 									case "low":

@@ -1,33 +1,26 @@
 "use client";
 
-import React from "react";
+import { useGetActiveCampaignCausesQuery } from "@/store/api/causeApi";
+import { useGetDonorDonationsQuery } from "@/store/api/donationApi";
+import { RootState } from "@/store/store";
+import { Cause } from "@/types/cause";
 import {
+	Alert,
+	Avatar,
 	Box,
-	Typography,
+	Button,
 	Card,
 	CardContent,
-	Button,
-	Avatar,
 	Chip,
-	LinearProgress,
 	Divider,
+	LinearProgress,
 	Paper,
-	Alert,
+	Typography,
 } from "@mui/material";
-import {
-	Heart,
-	TrendingUp,
-	Target,
-	Plus,
-	ArrowRight,
-	Gift,
-} from "lucide-react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { useGetDonorDonationsQuery } from "@/store/api/donationApi";
-import { useGetActiveCampaignCausesQuery } from "@/store/api/causeApi";
+import { ArrowRight, Gift, Heart, Plus, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Cause } from "@/types/cause";
+import React from "react";
+import { useSelector } from "react-redux";
 
 const DonorHomePage: React.FC = () => {
 	const { user } = useSelector((state: RootState) => state.auth);
@@ -115,24 +108,38 @@ const DonorHomePage: React.FC = () => {
 		};
 	});
 
+	const formatCurrency = (amount: number) => {
+		if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+		if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+		if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+		return `₹${amount.toLocaleString()}`;
+	};
+
+	// Update the getUrgencyColor function to remove red
 	const getUrgencyColor = (urgency: string) => {
 		switch (urgency) {
-			case "High":
-				return "#ef4444";
-			case "Medium":
+			case "high":
+				return "#f59e0b"; // Changed from red to orange
+			case "medium":
 				return "#f59e0b";
-			case "Low":
+			case "low":
 				return "#10b981";
 			default:
 				return "#6b7280";
 		}
 	};
 
-	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("en-IN", {
-			style: "currency",
-			currency: "INR",
-		}).format(amount);
+	const getUrgencyLabel = (urgency: string) => {
+		switch (urgency) {
+			case "high":
+				return "🟠 Urgent"; // Changed from red circle to orange
+			case "medium":
+				return "🟡 Important";
+			case "low":
+				return "🟢 Standard";
+			default:
+				return "⚪ Unknown";
+		}
 	};
 
 	const getGreeting = () => {
@@ -143,7 +150,7 @@ const DonorHomePage: React.FC = () => {
 	};
 
 	return (
-		<Box sx={{ p: 3, maxWidth: "1200px", mx: "auto" }}>
+		<Box sx={{ p: 3, maxWidth: "1300px", mx: "auto" }}>
 			{/* Welcome Section */}
 			<Box sx={{ mb: 4 }}>
 				<Typography
@@ -423,9 +430,7 @@ const DonorHomePage: React.FC = () => {
 							<Box
 								sx={{
 									height: 160,
-									background: `linear-gradient(45deg, ${getUrgencyColor(
-										cause.urgency
-									)}20, ${getUrgencyColor(cause.urgency)}40)`,
+									background: `url(${cause.image}) center/cover`,
 									display: "flex",
 									alignItems: "center",
 									justifyContent: "center",
@@ -444,7 +449,6 @@ const DonorHomePage: React.FC = () => {
 										fontWeight: 600,
 									}}
 								/>
-								<Target size={48} color={getUrgencyColor(cause.urgency)} />
 							</Box>
 							<CardContent>
 								<Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
@@ -479,12 +483,10 @@ const DonorHomePage: React.FC = () => {
 										</Box>
 										<LinearProgress
 											variant="determinate"
-											value={
-												Math.min(
-													100,
-													Math.max(0, (cause.raised / cause.goal) * 100)
-												) || 25
-											} // Fallback to 25% for testing
+											value={Math.min(
+												100,
+												Math.max(0, (cause.raised / cause.goal) * 100)
+											)}
 											sx={{
 												height: 8,
 												borderRadius: 4,
@@ -622,12 +624,13 @@ const DonorHomePage: React.FC = () => {
 										_id?: string;
 										amount?: number;
 										type?: string;
-										cause?: { title?: string };
-										organization?: { name?: string };
+										cause?: { title?: string; _id?: string };
+										organization?: { name?: string; _id?: string };
 										status?: string;
 										createdAt?: string;
 										quantity?: number;
 										unit?: string;
+										items?: string[];
 									},
 									index: number
 								) => (
@@ -649,54 +652,109 @@ const DonorHomePage: React.FC = () => {
 											>
 												<Avatar
 													sx={{
-														backgroundColor: "#287068",
+														backgroundColor:
+															donation.type === "ITEM" ? "#f59e0b" : "#287068",
 														width: 40,
 														height: 40,
 														mr: 2,
 													}}
 												>
-													<Heart size={20} />
+													{donation.type === "ITEM" ? (
+														<Gift size={20} />
+													) : (
+														<Heart size={20} />
+													)}
 												</Avatar>
 												<Box>
 													<Typography
 														variant="subtitle1"
 														sx={{ fontWeight: 600 }}
 													>
-														{donation.cause?.title || "Donation"}
+														{donation.cause?.title || "Unknown Cause"}
 													</Typography>
 													<Typography variant="body2" color="text.secondary">
-														{donation.organization?.name || "Organization"}
+														To:{" "}
+														{donation.organization?.name ||
+															"Unknown Organization"}
 													</Typography>
 													<Typography variant="caption" color="text.secondary">
 														{donation.createdAt
-															? new Date(
-																	donation.createdAt
-															  ).toLocaleDateString()
-															: "Unknown date"}
+															? new Date(donation.createdAt).toLocaleDateString(
+																	"en-IN",
+																	{
+																		year: "numeric",
+																		month: "short",
+																		day: "numeric",
+																	}
+															  )
+															: "Date not available"}
+													</Typography>
+													{/* Show donation type */}
+													<Typography
+														variant="caption"
+														sx={{
+															display: "block",
+															color:
+																donation.type === "ITEM"
+																	? "#f59e0b"
+																	: "#287068",
+															fontWeight: 500,
+														}}
+													>
+														{donation.type === "ITEM"
+															? "Item Donation"
+															: "Money Donation"}
 													</Typography>
 												</Box>
 											</Box>
 											<Box sx={{ textAlign: "right" }}>
 												<Chip
-													label={donation.status}
+													label={donation.status || "Unknown"}
 													size="small"
 													color={
-														donation.status === "CONFIRMED"
+														donation.status === "CONFIRMED" ||
+														donation.status === "COMPLETED"
 															? "success"
 															: donation.status === "PENDING"
 															? "warning"
-															: "info"
+															: donation.status === "REJECTED"
+															? "warning" // Changed from "error" to "warning" to avoid red
+															: "default"
 													}
 													sx={{ mb: 1 }}
 												/>
-												{donation.amount && (
-													<Typography
-														variant="subtitle2"
-														sx={{ fontWeight: 600 }}
-													>
-														{formatCurrency(donation.amount)}
-													</Typography>
-												)}
+												<Box>
+													{donation.type === "ITEM" ? (
+														<Box>
+															<Typography
+																variant="subtitle2"
+																sx={{ fontWeight: 600, color: "#f59e0b" }}
+															>
+																{donation.quantity || 1}{" "}
+																{donation.unit || "items"}
+															</Typography>
+															{donation.items && donation.items.length > 0 && (
+																<Typography
+																	variant="caption"
+																	color="text.secondary"
+																>
+																	{donation.items.slice(0, 2).join(", ")}
+																	{donation.items.length > 2 &&
+																		` +${donation.items.length - 2} more`}
+																</Typography>
+															)}
+														</Box>
+													) : (
+														donation.amount && (
+															<Typography
+																variant="subtitle2"
+																sx={{ fontWeight: 600, color: "#287068" }}
+															>
+																{formatCurrency(donation.amount)}
+															</Typography>
+														)
+													)}
+												</Box>
 											</Box>
 										</Box>
 										{index < Math.min(stats.recentDonations.length - 1, 4) && (

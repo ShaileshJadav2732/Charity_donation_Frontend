@@ -34,13 +34,6 @@ export interface OrganizationsResponse {
 	limit: number;
 }
 
-// Define interfaces for query arguments
-// interface GetOrganizationsParams {
-// 	page?: number;
-// 	limit?: number;
-// 	search?: string;
-// }
-
 // Define a service using a base URL and expected endpoints
 export const organizationApi = createApi({
 	reducerPath: "organizationApi",

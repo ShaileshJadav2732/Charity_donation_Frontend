@@ -359,50 +359,96 @@ export default function CauseDetailPage({
 						mb: 3,
 					}}
 				>
-					{acceptedDonationTypes.map((type: DonationType) => {
-						const TypeIcon = donationTypeIcons[type] || Category;
-						const title =
-							type === DonationType.MONEY
-								? "Money Donations"
-								: "Item Donations";
-
-						return (
-							<Paper
-								key={type}
-								sx={{
-									p: 3,
-									borderRadius: 3,
-									boxShadow: "0 8px 25px rgba(40, 112, 104, 0.15)",
-									transition: "all 0.2s",
-									"&:hover": {
-										transform: "translateY(-4px)",
-										boxShadow: "0 12px 35px rgba(40, 112, 104, 0.2)",
-									},
-								}}
-							>
-								<Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-									<Box
-										sx={{
-											p: 2,
-											borderRadius: 2,
-											backgroundColor: "#2f8077",
-											color: "white",
-											mr: 2,
-										}}
-									>
-										<TypeIcon sx={{ fontSize: 24 }} />
-									</Box>
-									<Typography variant="h6" sx={{ fontWeight: 600 }}>
-										{title}
-									</Typography>
+					{/* Money Donations Card */}
+					{(acceptanceType === "money" || acceptanceType === "both") && (
+						<Paper
+							sx={{
+								p: 3,
+								borderRadius: 3,
+								boxShadow: "0 8px 25px rgba(40, 112, 104, 0.15)",
+								transition: "all 0.2s",
+								"&:hover": {
+									transform: "translateY(-4px)",
+									boxShadow: "0 12px 35px rgba(40, 112, 104, 0.2)",
+								},
+							}}
+						>
+							<Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+								<Box
+									sx={{
+										p: 2,
+										borderRadius: 2,
+										backgroundColor: "#2f8077",
+										color: "white",
+										mr: 2,
+									}}
+								>
+									<MonetizationOn sx={{ fontSize: 24 }} />
 								</Box>
-								<Typography variant="body2" sx={{ color: "#666" }}>
-									Support this cause with {title.toLowerCase()}. Your
-									contribution will make a direct impact.
+								<Typography variant="h6" sx={{ fontWeight: 600 }}>
+									Money Donations
 								</Typography>
-							</Paper>
-						);
-					})}
+							</Box>
+							<Typography variant="body2" sx={{ color: "#666" }}>
+								Support this cause with monetary donations. Your financial
+								contribution will make a direct impact.
+							</Typography>
+						</Paper>
+					)}
+
+					{/* Item Donations Card */}
+					{(acceptanceType === "items" || acceptanceType === "both") && (
+						<Paper
+							sx={{
+								p: 3,
+								borderRadius: 3,
+								boxShadow: "0 8px 25px rgba(40, 112, 104, 0.15)",
+								transition: "all 0.2s",
+								"&:hover": {
+									transform: "translateY(-4px)",
+									boxShadow: "0 12px 35px rgba(40, 112, 104, 0.2)",
+								},
+							}}
+						>
+							<Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+								<Box
+									sx={{
+										p: 2,
+										borderRadius: 2,
+										backgroundColor: "#2f8077",
+										color: "white",
+										mr: 2,
+									}}
+								>
+									<Category sx={{ fontSize: 24 }} />
+								</Box>
+								<Typography variant="h6" sx={{ fontWeight: 600 }}>
+									Item Donations
+								</Typography>
+							</Box>
+							<Typography variant="body2" sx={{ color: "#666", mb: 2 }}>
+								Support this cause with item donations. Check the accepted item
+								types below.
+							</Typography>
+							{/* Show accepted item types */}
+							<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+								{acceptedDonationTypes
+									.filter((type) => type !== DonationType.MONEY)
+									.map((type: DonationType) => (
+										<Chip
+											key={type}
+											label={type.charAt(0) + type.slice(1).toLowerCase()}
+											size="small"
+											sx={{
+												backgroundColor: "rgba(47, 128, 119, 0.1)",
+												color: "#2f8077",
+												fontSize: "0.75rem",
+											}}
+										/>
+									))}
+							</Box>
+						</Paper>
+					)}
 				</Box>
 			</Box>
 

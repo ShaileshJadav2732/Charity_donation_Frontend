@@ -34,8 +34,6 @@ export const useAuth = () => {
 	const [register] = useRegisterMutation();
 	const [login] = useLoginMutation();
 
-	// Authentication actions only - redirect logic handled by AuthContext
-
 	// Signup with email and password
 	const signup = async (formData: SignupFormData) => {
 		const { email, password, role } = formData;
@@ -134,21 +132,6 @@ export const useAuth = () => {
 			// Use signInWithPopup with explicit error handling
 			const result = await signInWithPopup(auth, googleProvider).catch(
 				(error) => {
-					if (error.code === "auth/popup-blocked") {
-						throw new Error(
-							"Popup was blocked by the browser. Please allow popups for this site."
-						);
-					} else if (error.code === "auth/popup-closed-by-user") {
-						throw new Error("Sign-in was cancelled. Please try again.");
-					} else if (error.code === "auth/cancelled-popup-request") {
-						throw new Error(
-							"Multiple popup requests were made. Please try again."
-						);
-					} else if (error.code === "auth/network-request-failed") {
-						throw new Error(
-							"Network error occurred. Please check your internet connection."
-						);
-					}
 					throw error;
 				}
 			);

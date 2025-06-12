@@ -197,3 +197,132 @@ export interface DonorAnalyticsResponse {
 	success: boolean;
 	data: DonorAnalytics;
 }
+
+// Additional analytics types
+export interface Trend {
+	month: string;
+	amount: number;
+	count: number;
+}
+
+export interface DonationType {
+	type: string;
+	amount: number;
+	count: number;
+}
+
+export interface Campaign {
+	title: string;
+	targetAmount: number;
+	raisedAmount: number;
+	status?: string;
+}
+
+export interface Cause {
+	name: string;
+	count: number;
+	amount: number;
+}
+
+export interface Donor {
+	email: string;
+	count: number;
+	amount: number;
+}
+
+export interface Activity {
+	id: string;
+	campaignName: string;
+	timestamp: string;
+	amount?: number;
+	type?: string;
+	donorName?: string;
+	donorEmail?: string;
+	donationType?: string;
+	status?: string;
+	rating?: number;
+	comment?: string;
+	targetAmount?: number;
+	raisedAmount?: number;
+}
+
+export interface AnalyticsData {
+	stats: {
+		donations: {
+			totalAmount: number;
+			totalDonations: number;
+			averageDonation: number;
+		};
+		campaigns: {
+			activeCampaigns: number;
+			totalCampaigns: number;
+		};
+	};
+	charts: {
+		monthlyTrends: Trend[];
+		donationsByType: DonationType[];
+		campaignPerformance?: Campaign[];
+		topCauses?: Cause[];
+		topDonors?: Donor[];
+	};
+	recentActivities: {
+		donations: Activity[];
+		campaigns?: Activity[];
+		feedback?: Activity[];
+	};
+}
+
+export interface ProcessedDonationData {
+	type: string;
+	amount: number;
+	count: number;
+}
+
+export interface StatsCard {
+	title: string;
+	value: number;
+	prefix?: string;
+	subtitle?: string;
+	icon: React.ReactNode;
+	color: string;
+}
+
+// Specific chart data types for each chart component
+export interface LineChartData {
+	labels: string[];
+	datasets: {
+		label: string;
+		data: number[];
+		borderColor?: string;
+		backgroundColor?: string;
+		fill?: boolean;
+		tension?: number;
+		pointHoverRadius?: number;
+	}[];
+}
+
+export interface DoughnutChartData {
+	labels: string[];
+	datasets: {
+		data: number[];
+		backgroundColor: string[];
+		borderColor?: string[];
+		borderWidth?: number;
+		hoverBorderWidth?: number;
+		hoverOffset?: number;
+		hoverBackgroundColor?: string[];
+	}[];
+}
+
+export interface BarChartData {
+	labels: string[];
+	datasets: {
+		label: string;
+		data: number[];
+		backgroundColor?: string | string[];
+		borderColor?: string | string[];
+		borderWidth?: number;
+		borderRadius?: number;
+		borderSkipped?: boolean;
+	}[];
+}

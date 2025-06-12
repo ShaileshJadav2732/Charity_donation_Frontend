@@ -44,6 +44,7 @@ interface CauseData {
 	urgency?: "low" | "medium" | "high";
 	acceptanceType?: "money" | "items" | "both";
 	createdAt: string;
+	imageUrl?: string;
 }
 
 const OrganizationHomePage: React.FC = () => {
@@ -407,9 +408,11 @@ const OrganizationHomePage: React.FC = () => {
 								<Box
 									sx={{
 										height: 160,
-										background: `linear-gradient(45deg, ${getUrgencyColor(
-											cause.urgency || "low"
-										)}20, ${getUrgencyColor(cause.urgency || "low")}40)`,
+										background: cause.imageUrl
+											? `url(${cause.imageUrl}) center/cover`
+											: `linear-gradient(45deg, ${getUrgencyColor(
+													cause.urgency || "low"
+											  )}20, ${getUrgencyColor(cause.urgency || "low")}40)`,
 										display: "flex",
 										alignItems: "center",
 										justifyContent: "center",
@@ -435,10 +438,6 @@ const OrganizationHomePage: React.FC = () => {
 											}}
 										/>
 									</Box>
-									<Target
-										size={48}
-										color={getUrgencyColor(cause.urgency || "low")}
-									/>
 								</Box>
 								<CardContent sx={{ p: 3 }}>
 									<Typography

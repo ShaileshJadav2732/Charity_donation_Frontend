@@ -148,8 +148,6 @@ export const profileApi = createApi({
 			}),
 			invalidatesTags: ["Profile"],
 		}),
-
-
 	}),
 });
 

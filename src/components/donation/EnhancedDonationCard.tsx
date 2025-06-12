@@ -64,7 +64,7 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 			case "FOOD":
 				return "bg-orange-100 text-orange-600 border-orange-200";
 			case "BLOOD":
-				return "bg-red-100 text-red-600 border-red-200";
+				return "bg-pink-100 text-pink-600 border-pink-200"; // Changed from red to pink
 			case "BOOKS":
 				return "bg-yellow-100 text-yellow-600 border-yellow-200";
 			case "FURNITURE":
@@ -88,6 +88,8 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 				return "bg-yellow-100 text-yellow-800 border-yellow-200";
 			case "PENDING":
 				return "bg-gray-100 text-gray-800 border-gray-200";
+			case "REJECTED":
+				return "bg-orange-100 text-orange-800 border-orange-200"; // Changed from red to orange
 			default:
 				return "bg-gray-100 text-gray-800 border-gray-200";
 		}
@@ -220,9 +222,14 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 							{donation.receiptImage && (
 								<a
 									href={
-										donation.receiptImage.startsWith('http')
+										donation.receiptImage.startsWith("http")
 											? donation.receiptImage
-											: `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080'}${donation.receiptImage}`
+											: `${
+													process.env.NEXT_PUBLIC_API_URL?.replace(
+														"/api",
+														""
+													) || "http://localhost:8080"
+											  }${donation.receiptImage}`
 									}
 									target="_blank"
 									rel="noopener noreferrer"
@@ -240,9 +247,14 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 							{donation.pdfReceiptUrl && (
 								<a
 									href={
-										donation.pdfReceiptUrl.startsWith('http')
+										donation.pdfReceiptUrl.startsWith("http")
 											? donation.pdfReceiptUrl
-											: `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080'}${donation.pdfReceiptUrl}`
+											: `${
+													process.env.NEXT_PUBLIC_API_URL?.replace(
+														"/api",
+														""
+													) || "http://localhost:8080"
+											  }${donation.pdfReceiptUrl}`
 									}
 									target="_blank"
 									rel="noopener noreferrer"

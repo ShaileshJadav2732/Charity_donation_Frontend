@@ -38,11 +38,10 @@ interface DoughnutChartProps {
 const DoughnutChart: React.FC<DoughnutChartProps> = ({
 	title,
 	data,
-	height = 800,
+	height = 1000,
 	showLegend = true,
-	currency = false,
 	showPercentage = true,
-	cutout = "60%",
+	cutout = "100%",
 	centerText,
 }) => {
 	const options = {
@@ -56,7 +55,7 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({
 					usePointStyle: true,
 					padding: 20,
 					font: {
-						size: 12,
+						size: 10,
 					},
 					generateLabels: function (chart: ChartJS) {
 						const data = chart.data;
@@ -73,17 +72,15 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({
 									const value = dataValues[index];
 									const percentage =
 										total > 0 ? ((value / total) * 100).toFixed(1) : "0";
-									const formattedValue = currency
-										? `₹${value.toLocaleString()}`
-										: value.toLocaleString();
+									const formattedValue = value.toLocaleString();
 
 									const backgroundColors = dataset.backgroundColor as string[];
 									const borderColors = dataset.borderColor as string[];
 
 									return {
 										text: showPercentage
-											? `${label}: ${percentage}%`
-											: `${label}: ${formattedValue}`,
+											? `${label}: ${percentage}% (${formattedValue} donations)`
+											: `${label}: ${formattedValue} donations`,
 										fillStyle: backgroundColors?.[index] || "#000",
 										strokeStyle:
 											borderColors?.[index] ||
@@ -119,11 +116,8 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({
 						);
 						const percentage =
 							total > 0 ? ((value / total) * 100).toFixed(1) : "0";
-						const formattedValue = currency
-							? `₹${value.toLocaleString()}`
-							: value.toLocaleString();
 
-						return `${label}: ${formattedValue} (${percentage}%)`;
+						return `${label}: ${value.toLocaleString()} donations (${percentage}%)`;
 					},
 				},
 			},

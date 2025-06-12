@@ -90,10 +90,6 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({
 
 		// Message events
 		const handleNewMessage = (message: Message) => {
-			// Don't show toast here - let the notification system handle it
-			// This prevents duplicate notifications
-
-			// Call all registered callbacks
 			messageCallbacks.newMessage.forEach((callback) => callback(message));
 		};
 

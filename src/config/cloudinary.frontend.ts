@@ -1,6 +1,3 @@
-// Frontend-only Cloudinary configuration (no Node.js dependencies)
-
-// Cloudinary configuration for frontend
 export const CLOUDINARY_CONFIG = {
 	cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
 	uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "charity",
@@ -51,11 +48,10 @@ export const extractPublicIdFromUrl = (url: string): string => {
 		const uploadIndex = parts.findIndex((part) => part === "upload");
 		if (uploadIndex === -1) return "";
 
-		// Get everything after the transformation parameters
 		const afterUpload = parts.slice(uploadIndex + 1);
-		// Remove version if present (starts with 'v' followed by numbers)
+
 		const withoutVersion = afterUpload.filter((part) => !/^v\d+$/.test(part));
-		// Join the remaining parts and remove file extension
+
 		const publicId = withoutVersion.join("/").replace(/\.[^/.]+$/, "");
 
 		return publicId;

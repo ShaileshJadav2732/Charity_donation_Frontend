@@ -167,7 +167,7 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 		);
 
 		try {
-			// ✅ FIXED: Actually call the API to mark as received
+			//  FIXED: Actually call the API to mark as received
 			await markAsReceived({
 				donationId: selectedDonation._id,
 				photo: selectedPhoto,
