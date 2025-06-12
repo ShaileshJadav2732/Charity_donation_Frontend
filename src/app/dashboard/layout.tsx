@@ -26,6 +26,7 @@ import {
 	FaUsers,
 	FaComments,
 	FaMoneyCheck,
+	FaMicrophone,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -174,6 +175,7 @@ export default function DashboardLayout({
 					text: "My Donations",
 					path: "/dashboard/donations",
 				},
+
 				{
 					icon: FaComments,
 					text: "Messages",
@@ -208,6 +210,7 @@ export default function DashboardLayout({
 					text: "Donors",
 					path: "/dashboard/donors",
 				},
+
 				{
 					icon: FaComments,
 					text: "Messages",

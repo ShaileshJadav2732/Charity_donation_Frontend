@@ -26,6 +26,9 @@ import {
 import { useFormik } from "formik";
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
+import VoiceToDonateButton from "./VoiceToDonateButton";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface ImprovedDonationFormProps {
 	cause: CauseWithDetails;
@@ -42,6 +45,10 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 }) => {
 	const [isMonetary, setIsMonetary] = useState(false);
 	const customColor = "#287068";
+
+	// Get user role to show voice feature only for donors
+	const { user } = useSelector((state: RootState) => state.auth);
+	const isDonor = user?.role === "donor";
 
 	// Get accepted donation types from cause
 	const acceptedDonationTypes = cause?.cause?.acceptedDonationTypes || [
@@ -152,18 +159,159 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 		formik.setFieldValue("isPickup", !isMonetaryDonation);
 	};
 
+	// Handle voice command - Fill ENTIRE form
+	const handleVoiceCommand = (command: any) => {
+		// Get current user info for auto-filling contact details
+		const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+		// Generate default scheduling (tomorrow at 10 AM)
+		const tomorrow = new Date();
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		const defaultDate = tomorrow.toISOString().split("T")[0];
+		const defaultTime = "10:00";
+
+		if (command.type === "MONEY" && command.amount) {
+			// Set monetary donation
+			setIsMonetary(true);
+
+			// Basic donation fields
+			formik.setFieldValue("type", DonationType.MONEY);
+			formik.setFieldValue("amount", command.amount.toString());
+			formik.setFieldValue(
+				"description",
+				command.description || `Voice donation of ₹${command.amount}`
+			);
+
+			// Clear item-specific fields
+			formik.setFieldValue("quantity", 1);
+			formik.setFieldValue("unit", "kg");
+			formik.setFieldValue("isPickup", false);
+
+			// Fill contact information
+			formik.setFieldValue("contactPhone", currentUser.phone || "");
+			formik.setFieldValue("contactEmail", currentUser.email || "");
+
+			// Clear scheduling (not needed for money)
+			formik.setFieldValue("scheduledDate", "");
+			formik.setFieldValue("scheduledTime", "");
+
+			toast.success(
+				`✅ Complete form filled: ₹${command.amount} donation with contact info!`
+			);
+		} else if (command.type === "ITEMS") {
+			// Set item donation
+			setIsMonetary(false);
+
+			// Determine item type with better mapping
+			let itemType = DonationType.OTHER;
+			if (command.itemType) {
+				const upperItemType = command.itemType.toUpperCase();
+				if (upperItemType.includes("CLOTH")) itemType = DonationType.CLOTHES;
+				else if (upperItemType.includes("FOOD")) itemType = DonationType.FOOD;
+				else if (upperItemType.includes("BOOK")) itemType = DonationType.BOOKS;
+				else if (upperItemType.includes("TOY")) itemType = DonationType.TOYS;
+				else if (availableItemTypes.length > 0)
+					itemType = availableItemTypes[0];
+			} else if (availableItemTypes.length > 0) {
+				itemType = availableItemTypes[0];
+			}
+
+			// Basic donation fields
+			formik.setFieldValue("type", itemType);
+			formik.setFieldValue("quantity", command.quantity || 1);
+			formik.setFieldValue("unit", command.unit || "items");
+			formik.setFieldValue(
+				"description",
+				command.description ||
+					`Voice donation: ${command.quantity || 1} ${
+						command.unit || "items"
+					} of ${command.itemType || "items"}`
+			);
+			formik.setFieldValue("isPickup", true);
+
+			// Fill scheduling information (required for items)
+			formik.setFieldValue("scheduledDate", defaultDate);
+			formik.setFieldValue("scheduledTime", defaultTime);
+
+			// Fill contact information
+			formik.setFieldValue("contactPhone", currentUser.phone || "");
+			formik.setFieldValue("contactEmail", currentUser.email || "");
+
+			// Fill pickup address if available
+			if (currentUser.address) {
+				formik.setFieldValue(
+					"pickupAddress.street",
+					currentUser.address.street || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.city",
+					currentUser.address.city || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.state",
+					currentUser.address.state || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.zipCode",
+					currentUser.address.zipCode || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.country",
+					currentUser.address.country || "India"
+				);
+			}
+
+			// Clear monetary fields
+			formik.setFieldValue("amount", "");
+
+			toast.success(
+				`✅ Complete form filled: ${command.quantity || 1} ${
+					command.unit || "items"
+				} of ${command.itemType || "items"} with delivery & contact info!`
+			);
+		}
+
+		// Mark fields as touched to show they're filled
+		formik.setFieldTouched("type", true);
+		formik.setFieldTouched("amount", true);
+		formik.setFieldTouched("description", true);
+		formik.setFieldTouched("contactPhone", true);
+		formik.setFieldTouched("contactEmail", true);
+		if (!isMonetary) {
+			formik.setFieldTouched("scheduledDate", true);
+			formik.setFieldTouched("scheduledTime", true);
+		}
+	};
+
 	return (
 		<Box sx={{ maxWidth: 800, mx: "auto", p: { xs: 2, md: 3 } }}>
-			<Typography
-				variant="h4"
-				gutterBottom
-				sx={{ fontWeight: 600, color: customColor }}
+			<Box
+				sx={{
+					display: "flex",
+					justifyContent: "space-between",
+					alignItems: "center",
+					mb: 2,
+				}}
 			>
-				Make a Donation
-			</Typography>
-			<Typography variant="h6" sx={{ color: "text.secondary", mb: 3 }}>
-				{cause?.cause?.title}
-			</Typography>
+				<Box>
+					<Typography
+						variant="h4"
+						gutterBottom
+						sx={{ fontWeight: 600, color: customColor }}
+					>
+						Make a Donation
+					</Typography>
+					<Typography variant="h6" sx={{ color: "text.secondary" }}>
+						{cause?.cause?.title}
+					</Typography>
+				</Box>
+				{isDonor && (
+					<VoiceToDonateButton
+						onVoiceCommand={handleVoiceCommand}
+						disabled={isLoading}
+					/>
+				)}
+			</Box>
 
 			<Box component="form" onSubmit={formik.handleSubmit}>
 				{/* Donation Type */}

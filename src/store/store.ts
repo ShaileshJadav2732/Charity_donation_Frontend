@@ -11,6 +11,7 @@ import { dashboardApi } from "./api/dashboardApi";
 import { organizationApi } from "./api/organizationApi";
 import { notificationApi } from "./api/notificationApi";
 import { messageApi } from "./api/messageApi";
+import voiceCommandApi from "./api/voiceCommandApi";
 
 // Import authApi to ensure it's injected into apiSlice
 import "./api/authApi";
@@ -27,6 +28,7 @@ export const store = configureStore({
 		[organizationApi.reducerPath]: organizationApi.reducer,
 		[notificationApi.reducerPath]: notificationApi.reducer,
 		[messageApi.reducerPath]: messageApi.reducer,
+		[voiceCommandApi.reducerPath]: voiceCommandApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
@@ -39,7 +41,8 @@ export const store = configureStore({
 			.concat(uploadApi.middleware)
 			.concat(organizationApi.middleware)
 			.concat(notificationApi.middleware)
-			.concat(messageApi.middleware),
+			.concat(messageApi.middleware)
+			.concat(voiceCommandApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });
 
