@@ -36,6 +36,26 @@ interface VoiceCommand {
 	unit?: string;
 	description?: string;
 	confidence: number;
+
+	// Contact Information
+	contactPhone?: string;
+	contactEmail?: string;
+	donorName?: string;
+
+	// Address Information
+	address?: {
+		street?: string;
+		city?: string;
+		state?: string;
+		zipCode?: string;
+		country?: string;
+	};
+
+	// Delivery/Pickup Information
+	isPickup?: boolean;
+	scheduledDate?: string;
+	scheduledTime?: string;
+	deliveryInstructions?: string;
 }
 
 interface VoiceToDonateButtonProps {
@@ -229,63 +249,32 @@ const VoiceToDonateButton: React.FC<VoiceToDonateButtonProps> = ({
 		setAudioLevel(0);
 	};
 
-	// Process voice command using AI backend service
+	// Process voice command using ONLY AI backend service
 	const processVoiceCommandWithAI = async (text: string) => {
 		setIsProcessing(true);
 		try {
 			const response = await processVoiceCommand({ text }).unwrap();
 			const command = response.data.command;
 			setParsedCommand(command);
-		} catch (error) {
-			// Fallback to local parsing if AI service fails
-			const command = parseVoiceCommandLocal(text);
-			setParsedCommand(command);
+
+			// Auto-apply if enabled and confidence is good (20% threshold)
+			if (autoApply && command && command.confidence >= 0.2) {
+				setTimeout(() => {
+					handleConfirm();
+				}, 1000); // Small delay to show the command first
+			}
+		} catch (error: any) {
+			// No fallback - show error to user
+			setError(
+				`AI processing failed: ${
+					error.data?.message ||
+					error.message ||
+					"Please check your Groq API configuration"
+				}`
+			);
 		} finally {
 			setIsProcessing(false);
 		}
-	};
-
-	// Local fallback voice command parser
-	const parseVoiceCommandLocal = (text: string): VoiceCommand => {
-		const lowerText = text.toLowerCase();
-
-		// Extract amount for money donations
-		const moneyRegex =
-			/(?:donate|give|send)\s+(?:rupees?\s+)?(\d+)(?:\s+rupees?)?/i;
-		const moneyMatch = lowerText.match(moneyRegex);
-
-		if (moneyMatch) {
-			return {
-				type: "MONEY",
-				amount: parseInt(moneyMatch[1]),
-				description: `Voice donation: ${text}`,
-				confidence: 0.9,
-			};
-		}
-
-		// Extract item donations
-		const itemRegex =
-			/(?:donate|give)\s+(\d+)?\s*(kg|items?|boxes?|pieces?)?\s+(?:of\s+)?(clothes?|food|books?|toys?)/i;
-		const itemMatch = lowerText.match(itemRegex);
-
-		if (itemMatch) {
-			return {
-				type: "ITEMS",
-				quantity: itemMatch[1] ? parseInt(itemMatch[1]) : 1,
-				unit: itemMatch[2] || "items",
-				itemType: itemMatch[3],
-				description: `Voice donation: ${text}`,
-				confidence: 0.8,
-			};
-		}
-
-		// Default fallback
-		return {
-			type: "MONEY",
-			amount: 100,
-			description: `Voice donation: ${text}`,
-			confidence: 0.5,
-		};
 	};
 
 	const startListening = async () => {

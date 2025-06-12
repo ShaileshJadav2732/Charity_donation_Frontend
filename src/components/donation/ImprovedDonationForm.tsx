@@ -159,12 +159,14 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 		formik.setFieldValue("isPickup", !isMonetaryDonation);
 	};
 
-	// Handle voice command - Fill ENTIRE form
+	// Handle voice command - Fill COMPLETE form with ALL extracted data
 	const handleVoiceCommand = (command: any) => {
-		// Get current user info for auto-filling contact details
+		console.log("Voice command received:", command);
+
+		// Get current user info as fallback
 		const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
-		// Generate default scheduling (tomorrow at 10 AM)
+		// Generate default scheduling (tomorrow at 10 AM) if not provided
 		const tomorrow = new Date();
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		const defaultDate = tomorrow.toISOString().split("T")[0];
@@ -187,16 +189,76 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 			formik.setFieldValue("unit", "kg");
 			formik.setFieldValue("isPickup", false);
 
-			// Fill contact information
-			formik.setFieldValue("contactPhone", currentUser.phone || "");
-			formik.setFieldValue("contactEmail", currentUser.email || "");
+			// Fill contact information (voice data takes priority)
+			formik.setFieldValue(
+				"contactPhone",
+				command.contactPhone || currentUser.phone || ""
+			);
+			formik.setFieldValue(
+				"contactEmail",
+				command.contactEmail || currentUser.email || ""
+			);
+
+			// Fill address if provided in voice command
+			if (command.address) {
+				formik.setFieldValue(
+					"pickupAddress.street",
+					command.address.street || ""
+				);
+				formik.setFieldValue("pickupAddress.city", command.address.city || "");
+				formik.setFieldValue(
+					"pickupAddress.state",
+					command.address.state || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.zipCode",
+					command.address.zipCode || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.country",
+					command.address.country || "India"
+				);
+			} else if (currentUser.address) {
+				// Fallback to user's saved address
+				formik.setFieldValue(
+					"pickupAddress.street",
+					currentUser.address.street || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.city",
+					currentUser.address.city || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.state",
+					currentUser.address.state || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.zipCode",
+					currentUser.address.zipCode || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.country",
+					currentUser.address.country || "India"
+				);
+			}
 
 			// Clear scheduling (not needed for money)
 			formik.setFieldValue("scheduledDate", "");
 			formik.setFieldValue("scheduledTime", "");
 
+			// Create success message with filled fields
+			const filledFields = [];
+			if (command.contactPhone) filledFields.push("phone");
+			if (command.contactEmail) filledFields.push("email");
+			if (command.address) filledFields.push("address");
+
+			const fieldsText =
+				filledFields.length > 0
+					? ` with ${filledFields.join(", ")}`
+					: " with contact info";
+
 			toast.success(
-				`✅ Complete form filled: ₹${command.amount} donation with contact info!`
+				`✅ Complete form filled: ₹${command.amount} donation${fieldsText}!`
 			);
 		} else if (command.type === "ITEMS") {
 			// Set item donation
@@ -210,6 +272,11 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 				else if (upperItemType.includes("FOOD")) itemType = DonationType.FOOD;
 				else if (upperItemType.includes("BOOK")) itemType = DonationType.BOOKS;
 				else if (upperItemType.includes("TOY")) itemType = DonationType.TOYS;
+				else if (upperItemType.includes("FURNITURE"))
+					itemType = DonationType.FURNITURE;
+				else if (upperItemType.includes("HOUSEHOLD"))
+					itemType = DonationType.HOUSEHOLD;
+				else if (upperItemType.includes("BLOOD")) itemType = DonationType.BLOOD;
 				else if (availableItemTypes.length > 0)
 					itemType = availableItemTypes[0];
 			} else if (availableItemTypes.length > 0) {
@@ -227,18 +294,53 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 						command.unit || "items"
 					} of ${command.itemType || "items"}`
 			);
-			formik.setFieldValue("isPickup", true);
 
-			// Fill scheduling information (required for items)
-			formik.setFieldValue("scheduledDate", defaultDate);
-			formik.setFieldValue("scheduledTime", defaultTime);
+			// Set pickup/delivery based on voice command or default to pickup
+			const isPickupMode =
+				command.isPickup !== undefined ? command.isPickup : true;
+			formik.setFieldValue("isPickup", isPickupMode);
 
-			// Fill contact information
-			formik.setFieldValue("contactPhone", currentUser.phone || "");
-			formik.setFieldValue("contactEmail", currentUser.email || "");
+			// Fill scheduling information (use voice data or defaults)
+			formik.setFieldValue(
+				"scheduledDate",
+				command.scheduledDate || defaultDate
+			);
+			formik.setFieldValue(
+				"scheduledTime",
+				command.scheduledTime || defaultTime
+			);
 
-			// Fill pickup address if available
-			if (currentUser.address) {
+			// Fill contact information (voice data takes priority)
+			formik.setFieldValue(
+				"contactPhone",
+				command.contactPhone || currentUser.phone || ""
+			);
+			formik.setFieldValue(
+				"contactEmail",
+				command.contactEmail || currentUser.email || ""
+			);
+
+			// Fill address information (voice data takes priority)
+			if (command.address) {
+				formik.setFieldValue(
+					"pickupAddress.street",
+					command.address.street || ""
+				);
+				formik.setFieldValue("pickupAddress.city", command.address.city || "");
+				formik.setFieldValue(
+					"pickupAddress.state",
+					command.address.state || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.zipCode",
+					command.address.zipCode || ""
+				);
+				formik.setFieldValue(
+					"pickupAddress.country",
+					command.address.country || "India"
+				);
+			} else if (currentUser.address) {
+				// Fallback to user's saved address
 				formik.setFieldValue(
 					"pickupAddress.street",
 					currentUser.address.street || ""
@@ -264,10 +366,21 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 			// Clear monetary fields
 			formik.setFieldValue("amount", "");
 
+			// Create detailed success message
+			const filledFields = [];
+			if (command.contactPhone) filledFields.push("phone");
+			if (command.contactEmail) filledFields.push("email");
+			if (command.address) filledFields.push("address");
+			if (command.scheduledDate) filledFields.push("schedule");
+
+			const deliveryMethod = isPickupMode ? "pickup" : "delivery";
+			const fieldsText =
+				filledFields.length > 0 ? ` with ${filledFields.join(", ")}` : "";
+
 			toast.success(
 				`✅ Complete form filled: ${command.quantity || 1} ${
 					command.unit || "items"
-				} of ${command.itemType || "items"} with delivery & contact info!`
+				} of ${command.itemType || "items"} for ${deliveryMethod}${fieldsText}!`
 			);
 		}
 
