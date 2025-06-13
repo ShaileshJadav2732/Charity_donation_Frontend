@@ -6,7 +6,7 @@ import {
 	DonorDonationsResponse,
 	UpdateDonationStatusResponse,
 } from "@/types/donation";
-import apiSlice from "./apiSlice";
+import apiSlice from "../slices/apiSlice";
 
 export const donationApi = apiSlice.injectEndpoints({
 	endpoints: (builder) => ({

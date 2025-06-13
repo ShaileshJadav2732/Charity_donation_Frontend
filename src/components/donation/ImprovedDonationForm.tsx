@@ -59,7 +59,7 @@ const ImprovedDonationForm: React.FC<ImprovedDonationFormProps> = ({
 		acceptanceType === "money" || acceptanceType === "both";
 	const canDonateItems =
 		acceptanceType === "items" || acceptanceType === "both";
-	const availableItemTypes = acceptedDonationTypes.filter(
+	const availableItemTypes = [...new Set(acceptedDonationTypes)].filter(
 		(type: DonationType) => type !== DonationType.MONEY
 	);
 

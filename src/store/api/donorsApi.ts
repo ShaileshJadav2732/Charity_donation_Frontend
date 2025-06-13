@@ -1,4 +1,4 @@
-import { apiSlice } from "./apiSlice";
+import { apiSlice } from "../slices/apiSlice";
 
 export interface DonorAddress {
 	street: string | null;
@@ -70,6 +70,4 @@ export const donorsApi = apiSlice.injectEndpoints({
 	}),
 });
 
-export const {
-	useGetOrganizationDonorsQuery,
-} = donorsApi;
+export const { useGetOrganizationDonorsQuery } = donorsApi;

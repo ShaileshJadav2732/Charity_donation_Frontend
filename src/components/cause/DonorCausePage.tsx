@@ -568,7 +568,7 @@ const CausesPage = () => {
 											)}
 											{cause.donationItems && cause.donationItems.length > 0 ? (
 												<Box display="flex" gap={1} flexWrap="wrap">
-													{cause.donationItems
+													{[...new Set(cause.donationItems)]
 														.slice(0, 3)
 														.map((item, index) => (
 															<Chip
@@ -586,9 +586,11 @@ const CausesPage = () => {
 																}}
 															/>
 														))}
-													{cause.donationItems.length > 3 && (
+													{[...new Set(cause.donationItems)].length > 3 && (
 														<Chip
-															label={`+${cause.donationItems.length - 3} more`}
+															label={`+${
+																[...new Set(cause.donationItems)].length - 3
+															} more`}
 															size="small"
 															variant="outlined"
 															sx={{

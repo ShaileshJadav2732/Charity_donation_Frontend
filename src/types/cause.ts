@@ -27,6 +27,9 @@ export interface CreateCauseBody {
 	imageUrl: string;
 	tags: string[];
 	organizationId: string;
+	acceptanceType?: "money" | "items" | "both";
+	donationItems?: string[];
+	acceptedDonationTypes?: DonationType[];
 }
 
 export interface UpdateCauseBody {

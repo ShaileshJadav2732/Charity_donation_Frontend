@@ -1,4 +1,4 @@
-import { apiSlice } from "./apiSlice";
+import { apiSlice } from "../slices/apiSlice";
 import { User } from "@/types";
 
 // Define auth API endpoints

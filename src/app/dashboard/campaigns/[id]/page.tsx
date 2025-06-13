@@ -617,7 +617,7 @@ const CampaignDetailPage = () => {
 																	gap: 1,
 																}}
 															>
-																{cause.donationItems
+																{[...new Set(cause.donationItems)]
 																	.slice(0, 5)
 																	.map((item, itemIndex) => (
 																		<Chip
@@ -636,10 +636,12 @@ const CampaignDetailPage = () => {
 																			}}
 																		/>
 																	))}
-																{cause.donationItems.length > 5 && (
+																{[...new Set(cause.donationItems)].length >
+																	5 && (
 																	<Chip
 																		label={`+${
-																			cause.donationItems.length - 5
+																			[...new Set(cause.donationItems)].length -
+																			5
 																		} more`}
 																		size="small"
 																		sx={{

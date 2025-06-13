@@ -2,7 +2,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import authReducer from "./slices/authSlice";
-import apiSlice from "./api/apiSlice";
+import apiSlice from "./slices/apiSlice";
 import { profileApi } from "./api/profileApi";
 import { campaignApi } from "./api/campaignApi";
 import { uploadApi } from "./api/uploadApi";

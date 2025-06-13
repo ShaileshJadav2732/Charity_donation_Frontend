@@ -5,7 +5,7 @@ import {
 	FetchArgs,
 	FetchBaseQueryError,
 } from "@reduxjs/toolkit/query/react";
-import { clearCredentials } from "../slices/authSlice";
+import { clearCredentials } from "./authSlice";
 import AuthUtils from "@/utils/authUtils";
 
 // Enhanced base query with authentication error handling

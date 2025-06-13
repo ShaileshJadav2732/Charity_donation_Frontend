@@ -172,6 +172,18 @@ export const campaignApi = createApi({
 			invalidatesTags: ["Campaign"],
 		}),
 
+		// Remove cause from campaign
+		removeCauseFromCampaign: builder.mutation<
+			{ success: boolean; message: string },
+			{ campaignId: string; causeId: string }
+		>({
+			query: ({ campaignId, causeId }) => ({
+				url: `/campaigns/${campaignId}/causes/${causeId}`,
+				method: "DELETE",
+			}),
+			invalidatesTags: ["Campaign", "Cause"],
+		}),
+
 		// Add a cause to a campaign
 		addCauseToCampaign: builder.mutation<
 			CampaignResponse,
@@ -222,5 +234,6 @@ export const {
 	useUpdateCampaignMutation,
 	useDeleteCampaignMutation,
 	useAddCauseToCampaignMutation,
+	useRemoveCauseFromCampaignMutation,
 	useGetCampaignDetailsWithDonationsQuery,
 } = campaignApi;

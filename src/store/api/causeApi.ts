@@ -92,7 +92,10 @@ export const causeApi = createApi({
 		}),
 
 		// Delete a cause
-		deleteCause: builder.mutation<void, string>({
+		deleteCause: builder.mutation<
+			{ success: boolean; message: string },
+			string
+		>({
 			query: (id) => ({
 				url: `/causes/${id}`,
 				method: "DELETE",
@@ -119,6 +122,31 @@ export const causeApi = createApi({
 			providesTags: ["Cause"],
 		}),
 
+		// Get campaigns associated with a specific cause
+		getCampaignsForCause: builder.query<
+			{
+				success: boolean;
+				data: {
+					causeId: string;
+					campaigns: Array<{
+						id: string;
+						title: string;
+						status: string;
+						startDate: string;
+						endDate: string;
+						organizations: Array<{
+							_id: string;
+							name: string;
+						}>;
+					}>;
+				};
+			},
+			string
+		>({
+			query: (causeId) => `/causes/${causeId}/campaigns`,
+			providesTags: ["Cause", "Campaign"],
+		}),
+
 		// Get causes for a specific campaign
 	}),
 });
@@ -132,4 +160,5 @@ export const {
 	useUpdateCauseMutation,
 	useDeleteCauseMutation,
 	useGetOrganizationUserIdByCauseIdQuery,
+	useGetCampaignsForCauseQuery,
 } = causeApi;

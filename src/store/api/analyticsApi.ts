@@ -1,4 +1,4 @@
-import { apiSlice } from "./apiSlice";
+import { apiSlice } from "../slices/apiSlice";
 
 export interface DashboardStats {
 	totalDonations: number;

@@ -24,6 +24,7 @@ import {
 	SwapHoriz as BothIcon,
 	GpsFixed as Target,
 	Toys as ToysIcon,
+	Edit as EditIcon,
 } from "@mui/icons-material";
 import {
 	Alert,
@@ -53,6 +54,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSelector } from "react-redux";
+import CauseCampaignAssociations from "./CauseCampaignAssociations";
 
 const DonationTypeIcons = {
 	[DonationType.MONEY]: MoneyIcon,
@@ -73,6 +75,11 @@ const CausesPage = () => {
 	const [donationTypeFilter, setDonationTypeFilter] = useState<string>("all");
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [createCauseDialogOpen, setCreateCauseDialogOpen] = useState(false);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [causeToDelete, setCauseToDelete] = useState<{
+		id: string;
+		title: string;
+	} | null>(null);
 
 	// Pagination state
 	const [page, setPage] = useState(1);
@@ -128,19 +135,33 @@ const CausesPage = () => {
 		router.push(`/dashboard/causes/${id}/edit`);
 	};
 
-	const handleDeleteCause = async (id: string) => {
-		if (window.confirm("Are you sure you want to delete this cause?")) {
-			try {
-				setIsDeleting(true);
-				await deleteCause(id).unwrap();
-				toast.success("Cause deleted successfully!");
-				refetch();
-			} catch {
-				toast.error("Failed to delete cause. Please try again.");
-			} finally {
-				setIsDeleting(false);
-			}
+	const handleDeleteCause = (id: string, title: string) => {
+		setCauseToDelete({ id, title });
+		setDeleteDialogOpen(true);
+	};
+
+	const handleConfirmDelete = async () => {
+		if (!causeToDelete) return;
+
+		try {
+			setIsDeleting(true);
+			const result = await deleteCause(causeToDelete.id).unwrap();
+			toast.success(result.message || "Cause deleted successfully!");
+			refetch();
+			handleCloseDeleteDialog();
+		} catch (error: any) {
+			// Handle specific error messages from the backend
+			const errorMessage =
+				error?.data?.message || "Failed to delete cause. Please try again.";
+			toast.error(errorMessage);
+		} finally {
+			setIsDeleting(false);
 		}
+	};
+
+	const handleCloseDeleteDialog = () => {
+		setDeleteDialogOpen(false);
+		setCauseToDelete(null);
 	};
 
 	const handleCloseCreateCauseDialog = () => {
@@ -627,7 +648,7 @@ const CausesPage = () => {
 													{cause.donationItems &&
 													cause.donationItems.length > 0 ? (
 														<Box display="flex" gap={0.5} flexWrap="wrap">
-															{cause.donationItems
+															{[...new Set(cause.donationItems)]
 																.slice(0, 2)
 																.map((item, index) => (
 																	<Chip
@@ -644,10 +665,10 @@ const CausesPage = () => {
 																		}}
 																	/>
 																))}
-															{cause.donationItems.length > 2 && (
+															{[...new Set(cause.donationItems)].length > 2 && (
 																<Chip
 																	label={`+${
-																		cause.donationItems.length - 2
+																		[...new Set(cause.donationItems)].length - 2
 																	} more`}
 																	size="small"
 																	variant="outlined"
@@ -711,6 +732,21 @@ const CausesPage = () => {
 													</Box>
 												</Box>
 											)}
+
+											{/* Campaign Associations */}
+											<Box sx={{ mb: 2 }}>
+												<Typography
+													variant="body2"
+													color="text.secondary"
+													sx={{ fontWeight: 500, mb: 1 }}
+												>
+													Campaign Associations:
+												</Typography>
+												<CauseCampaignAssociations
+													causeId={cause.id}
+													onCampaignRemoved={refetch}
+												/>
+											</Box>
 										</CardContent>
 										<CardActions
 											sx={{ justifyContent: "space-between", p: 3, pt: 0 }}
@@ -732,7 +768,7 @@ const CausesPage = () => {
 											</Button>
 											<IconButton
 												size="small"
-												onClick={() => handleDeleteCause(cause.id)}
+												onClick={() => handleDeleteCause(cause.id, cause.title)}
 												disabled={isDeleting}
 												sx={{
 													color: "#ef4444",
@@ -834,6 +870,82 @@ const CausesPage = () => {
 						}}
 					>
 						Create Cause
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Delete Cause Confirmation Dialog */}
+			<Dialog
+				open={deleteDialogOpen}
+				onClose={handleCloseDeleteDialog}
+				maxWidth="sm"
+				fullWidth
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: 3,
+							p: 1,
+						},
+					},
+				}}
+			>
+				<DialogTitle
+					sx={{
+						fontWeight: 600,
+						color: "#ef4444",
+						display: "flex",
+						alignItems: "center",
+						gap: 1,
+					}}
+				>
+					<DeleteIcon />
+					Delete Cause
+				</DialogTitle>
+				<DialogContent>
+					<DialogContentText sx={{ color: "#666", lineHeight: 1.6, mb: 2 }}>
+						Are you sure you want to delete the cause{" "}
+						<strong>"{causeToDelete?.title}"</strong>?
+					</DialogContentText>
+					<DialogContentText
+						sx={{ color: "#ef4444", lineHeight: 1.6, fontSize: "0.9rem" }}
+					>
+						⚠️ <strong>Important:</strong> Causes with existing donations or
+						associated with campaigns cannot be deleted. You'll need to remove
+						the cause from all campaigns first.
+					</DialogContentText>
+					<DialogContentText
+						sx={{ color: "#666", lineHeight: 1.6, fontSize: "0.9rem", mt: 1 }}
+					>
+						This action cannot be undone.
+					</DialogContentText>
+				</DialogContent>
+				<DialogActions sx={{ p: 3, pt: 1 }}>
+					<Button
+						onClick={handleCloseDeleteDialog}
+						sx={{ color: "#666" }}
+						disabled={isDeleting}
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleConfirmDelete}
+						variant="contained"
+						color="error"
+						disabled={isDeleting}
+						sx={{
+							backgroundColor: "#ef4444",
+							"&:hover": { backgroundColor: "#dc2626" },
+							minWidth: 120,
+						}}
+					>
+						{isDeleting ? (
+							<>
+								<CircularProgress size={16} sx={{ mr: 1, color: "white" }} />
+								Deleting...
+							</>
+						) : (
+							"Delete Cause"
+						)}
 					</Button>
 				</DialogActions>
 			</Dialog>

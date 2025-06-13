@@ -432,7 +432,7 @@ export default function CauseDetailPage({
 							</Typography>
 							{/* Show accepted item types */}
 							<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-								{acceptedDonationTypes
+								{[...new Set(acceptedDonationTypes)]
 									.filter((type) => type !== DonationType.MONEY)
 									.map((type: DonationType) => (
 										<Chip
@@ -463,20 +463,22 @@ export default function CauseDetailPage({
 							Items Needed
 						</Typography>
 						<Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-							{donationItems.map((item: string, index: number) => (
-								<Chip
-									key={index}
-									label={item}
-									sx={{
-										backgroundColor: "#2f8077",
-										color: "white",
-										fontWeight: 500,
-										"&:hover": {
-											backgroundColor: "#287068",
-										},
-									}}
-								/>
-							))}
+							{[...new Set(donationItems)].map(
+								(item: string, index: number) => (
+									<Chip
+										key={index}
+										label={item}
+										sx={{
+											backgroundColor: "#2f8077",
+											color: "white",
+											fontWeight: 500,
+											"&:hover": {
+												backgroundColor: "#287068",
+											},
+										}}
+									/>
+								)
+							)}
 						</Box>
 					</Box>
 				)}

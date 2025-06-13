@@ -548,24 +548,28 @@ const DonorHomePage: React.FC = () => {
 										)}
 										{cause.donationItems && cause.donationItems.length > 0 ? (
 											<Box display="flex" gap={0.5} flexWrap="wrap">
-												{cause.donationItems.slice(0, 2).map((item, index) => (
+												{[...new Set(cause.donationItems)]
+													.slice(0, 2)
+													.map((item, index) => (
+														<Chip
+															key={index}
+															label={item}
+															size="small"
+															variant="outlined"
+															sx={{
+																borderRadius: 1,
+																fontSize: "0.7rem",
+																height: 22,
+																borderColor: getUrgencyColor(cause.urgency),
+																color: getUrgencyColor(cause.urgency),
+															}}
+														/>
+													))}
+												{[...new Set(cause.donationItems)].length > 2 && (
 													<Chip
-														key={index}
-														label={item}
-														size="small"
-														variant="outlined"
-														sx={{
-															borderRadius: 1,
-															fontSize: "0.7rem",
-															height: 22,
-															borderColor: getUrgencyColor(cause.urgency),
-															color: getUrgencyColor(cause.urgency),
-														}}
-													/>
-												))}
-												{cause.donationItems.length > 2 && (
-													<Chip
-														label={`+${cause.donationItems.length - 2} more`}
+														label={`+${
+															[...new Set(cause.donationItems)].length - 2
+														} more`}
 														size="small"
 														variant="outlined"
 														sx={{
@@ -738,9 +742,13 @@ const DonorHomePage: React.FC = () => {
 																	variant="caption"
 																	color="text.secondary"
 																>
-																	{donation.items.slice(0, 2).join(", ")}
-																	{donation.items.length > 2 &&
-																		` +${donation.items.length - 2} more`}
+																	{[...new Set(donation.items)]
+																		.slice(0, 2)
+																		.join(", ")}
+																	{[...new Set(donation.items)].length > 2 &&
+																		` +${
+																			[...new Set(donation.items)].length - 2
+																		} more`}
 																</Typography>
 															)}
 														</Box>
