@@ -102,8 +102,8 @@ canvas {
 
 /* Replace any red color variables with alternatives */
 :root {
-	--error-color: #f59e0b; /* Changed from red to orange */
-	--danger-color: #f59e0b; /* Changed from red to orange */
+	--error-color: #101313; /* Changed from red to orange */
+	--danger-color: #101313; /* Changed from red to orange */
 	/* Keep your existing teal theme colors */
 	--primary-color: #287068;
 	--secondary-color: #2f8077;

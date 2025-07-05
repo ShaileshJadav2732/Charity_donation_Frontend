@@ -19,6 +19,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { AuthUtils } from "@/utils/authUtils";
 
 export default function DonationForm() {
 	const params = useParams();
@@ -174,7 +175,7 @@ export default function DonationForm() {
 			};
 
 			const res = await axios.post(
-				"https://charity-donation-backend.onrender.com/api/payments/create-checkout-session",
+				"http://localhost:8080/api/payments/create-checkout-session",
 				{
 					amount: donationPayload.amount,
 					organizationId: donationPayload.organization,
@@ -185,7 +186,7 @@ export default function DonationForm() {
 				},
 				{
 					headers: {
-						Authorization: `Bearer ${localStorage.getItem("token")}`,
+						Authorization: `Bearer ${token}`,
 					},
 				}
 			);
@@ -196,12 +197,22 @@ export default function DonationForm() {
 				throw new Error("No checkout URL received");
 			}
 		} catch (err: unknown) {
-			const apiError = err as { response?: { data?: { message?: string } } };
-			if (apiError.response?.data?.message) {
-				toast.error(apiError.response.data.message);
-			} else {
-				toast.error("Payment failed. Please try again.");
-			}
+			const apiError = err as {
+				response?: {
+					status?: number;
+					data?: { message?: string };
+				};
+			};
+
+			// Handle specific authentication errors
+			// if (apiError.response?.status === 401) {
+			// 	toast.error("Authentication failed. Please log in again.");
+			// 	router.push("/login");
+			// } else if (apiError.response?.data?.message) {
+			// 	toast.error(apiError.response.data.message);
+			// } else {
+			// 	toast.error("Payment failed. Please try again.");
+			// }
 		}
 	};
 

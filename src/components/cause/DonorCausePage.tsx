@@ -137,21 +137,13 @@ const CausesPage = () => {
 	});
 
 	return (
-		<Box sx={{ p: 3, maxWidth: "1200px", mx: "auto" }}>
+		<Box sx={{ p: 3, maxWidth: "1300px", mx: "auto" }}>
 			<Typography
-				variant="h4"
+				variant="h6"
 				component="h1"
 				sx={{ fontWeight: "bold", mb: 2, color: "#1a1a1a" }}
 			>
 				Browse Active Causes
-			</Typography>
-			<Typography
-				variant="body1"
-				color="text.secondary"
-				sx={{ mb: 4, maxWidth: 600 }}
-			>
-				Discover causes from active campaigns that need your support. Every
-				donation makes a difference.
 			</Typography>
 
 			{/* Search and Filters */}

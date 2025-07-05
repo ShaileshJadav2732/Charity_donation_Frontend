@@ -326,3 +326,104 @@ export interface BarChartData {
 		borderSkipped?: boolean;
 	}[];
 }
+
+export interface BarChartProps {
+	title: string;
+	data: BarChartData;
+	height?: number;
+	showLegend?: boolean;
+	showGrid?: boolean;
+	currency?: boolean;
+	horizontal?: boolean;
+}
+
+export interface DonationTypeData {
+	type: string;
+	count: number;
+	amount?: number;
+	percentage?: number;
+}
+
+export interface DonationTypeChartProps {
+	title: string;
+	data: DonationTypeData[];
+	showAmount?: boolean;
+	variant?: "grid" | "list" | "chart";
+}
+
+export interface DoughnutChartProps {
+	title: string;
+	data: DoughnutChartData;
+	height?: number;
+	showLegend?: boolean;
+	currency?: boolean;
+	showPercentage?: boolean;
+	cutout?: string | number;
+	centerText?: string;
+}
+
+export interface LineChartProps {
+	title: string;
+	data: LineChartData;
+	height?: number;
+	showLegend?: boolean;
+	showGrid?: boolean;
+	currency?: boolean;
+}
+export interface OrganizationStats {
+	donations: {
+		totalAmount: number;
+		totalDonations: number;
+		averageDonation: number;
+	};
+	campaigns: {
+		totalCampaigns: number;
+		activeCampaigns: number;
+	};
+	feedback: {
+		averageRating: number;
+		totalFeedback: number;
+	};
+}
+
+export interface ChartData {
+	monthlyTrends: Array<{
+		month: string;
+		amount: number;
+		count: number;
+	}>;
+	donationsByType: Array<{
+		type: string;
+		count: number;
+		amount: number;
+	}>;
+}
+
+export interface RecentActivity {
+	id: string;
+	type: string;
+	amount?: number;
+	campaignName: string;
+	timestamp: string;
+}
+
+export interface OrganizationAnalyticsData {
+	stats: OrganizationStats;
+	charts: ChartData;
+	recentActivities: {
+		donations: RecentActivity[];
+		campaigns: RecentActivity[];
+		feedback: RecentActivity[];
+	};
+}
+
+export interface StatCard {
+	title: string;
+	value: number;
+	prefix?: string;
+	suffix?: string;
+	subtitle?: string;
+	icon: React.ReactElement;
+	color: string;
+	bgGradient: string;
+}

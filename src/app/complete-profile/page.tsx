@@ -105,7 +105,7 @@ function CompleteProfileContent() {
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5 }}
-			className="w-full max-w-lg"
+			className="w-full max-w-2xl"
 		>
 			<div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
 				{/* Header with logout button */}
@@ -121,7 +121,7 @@ function CompleteProfileContent() {
 							<span className="text-gray-300">|</span>
 							<button
 								onClick={handleLogout}
-								className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-600 transition-colors"
+								className="flex items-center space-x-1 text-sm text-gray-500 hover:text-green-800 transition-colors"
 							>
 								<FiLogOut className="h-4 w-4" />
 								<span>Logout</span>

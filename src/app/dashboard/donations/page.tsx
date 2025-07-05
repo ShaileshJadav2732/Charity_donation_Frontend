@@ -117,7 +117,7 @@ export default function DonationsPage() {
 						<div className="flex items-center justify-between">
 							<div>
 								<p className="text-sm font-medium text-gray-600">
-									Total Donated
+									confirmed Donated
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
 									₹{stats.monetary?.totalDonated?.toLocaleString() || "0"}

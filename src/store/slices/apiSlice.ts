@@ -67,7 +67,7 @@ export const apiSlice = createApi({
 		"DonorProfile",
 		"OrganizationProfile",
 		"Dashboard",
-		"Feedback",
+
 		"Notifications",
 		"Organizations",
 		"AdminStats",
@@ -76,6 +76,7 @@ export const apiSlice = createApi({
 		"Cause",
 		"Profile",
 		"Analytics",
+		"VoiceCommands",
 	],
 	endpoints: () => ({}),
 });

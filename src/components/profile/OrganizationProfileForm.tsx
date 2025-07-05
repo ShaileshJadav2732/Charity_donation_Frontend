@@ -59,11 +59,6 @@ export default function OrganizationProfileForm() {
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
-		if (!validateForm()) {
-			toast.error("Please fix the errors in the form.");
-			return;
-		}
-
 		try {
 			await completeOrgProfile(formData);
 
@@ -114,33 +109,6 @@ export default function OrganizationProfileForm() {
 				</div>
 				{errors.name && (
 					<p className="mt-1 text-sm text-red-500">{errors.name}</p>
-				)}
-			</div>
-
-			{/* Description */}
-			<div>
-				<label
-					htmlFor="description"
-					className="block text-sm font-medium text-gray-700"
-				>
-					Description <span className="text-red-500">*</span>
-				</label>
-				<div className="mt-1">
-					<textarea
-						id="description"
-						name="description"
-						rows={4}
-						value={formData.description}
-						onChange={handleChange}
-						required
-						className={`appearance-none block w-full px-3 py-3 rounded-lg border ${
-							errors.description ? "border-red-300" : "border-gray-200"
-						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
-						placeholder="Describe your organization’s mission and goals..."
-					/>
-				</div>
-				{errors.description && (
-					<p className="mt-1 text-sm text-red-500">{errors.description}</p>
 				)}
 			</div>
 
@@ -317,7 +285,32 @@ export default function OrganizationProfileForm() {
 					/>
 				</div>
 			</div>
-
+			{/* Description */}
+			<div>
+				<label
+					htmlFor="description"
+					className="block text-sm font-medium text-gray-700"
+				>
+					Description <span className="text-red-500">*</span>
+				</label>
+				<div className="mt-1">
+					<textarea
+						id="description"
+						name="description"
+						rows={4}
+						value={formData.description}
+						onChange={handleChange}
+						required
+						className={`appearance-none block w-full px-3 py-3 rounded-lg border ${
+							errors.description ? "border-red-300" : "border-gray-200"
+						} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
+						placeholder="Describe your organization’s mission and goals..."
+					/>
+				</div>
+				{errors.description && (
+					<p className="mt-1 text-sm text-red-500">{errors.description}</p>
+				)}
+			</div>
 			{/* Submit Button */}
 			<motion.button
 				type="submit"

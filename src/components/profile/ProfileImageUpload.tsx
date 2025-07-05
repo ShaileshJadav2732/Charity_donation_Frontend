@@ -60,14 +60,10 @@ export default function ProfileImageUpload({
 			const result = await uploadProfileImage(formData).unwrap();
 
 			if (result.profileImage) {
-				// Silently update the image without showing toast
 				onImageUpdate?.(result.profileImage);
 				setPreviewImage(null);
 			}
 		} catch {
-			// Silently handle the error - just reset the preview
-			// Don't show error toast, just keep the preview
-			// setPreviewImage(null); // Keep the preview so user can see their selection
 		} finally {
 			setIsUploading(false);
 		}

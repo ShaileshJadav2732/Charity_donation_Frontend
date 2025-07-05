@@ -102,11 +102,18 @@ export default function ProfileDashboard() {
 	const profile = isDonor ? donorProfile : orgProfile;
 	const recentDonations = donorData?.recentDonations || [];
 
-	// Filter active campaigns
+	// Filter active campaigns (must be active status AND currently running)
+	const now = new Date();
 	const activeCampaigns =
-		campaignsData?.campaigns?.filter(
-			(campaign) => campaign.status?.toLowerCase() === "active"
-		) || [];
+		campaignsData?.campaigns?.filter((campaign) => {
+			if (campaign.status?.toLowerCase() !== "active") {
+				return false;
+			}
+			// Check if campaign is currently running (between start and end dates)
+			const startDate = new Date(campaign.startDate);
+			const endDate = new Date(campaign.endDate);
+			return startDate <= now && endDate >= now;
+		}) || [];
 
 	// Calculate membership duration
 	const [membershipDuration, setMembershipDuration] = useState("");
@@ -792,7 +799,7 @@ export default function ProfileDashboard() {
 										donorProfile?.stats?.totalDonations ||
 										0) < 100 ? (
 										<>
-											Donate $
+											Donate ₹
 											{100 -
 												(donorStats.totalDonated ||
 													donorProfile?.stats?.totalDonations ||
@@ -803,7 +810,7 @@ export default function ProfileDashboard() {
 											donorProfile?.stats?.totalDonations ||
 											0) < 500 ? (
 										<>
-											Donate $
+											Donate ₹
 											{500 -
 												(donorStats.totalDonated ||
 													donorProfile?.stats?.totalDonations ||
@@ -814,7 +821,7 @@ export default function ProfileDashboard() {
 											donorProfile?.stats?.totalDonations ||
 											0) < 1000 ? (
 										<>
-											Donate $
+											Donate ₹
 											{1000 -
 												(donorStats.totalDonated ||
 													donorProfile?.stats?.totalDonations ||

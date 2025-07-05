@@ -70,7 +70,6 @@ interface CauseFormData {
 	tags: string[];
 	acceptanceType: "money" | "items" | "both";
 	donationItems: string[];
-	acceptedDonationTypes: DonationType[];
 }
 
 const DONATION_TYPES = [
@@ -85,38 +84,19 @@ const DONATION_TYPES = [
 	{ value: DonationType.OTHER, label: "Other" },
 ];
 
-// List of donation items for the UI
 const DONATION_ITEMS = [
 	"Clothes",
-	"Winter Clothing",
-	"Summer Clothing",
-	"Children's Clothing",
 	"Books",
-	"Textbooks",
-	"Children's Books",
-	"Educational Materials",
 	"Toys",
-	"Children's Toys",
-	"Board Games",
 	"Food",
-	"Non-perishable Food",
-	"Canned Goods",
-	"Baby Food",
 	"Furniture",
-	"Beds",
-	"Tables",
-	"Chairs",
+	"Electronics",
 	"Household Items",
-	"Kitchen Supplies",
-	"Cleaning Supplies",
-	"Bedding",
+	"School Supplies",
 	"Medical Supplies",
 	"Hygiene Products",
 	"Baby Items",
 	"Sports Equipment",
-	"School Supplies",
-	"Electronics",
-	"Other",
 ];
 
 const CreateCampaignPage = () => {
@@ -160,7 +140,6 @@ const CreateCampaignPage = () => {
 		tags: [],
 		acceptanceType: "money",
 		donationItems: [],
-		acceptedDonationTypes: [DonationType.MONEY],
 	});
 
 	// Calculate total target amount based on selected causes
@@ -236,7 +215,6 @@ const CreateCampaignPage = () => {
 			tags: [],
 			acceptanceType: "money",
 			donationItems: [],
-			acceptedDonationTypes: [DonationType.MONEY],
 		});
 	};
 
@@ -307,51 +285,6 @@ const CreateCampaignPage = () => {
 		});
 	};
 
-	const handleCauseAcceptanceTypeChange = (
-		event: SelectChangeEvent<string>
-	) => {
-		const value = event.target.value as "money" | "items" | "both";
-		setCauseFormData((prev) => ({
-			...prev,
-			acceptanceType: value,
-			// Reset donation items if changing to money-only
-			donationItems: value === "money" ? [] : prev.donationItems,
-			// Update accepted donation types based on acceptance type
-			acceptedDonationTypes:
-				value === "money"
-					? [DonationType.MONEY]
-					: value === "items"
-					? prev.acceptedDonationTypes.filter(
-							(type) => type !== DonationType.MONEY
-					  )
-					: prev.acceptedDonationTypes.includes(DonationType.MONEY)
-					? prev.acceptedDonationTypes
-					: [DonationType.MONEY, ...prev.acceptedDonationTypes],
-		}));
-	};
-
-	const handleCauseDonationItemsChange = (
-		event: SelectChangeEvent<string[]>
-	) => {
-		const value = event.target.value as string[];
-		setCauseFormData((prev) => ({
-			...prev,
-			donationItems: value,
-		}));
-	};
-
-	const handleCauseDonationTypeChange = (type: DonationType) => {
-		setCauseFormData((prev) => {
-			const types = prev.acceptedDonationTypes.includes(type)
-				? prev.acceptedDonationTypes.filter((t) => t !== type)
-				: [...prev.acceptedDonationTypes, type];
-			return {
-				...prev,
-				acceptedDonationTypes: types,
-			};
-		});
-	};
-
 	const handleCreateCause = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
@@ -366,23 +299,66 @@ const CreateCampaignPage = () => {
 				title: causeFormData.title,
 				description: causeFormData.description,
 				targetAmount:
-					causeFormData.acceptanceType !== "items"
-						? parseFloat(causeFormData.targetAmount) || 0
-						: 0,
+					causeFormData.acceptanceType === "items"
+						? 0
+						: parseFloat(causeFormData.targetAmount) || 0,
 				imageUrl: causeFormData.imageUrl,
 				tags: causeFormData.tags,
 				organizationId: user.id,
 				acceptanceType: causeFormData.acceptanceType,
-				donationItems:
-					causeFormData.acceptanceType !== "money"
-						? causeFormData.donationItems
-						: [],
-				acceptedDonationTypes: causeFormData.acceptedDonationTypes,
+				donationItems: causeFormData.donationItems,
+				acceptedDonationTypes:
+					causeFormData.acceptanceType === "money"
+						? [DonationType.MONEY]
+						: causeFormData.acceptanceType === "both"
+						? [
+								DonationType.MONEY,
+								...causeFormData.tags
+									.filter((tag) =>
+										Object.values(DonationType).includes(tag as DonationType)
+									)
+									.map((tag) => tag as DonationType),
+						  ]
+						: undefined, // Let backend infer from donationItems for items-only causes
 			};
 
-			// Validate only the title
+			// Validate required fields
 			if (!payload.title) {
 				toast.error("Cause title is required");
+				return;
+			}
+
+			if (!payload.description) {
+				toast.error("Cause description is required");
+				return;
+			}
+
+			if (!payload.imageUrl) {
+				toast.error("Cause image is required");
+				return;
+			}
+
+			// Validate acceptance type specific requirements
+			if (
+				payload.acceptanceType === "items" ||
+				payload.acceptanceType === "both"
+			) {
+				if (!payload.donationItems || payload.donationItems.length === 0) {
+					toast.error(
+						"At least one donation item must be selected for item-based causes"
+					);
+					return;
+				}
+			}
+
+			if (
+				payload.acceptanceType !== "items" &&
+				(!causeFormData.targetAmount ||
+					parseFloat(causeFormData.targetAmount) <= 0)
+			) {
+				toast.error(
+					"Target amount must be greater than 0 for money-based causes"
+				);
 				return;
 			}
 
@@ -866,112 +842,169 @@ const CreateCampaignPage = () => {
 								placeholder="Describe the cause and its impact"
 							/>
 
-							{/* Acceptance Type Selection */}
-							<FormControl fullWidth>
+							<FormControl
+								fullWidth
+								sx={{
+									"& .MuiOutlinedInput-root": {
+										borderRadius: 2,
+										"&.Mui-focused": {
+											"& .MuiOutlinedInput-notchedOutline": {
+												borderColor: customColor,
+											},
+										},
+									},
+								}}
+							>
 								<InputLabel>Acceptance Type</InputLabel>
 								<Select
+									name="acceptanceType"
 									value={causeFormData.acceptanceType}
-									onChange={handleCauseAcceptanceTypeChange}
+									onChange={(e) => {
+										const newAcceptanceType = e.target.value as
+											| "money"
+											| "items"
+											| "both";
+										setCauseFormData((prev) => ({
+											...prev,
+											acceptanceType: newAcceptanceType,
+											// Reset target amount to 0 for items-only causes
+											targetAmount:
+												newAcceptanceType === "items" ? "0" : prev.targetAmount,
+										}));
+									}}
 									required
 								>
 									<MenuItem value="money">Money Only</MenuItem>
 									<MenuItem value="items">Items Only</MenuItem>
-									<MenuItem value="both">Both Money & Items</MenuItem>
+									<MenuItem value="both">Money & Items</MenuItem>
 								</Select>
 							</FormControl>
 
-							{/* Target Amount - only show for money or both acceptance types */}
-							{causeFormData.acceptanceType !== "items" && (
-								<FormInput
-									fullWidth
-									label="Target Amount"
-									name="targetAmount"
-									type="number"
-									value={causeFormData.targetAmount}
-									onChange={handleCauseFormChange}
-									required
-									slotProps={{
-										input: {
-											startAdornment: <span>₹</span>,
-										},
-									}}
-									placeholder="0"
-									helperText="Set a monetary target for this cause"
-								/>
-							)}
-
 							<FormInput
 								fullWidth
-								label="Image URL"
-								name="imageUrl"
-								value={causeFormData.imageUrl}
+								label="Target Amount"
+								name="targetAmount"
+								type="number"
+								value={causeFormData.targetAmount}
 								onChange={handleCauseFormChange}
-								required
-								placeholder="https://example.com/cause-image.jpg"
+								required={causeFormData.acceptanceType !== "items"}
+								disabled={causeFormData.acceptanceType === "items"}
+								slotProps={{
+									input: {
+										startAdornment: <span>₹</span>,
+									},
+								}}
+								placeholder="0"
+								helperText={
+									causeFormData.acceptanceType === "items"
+										? "Target amount is not required for items-only causes"
+										: "Enter the target amount for monetary donations"
+								}
 							/>
 
-							{/* Donation Items - only show for items or both acceptance types */}
-							{causeFormData.acceptanceType !== "money" && (
-								<FormControl fullWidth>
-									<InputLabel>Donation Items</InputLabel>
-									<Select
-										multiple
-										value={causeFormData.donationItems}
-										onChange={handleCauseDonationItemsChange}
-										renderValue={(selected) => (
-											<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-												{selected.map((value) => (
-													<Chip key={value} label={value} size="small" />
-												))}
-											</Box>
-										)}
+							<CloudinaryImageUpload
+								onImageUpload={(imageUrl) => {
+									setCauseFormData((prev) => ({
+										...prev,
+										imageUrl,
+									}));
+								}}
+								currentImageUrl={causeFormData.imageUrl}
+								label="Cause Image"
+								helperText="Upload an image for your cause (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
+							/>
+
+							{(causeFormData.acceptanceType === "items" ||
+								causeFormData.acceptanceType === "both") && (
+								<Box>
+									<Typography
+										variant="subtitle2"
+										gutterBottom
+										sx={{
+											fontWeight: 600,
+											color: customColor,
+											mb: 2,
+										}}
 									>
+										Donation Items *
+									</Typography>
+									<FormGroup>
 										{DONATION_ITEMS.map((item) => (
-											<MenuItem key={item} value={item}>
-												<Checkbox
-													checked={causeFormData.donationItems.includes(item)}
-												/>
-												<ListItemText primary={item} />
-											</MenuItem>
+											<FormControlLabel
+												key={item}
+												control={
+													<Checkbox
+														checked={causeFormData.donationItems.includes(item)}
+														onChange={(e) => {
+															if (e.target.checked) {
+																setCauseFormData((prev) => ({
+																	...prev,
+																	donationItems: [...prev.donationItems, item],
+																}));
+															} else {
+																setCauseFormData((prev) => ({
+																	...prev,
+																	donationItems: prev.donationItems.filter(
+																		(donationItem) => donationItem !== item
+																	),
+																}));
+															}
+														}}
+													/>
+												}
+												label={item}
+											/>
 										))}
-									</Select>
-								</FormControl>
+									</FormGroup>
+								</Box>
 							)}
 
-							{/* Accepted Donation Types */}
-							<Box>
-								<Typography
-									variant="subtitle2"
-									gutterBottom
-									sx={{
-										fontWeight: 600,
-										color: customColor,
-										mb: 2,
-									}}
-								>
-									Accepted Donation Types
-								</Typography>
-								<FormGroup>
-									{Object.values(DonationType).map((type) => (
-										<FormControlLabel
-											key={type}
-											control={
-												<Checkbox
-													checked={causeFormData.acceptedDonationTypes.includes(
-														type
-													)}
-													onChange={() => handleCauseDonationTypeChange(type)}
-													disabled={
-														type === DonationType.MONEY &&
-														causeFormData.acceptanceType === "items"
+							{(causeFormData.acceptanceType === "money" ||
+								causeFormData.acceptanceType === "both") && (
+								<Box>
+									<Typography
+										variant="subtitle2"
+										gutterBottom
+										sx={{
+											fontWeight: 600,
+											color: customColor,
+											mb: 2,
+										}}
+									>
+										Accepted Donation Types
+									</Typography>
+									<FormGroup>
+										{Object.values(DonationType)
+											.filter((type) => type !== DonationType.MONEY)
+											.map((type) => (
+												<FormControlLabel
+													key={type}
+													control={
+														<Checkbox
+															checked={causeFormData.tags.includes(type)}
+															onChange={(e) => {
+																if (e.target.checked) {
+																	setCauseFormData((prev) => ({
+																		...prev,
+																		tags: [...prev.tags, type],
+																	}));
+																} else {
+																	setCauseFormData((prev) => ({
+																		...prev,
+																		tags: prev.tags.filter(
+																			(tag) => tag !== type
+																		),
+																	}));
+																}
+															}}
+														/>
 													}
+													label={type.charAt(0) + type.slice(1).toLowerCase()}
 												/>
-											}
-											label={type.charAt(0) + type.slice(1).toLowerCase()}
-										/>
-									))}
-								</FormGroup>
-							</Box>
+											))}
+									</FormGroup>
+								</Box>
+							)}
 
 							{causeError && (
 								<Alert severity="error">

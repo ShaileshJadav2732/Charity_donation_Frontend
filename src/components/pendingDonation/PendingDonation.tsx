@@ -43,15 +43,26 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 	// Loading states for individual actions
 	const [loadingStates] = useState<Record<string, boolean>>({});
 
+	// Only make the API call if we have a valid organization ID
+	const shouldSkipQuery =
+		!organizationId ||
+		organizationId === "undefined" ||
+		organizationId.trim() === "";
+
 	const { data, isLoading, isFetching, isError, refetch } =
-		useGetOrganizationDonationsQuery({
-			organizationId,
-			params: {
-				status,
-				page,
-				limit,
+		useGetOrganizationDonationsQuery(
+			{
+				organizationId: organizationId || "", // Provide empty string as fallback
+				params: {
+					status,
+					page,
+					limit,
+				},
 			},
-		});
+			{
+				skip: shouldSkipQuery, // Skip the query if organizationId is not available or invalid
+			}
+		);
 
 	const [markAsReceived] = useMarkDonationAsReceivedMutation();
 	const [markAsConfirmed] = useMarkDonationAsConfirmedMutation();
@@ -66,6 +77,19 @@ const OrganizationDonations: React.FC<OrganizationDonationsProps> = ({
 	// Receipt upload states
 	const [showReceiptUploadModal, setShowReceiptUploadModal] = useState(false);
 	const [isMarkingConfirmed, setIsMarkingConfirmed] = useState(false);
+
+	// Early return if organization ID is invalid
+	if (shouldSkipQuery) {
+		return (
+			<div className="flex justify-center items-center h-64">
+				<div className="text-gray-500">
+					{!organizationId
+						? "Loading organization data..."
+						: "Invalid organization ID"}
+				</div>
+			</div>
+		);
+	}
 
 	// Helper function to check if donation is loading
 	const isDonationLoading = (donationId: string) => {

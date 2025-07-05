@@ -15,7 +15,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Paper, Typography, Box } from "@mui/material";
-
+import { LineChartProps } from "../../types/analytics";
 ChartJS.register(
 	CategoryScale,
 	LinearScale,
@@ -26,27 +26,6 @@ ChartJS.register(
 	Legend,
 	Filler
 );
-
-interface LineChartData {
-	labels: string[];
-	datasets: {
-		label: string;
-		data: number[];
-		borderColor?: string;
-		backgroundColor?: string;
-		fill?: boolean;
-		tension?: number;
-	}[];
-}
-
-interface LineChartProps {
-	title: string;
-	data: LineChartData;
-	height?: number;
-	showLegend?: boolean;
-	showGrid?: boolean;
-	currency?: boolean;
-}
 
 const LineChart: React.FC<LineChartProps> = ({
 	title,

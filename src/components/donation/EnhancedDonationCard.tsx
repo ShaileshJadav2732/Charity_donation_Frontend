@@ -30,7 +30,6 @@ interface EnhancedDonationCardProps {
 const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 	donation,
 }) => {
-	// Helper function to get icon for donation type
 	const getDonationTypeIcon = (type: string) => {
 		switch (type) {
 			case "MONEY":
@@ -54,7 +53,6 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 		}
 	};
 
-	// Helper function to get color for donation type
 	const getDonationTypeColor = (type: string) => {
 		switch (type) {
 			case "MONEY":

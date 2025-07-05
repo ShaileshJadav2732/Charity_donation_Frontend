@@ -13,11 +13,6 @@ export function middleware(request: NextRequest) {
 	// Get auth token from cookies
 	const authToken = request.cookies.get("authToken")?.value;
 
-	// Check if current path is public
-	// const isPublicRoute = PUBLIC_ROUTES.some(
-	// 	(route) => pathname === route || pathname.startsWith(route + "/")
-	// );
-
 	// Check if current path allows incomplete profiles
 	const isAuthRouteAllowIncomplete = AUTH_ROUTES_ALLOW_INCOMPLETE.some(
 		(route) => pathname === route || pathname.startsWith(route + "/")

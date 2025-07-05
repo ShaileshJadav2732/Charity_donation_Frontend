@@ -368,29 +368,6 @@ const CampaignsPage = () => {
 											{/* Progress Bar - only show for campaigns with monetary targets */}
 											{campaign.totalTargetAmount > 0 ? (
 												<>
-													<Box sx={{ mb: 2 }}>
-														<Box
-															display="flex"
-															justifyContent="space-between"
-															mb={0.5}
-														>
-															<Typography
-																variant="body2"
-																color="text.secondary"
-															>
-																Progress
-															</Typography>
-															<Typography variant="body2" fontWeight="bold">
-																{progress.toFixed(0)}%
-															</Typography>
-														</Box>
-														<LinearProgress
-															variant="determinate"
-															value={progress}
-															sx={{ height: 6, borderRadius: 3 }}
-														/>
-													</Box>
-
 													{/* Raised vs Goal */}
 													<Box
 														sx={{
@@ -399,34 +376,7 @@ const CampaignsPage = () => {
 															gap: 1,
 															mb: 1,
 														}}
-													>
-														<Box>
-															<Typography
-																variant="body2"
-																color="text.secondary"
-															>
-																Raised
-															</Typography>
-															<Typography
-																variant="body2"
-																fontWeight="bold"
-																color="primary"
-															>
-																₹{campaign.totalRaisedAmount.toLocaleString()}
-															</Typography>
-														</Box>
-														<Box sx={{ textAlign: "right" }}>
-															<Typography
-																variant="body2"
-																color="text.secondary"
-															>
-																Goal
-															</Typography>
-															<Typography variant="body2" fontWeight="bold">
-																₹{campaign.totalTargetAmount.toLocaleString()}
-															</Typography>
-														</Box>
-													</Box>
+													></Box>
 												</>
 											) : (
 												<Box sx={{ mb: 2 }}>

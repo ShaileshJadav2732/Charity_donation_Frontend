@@ -53,14 +53,6 @@ export default function HomePage() {
 		<Box>
 			{user.role === "donor" && <DonorHomePage />}
 			{user.role === "organization" && <OrganizationHomePage />}
-			{user.role === "admin" && (
-				<Box sx={{ p: 3 }}>
-					<Typography variant="h4" gutterBottom>
-						Admin Dashboard
-					</Typography>
-					<Alert severity="info">Admin dashboard coming soon!</Alert>
-				</Box>
-			)}
 		</Box>
 	);
 }

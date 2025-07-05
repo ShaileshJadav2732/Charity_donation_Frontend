@@ -14,9 +14,15 @@ const Page = () => {
 		return <div>Error loading organization data</div>;
 	}
 
+	// Ensure organization ID exists before rendering the component
+	const organizationId = data.organization._id || data.organization.id;
+	if (!organizationId) {
+		return <div>Organization ID not found</div>;
+	}
+
 	return (
 		<div>
-			<OrganizationDonations organizationId={data.organization._id} />
+			<OrganizationDonations organizationId={organizationId} />
 		</div>
 	);
 };

@@ -49,12 +49,37 @@ const OrganizationAnalyticsPage: React.FC = () => {
 
 	const [dateRange, setDateRange] = useState<string>("last12Months");
 
-	// Calculate real campaign stats
+	// Calculate real campaign stats (must be active status AND currently running)
 	const campaigns = campaignsData?.campaigns || [];
-	const activeCampaigns = campaigns.filter(
-		(campaign) => campaign.status?.toLowerCase() === "active"
-	).length;
+	const now = new Date();
+
+	// Debug logging
+	console.log("Analytics Page - Debug Info:");
+	console.log("user?.id:", user?.id);
+	console.log("campaignsData:", campaignsData);
+	console.log("campaigns:", campaigns);
+	console.log("campaigns.length:", campaigns.length);
+
+	const activeCampaigns = campaigns.filter((campaign) => {
+		const isActiveStatus = campaign.status?.toLowerCase() === "active";
+		const startDate = new Date(campaign.startDate);
+		const endDate = new Date(campaign.endDate);
+		const isCurrentlyRunning = startDate <= now && endDate >= now;
+
+		console.log(`Analytics - Campaign "${campaign.title}":`, {
+			status: campaign.status,
+			isActiveStatus,
+			startDate: campaign.startDate,
+			endDate: campaign.endDate,
+			isCurrentlyRunning,
+			willBeIncluded: isActiveStatus && isCurrentlyRunning,
+		});
+
+		return isActiveStatus && isCurrentlyRunning;
+	}).length;
 	const totalCampaigns = campaigns.length;
+
+	console.log("Analytics - Final counts:", { activeCampaigns, totalCampaigns });
 
 	// Override analytics data with real campaign counts
 	const enhancedStats = {

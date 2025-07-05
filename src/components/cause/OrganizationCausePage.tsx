@@ -441,7 +441,7 @@ const CausesPage = () => {
 							const getUrgencyColor = (urgency: string) => {
 								switch (urgency) {
 									case "high":
-										return "#0000009";
+										return "#000000bb";
 									case "medium":
 										return "#f59e0b";
 									case "low":
@@ -646,13 +646,14 @@ const CausesPage = () => {
 														Needed Items:
 													</Typography>
 													{cause.donationItems &&
+													Array.isArray(cause.donationItems) &&
 													cause.donationItems.length > 0 ? (
 														<Box display="flex" gap={0.5} flexWrap="wrap">
 															{[...new Set(cause.donationItems)]
 																.slice(0, 2)
 																.map((item, index) => (
 																	<Chip
-																		key={index}
+																		key={`donation-item-${index}-${item}`}
 																		label={item}
 																		size="small"
 																		variant="outlined"
@@ -694,44 +695,46 @@ const CausesPage = () => {
 											)}
 
 											{/* Tags Section */}
-											{cause.tags && cause.tags.length > 0 && (
-												<Box sx={{ mb: 2 }}>
-													<Box display="flex" gap={0.5} flexWrap="wrap">
-														{cause.tags.slice(0, 2).map((tag, index) => (
-															<Chip
-																key={index}
-																label={tag}
-																size="small"
-																variant="filled"
-																sx={{
-																	backgroundColor: `${getUrgencyColor(
-																		urgency
-																	)}20`,
-																	color: getUrgencyColor(urgency),
-																	borderRadius: 1,
-																	fontSize: "0.7rem",
-																	height: 22,
-																	fontWeight: 500,
-																}}
-															/>
-														))}
-														{cause.tags.length > 2 && (
-															<Chip
-																label={`+${cause.tags.length - 2}`}
-																size="small"
-																variant="outlined"
-																sx={{
-																	borderRadius: 1,
-																	fontSize: "0.7rem",
-																	height: 22,
-																	borderColor: getUrgencyColor(urgency),
-																	color: getUrgencyColor(urgency),
-																}}
-															/>
-														)}
+											{cause.tags &&
+												Array.isArray(cause.tags) &&
+												cause.tags.length > 0 && (
+													<Box sx={{ mb: 2 }}>
+														<Box display="flex" gap={0.5} flexWrap="wrap">
+															{cause.tags.slice(0, 2).map((tag, index) => (
+																<Chip
+																	key={`tag-${index}-${tag}`}
+																	label={tag}
+																	size="small"
+																	variant="filled"
+																	sx={{
+																		backgroundColor: `${getUrgencyColor(
+																			urgency
+																		)}20`,
+																		color: getUrgencyColor(urgency),
+																		borderRadius: 1,
+																		fontSize: "0.7rem",
+																		height: 22,
+																		fontWeight: 500,
+																	}}
+																/>
+															))}
+															{cause.tags.length > 2 && (
+																<Chip
+																	label={`+${cause.tags.length - 2}`}
+																	size="small"
+																	variant="outlined"
+																	sx={{
+																		borderRadius: 1,
+																		fontSize: "0.7rem",
+																		height: 22,
+																		borderColor: getUrgencyColor(urgency),
+																		color: getUrgencyColor(urgency),
+																	}}
+																/>
+															)}
+														</Box>
 													</Box>
-												</Box>
-											)}
+												)}
 
 											{/* Campaign Associations */}
 											<Box sx={{ mb: 2 }}>

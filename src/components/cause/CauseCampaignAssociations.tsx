@@ -59,8 +59,13 @@ const CauseCampaignAssociations: React.FC<CauseCampaignAssociationsProps> = ({
 
 	const campaigns = campaignsData?.data?.campaigns || [];
 
-	const handleOpen = () => setOpen(true);
-	const handleClose = () => setOpen(false);
+	const handleOpen = React.useCallback(() => {
+		setOpen(true);
+	}, []);
+
+	const handleClose = React.useCallback(() => {
+		setOpen(false);
+	}, []);
 
 	const handleRemoveFromCampaign = (
 		campaignId: string,
@@ -166,8 +171,10 @@ const CauseCampaignAssociations: React.FC<CauseCampaignAssociationsProps> = ({
 							}`}
 							size="small"
 							color="primary"
-							onClick={handleOpen}
-							clickable
+							onClick={
+								typeof handleOpen === "function" ? handleOpen : undefined
+							}
+							clickable={typeof handleOpen === "function"}
 						/>
 						{campaigns.slice(0, 2).map((campaign) => (
 							<Chip
@@ -176,8 +183,10 @@ const CauseCampaignAssociations: React.FC<CauseCampaignAssociationsProps> = ({
 								size="small"
 								color={getStatusColor(campaign.status) as any}
 								variant="outlined"
-								onClick={handleOpen}
-								clickable
+								onClick={
+									typeof handleOpen === "function" ? handleOpen : undefined
+								}
+								clickable={typeof handleOpen === "function"}
 							/>
 						))}
 						{campaigns.length > 2 && (
@@ -185,8 +194,10 @@ const CauseCampaignAssociations: React.FC<CauseCampaignAssociationsProps> = ({
 								label={`+${campaigns.length - 2} more`}
 								size="small"
 								variant="outlined"
-								onClick={handleOpen}
-								clickable
+								onClick={
+									typeof handleOpen === "function" ? handleOpen : undefined
+								}
+								clickable={typeof handleOpen === "function"}
 							/>
 						)}
 					</>

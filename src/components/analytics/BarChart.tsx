@@ -12,6 +12,7 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import { Paper, Typography, Box } from "@mui/material";
+import { BarChartProps } from "../../types/analytics";
 
 ChartJS.register(
 	CategoryScale,
@@ -21,29 +22,6 @@ ChartJS.register(
 	Tooltip,
 	Legend
 );
-
-interface BarChartData {
-	labels: string[];
-	datasets: {
-		label: string;
-		data: number[];
-		backgroundColor?: string | string[];
-		borderColor?: string | string[];
-		borderWidth?: number;
-		borderRadius?: number;
-		borderSkipped?: boolean;
-	}[];
-}
-
-interface BarChartProps {
-	title: string;
-	data: BarChartData;
-	height?: number;
-	showLegend?: boolean;
-	showGrid?: boolean;
-	currency?: boolean;
-	horizontal?: boolean;
-}
 
 const BarChart: React.FC<BarChartProps> = ({
 	title,

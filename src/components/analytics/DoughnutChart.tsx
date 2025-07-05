@@ -10,30 +10,8 @@ import {
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { Paper, Typography, Box } from "@mui/material";
-
+import { DoughnutChartData, DoughnutChartProps } from "../../types/analytics";
 ChartJS.register(ArcElement, Tooltip, Legend);
-
-interface DoughnutChartData {
-	labels: string[];
-	datasets: {
-		data: number[];
-		backgroundColor: string[];
-		borderColor?: string[];
-		borderWidth?: number;
-		hoverBorderWidth?: number;
-	}[];
-}
-
-interface DoughnutChartProps {
-	title: string;
-	data: DoughnutChartData;
-	height?: number;
-	showLegend?: boolean;
-	currency?: boolean;
-	showPercentage?: boolean;
-	cutout?: string | number;
-	centerText?: string;
-}
 
 const DoughnutChart: React.FC<DoughnutChartProps> = ({
 	title,

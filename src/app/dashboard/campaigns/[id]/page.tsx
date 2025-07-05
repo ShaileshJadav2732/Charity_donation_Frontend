@@ -174,42 +174,14 @@ const CampaignDetailPage = () => {
 
 						{/* Quick Progress Overview */}
 						{campaign.totalTargetAmount > 0 && (
-							<Box sx={{ maxWidth: 400 }}>
-								<Box display="flex" justifyContent="space-between" mb={1}>
-									<Typography
-										variant="body2"
-										sx={{ color: "rgba(255, 255, 255, 0.9)" }}
-									>
-										₹{campaign.totalRaisedAmount.toLocaleString()} raised
-									</Typography>
-									<Typography
-										variant="body2"
-										sx={{ color: "rgba(255, 255, 255, 0.9)" }}
-									>
-										{progress.toFixed(0)}% of ₹
-										{campaign.totalTargetAmount.toLocaleString()}
-									</Typography>
-								</Box>
-								<LinearProgress
-									variant="determinate"
-									value={progress}
-									sx={{
-										height: 8,
-										borderRadius: 4,
-										backgroundColor: "rgba(255, 255, 255, 0.2)",
-										"& .MuiLinearProgress-bar": {
-											backgroundColor: "white",
-										},
-									}}
-								/>
-							</Box>
+							<Box sx={{ maxWidth: 400 }}></Box>
 						)}
 					</Box>
 				</Box>
 			</Box>
 
 			{/* Main Content Container */}
-			<Box sx={{ maxWidth: "1200px", mx: "auto", px: 3 }}>
+			<Box sx={{ maxWidth: "px", mx: "auto", px: 3 }}>
 				{/* Main Content Grid */}
 				<Box
 					sx={{
@@ -223,6 +195,7 @@ const CampaignDetailPage = () => {
 						{/* Description */}
 						<Paper
 							sx={{
+								width: "100%", //
 								p: 4,
 								mb: 3,
 								borderRadius: 3,
@@ -703,193 +676,6 @@ const CampaignDetailPage = () => {
 								</Stack>
 							</Paper>
 						)}
-					</Box>
-
-					{/* Right Column - Progress and Stats */}
-					<Box>
-						<Paper
-							sx={{
-								p: 4,
-								borderRadius: 3,
-								position: "sticky",
-								top: 100,
-								boxShadow: "0 8px 32px rgba(40, 112, 104, 0.15)",
-								border: "1px solid rgba(40, 112, 104, 0.1)",
-								background: "linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)",
-							}}
-						>
-							{/* Progress Section */}
-							{campaign.totalTargetAmount > 0 ? (
-								<>
-									<Typography
-										variant="h5"
-										sx={{
-											fontWeight: "bold",
-											mb: 3,
-
-											color: "#1a1a1a",
-											textAlign: "center",
-										}}
-									>
-										🎯 Campaign Progress
-									</Typography>
-
-									{/* Large Progress Circle or Bar */}
-									<Box sx={{ mb: 4, textAlign: "center" }}>
-										<Typography
-											variant="h2"
-											sx={{
-												fontWeight: "bold",
-												color: "#287068",
-												mb: 1,
-											}}
-										>
-											{progress.toFixed(0)}%
-										</Typography>
-										<Typography
-											variant="body2"
-											color="text.secondary"
-											sx={{ mb: 2 }}
-										>
-											of goal reached
-										</Typography>
-										<LinearProgress
-											variant="determinate"
-											value={progress}
-											sx={{
-												height: 12,
-												borderRadius: 6,
-												backgroundColor: "rgba(40, 112, 104, 0.1)",
-												"& .MuiLinearProgress-bar": {
-													backgroundColor: "#287068",
-													borderRadius: 6,
-												},
-											}}
-										/>
-									</Box>
-
-									{/* Amount Cards */}
-									<Box
-										sx={{
-											display: "grid",
-											gridTemplateColumns: "1fr 1fr",
-											gap: 2,
-											mb: 4,
-										}}
-									>
-										<Box
-											sx={{
-												p: 2,
-												backgroundColor: "rgba(40, 112, 104, 0.1)",
-												borderRadius: 2,
-												textAlign: "center",
-											}}
-										>
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{ mb: 1 }}
-											>
-												💰 Raised
-											</Typography>
-											<Typography
-												variant="h6"
-												fontWeight="bold"
-												color="#287068"
-											>
-												₹{campaign.totalRaisedAmount.toLocaleString()}
-											</Typography>
-										</Box>
-										<Box
-											sx={{
-												p: 2,
-												backgroundColor: "rgba(0, 0, 0, 0.05)",
-												borderRadius: 2,
-												textAlign: "center",
-											}}
-										>
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{ mb: 1 }}
-											>
-												🎯 Goal
-											</Typography>
-											<Typography variant="h6" fontWeight="bold">
-												₹{campaign.totalTargetAmount.toLocaleString()}
-											</Typography>
-										</Box>
-									</Box>
-								</>
-							) : (
-								<Alert severity="info" sx={{ mb: 3 }}>
-									<Typography variant="body2">
-										<strong>Items-only campaign</strong> - No monetary target
-										set
-									</Typography>
-								</Alert>
-							)}
-
-							{/* Campaign Stats */}
-							<Box sx={{ mb: 3 }}>
-								<Typography
-									variant="h6"
-									sx={{ fontWeight: "bold", mb: 2, color: "#1a1a1a" }}
-								>
-									📊 Campaign Stats
-								</Typography>
-								<Stack spacing={2}>
-									<Box
-										sx={{
-											p: 2,
-											backgroundColor: "rgba(40, 112, 104, 0.05)",
-											borderRadius: 2,
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "space-between",
-										}}
-									>
-										<Box display="flex" alignItems="center">
-											<GroupsIcon sx={{ mr: 1, color: "#287068" }} />
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{ fontWeight: 500 }}
-											>
-												Supporters
-											</Typography>
-										</Box>
-										<Typography variant="h6" fontWeight="bold" color="#287068">
-											{campaign.donorCount || 0}
-										</Typography>
-									</Box>
-									<Box
-										sx={{
-											p: 2,
-											backgroundColor: "rgba(40, 112, 104, 0.05)",
-											borderRadius: 2,
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "space-between",
-										}}
-									>
-										<Box display="flex" alignItems="center">
-											<CalendarIcon sx={{ mr: 1, color: "#287068" }} />
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{ fontWeight: 500 }}
-											>
-												Days Left
-											</Typography>
-										</Box>
-										<Typography variant="h6" fontWeight="bold" color="#287068">
-											{daysLeft}
-										</Typography>
-									</Box>
-								</Stack>
-							</Box>
-						</Paper>
 					</Box>
 				</Box>
 			</Box>

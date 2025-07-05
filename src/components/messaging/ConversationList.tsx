@@ -20,13 +20,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { formatDistanceToNow } from "date-fns";
-import {
-	Archive,
-	Delete,
-	MessageCircle,
-	MoreVertical,
-	Search,
-} from "lucide-react";
+import { MessageCircle, MoreVertical } from "lucide-react";
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 
@@ -50,7 +44,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
 }) => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const { onlineUsers } = useMessage();
-	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
 	const [, setSelectedConvForMenu] = useState<Conversation | null>(null);
 
 	const handleMenuOpen = (
@@ -58,12 +52,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
 		conversation: Conversation
 	) => {
 		event.stopPropagation();
-		setMenuAnchor(event.currentTarget);
+
 		setSelectedConvForMenu(conversation);
 	};
 
 	const handleMenuClose = () => {
-		setMenuAnchor(null);
 		setSelectedConvForMenu(null);
 	};
 
@@ -428,34 +421,6 @@ const ConversationList: React.FC<ConversationListProps> = ({
 					</List>
 				)}
 			</Box>
-
-			{/* Context Menu */}
-			<Menu
-				anchorEl={menuAnchor}
-				open={Boolean(menuAnchor)}
-				onClose={handleMenuClose}
-			>
-				<MenuItem
-					onClick={() => {
-						// Handle archive action for selectedConvForMenu
-						// TODO: Implement archive functionality
-						handleMenuClose();
-					}}
-				>
-					<Archive size={16} style={{ marginRight: 8 }} />
-					Archive
-				</MenuItem>
-				<MenuItem
-					onClick={() => {
-						// Handle delete action for selectedConvForMenu
-						// TODO: Implement delete functionality
-						handleMenuClose();
-					}}
-				>
-					<Delete size={16} style={{ marginRight: 8 }} />
-					Delete
-				</MenuItem>
-			</Menu>
 		</Box>
 	);
 };
