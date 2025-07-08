@@ -368,7 +368,6 @@ const CampaignsPage = () => {
 											{/* Progress Bar - only show for campaigns with monetary targets */}
 											{campaign.totalTargetAmount > 0 ? (
 												<>
-													{/* Raised vs Goal */}
 													<Box
 														sx={{
 															display: "grid",
@@ -389,9 +388,7 @@ const CampaignsPage = () => {
 												</Box>
 											)}
 
-											{/* Campaign Donation Items - show aggregated items from all causes */}
 											{(() => {
-												// Aggregate all donation items from all causes in this campaign
 												const allDonationItems =
 													campaign.causes
 														?.filter(
@@ -403,9 +400,9 @@ const CampaignsPage = () => {
 														?.flatMap((cause) => cause.donationItems || [])
 														?.filter(
 															(item, index, array) =>
-																item && // Ensure item is not null/undefined
-																typeof item === "string" && // Ensure item is a string
-																array.indexOf(item) === index // Remove duplicates
+																item &&
+																typeof item === "string" &&
+																array.indexOf(item) === index
 														) || [];
 
 												if (allDonationItems.length > 0) {

@@ -53,12 +53,6 @@ const OrganizationAnalyticsPage: React.FC = () => {
 	const campaigns = campaignsData?.campaigns || [];
 	const now = new Date();
 
-	// Debug logging
-	console.log("Analytics Page - Debug Info:");
-	console.log("user?.id:", user?.id);
-	console.log("campaignsData:", campaignsData);
-	console.log("campaigns:", campaigns);
-	console.log("campaigns.length:", campaigns.length);
 
 	const activeCampaigns = campaigns.filter((campaign) => {
 		const isActiveStatus = campaign.status?.toLowerCase() === "active";

@@ -12,8 +12,6 @@ import { organizationApi } from "./api/organizationApi";
 import { notificationApi } from "./api/notificationApi";
 import { messageApi } from "./api/messageApi";
 import voiceCommandApi from "./api/voiceCommandApi";
-
-// Import authApi to ensure it's injected into apiSlice
 import "./api/authApi";
 
 // Configure Redux store
