@@ -50,8 +50,8 @@ export interface DonationFormData {
 	dropoffAddress?: Address;
 }
 
-// Enhanced form values interface for ImprovedDonationForm
-export interface ImprovedDonationFormValues {
+// Enhanced form values interface for DonationForm
+export interface DonationFormValues {
 	type: DonationType;
 	amount: string | number;
 	description: string;
@@ -230,4 +230,32 @@ export interface Donation {
 	notes?: string;
 	createdAt: string;
 	updatedAt?: string;
+}
+
+export interface DonationFormValues {
+	type: DonationType;
+	amount: string | number;
+	quantity: number;
+	unit: string;
+	description: string;
+	scheduledDate: string;
+	scheduledTime: string;
+	contactPhone: string;
+	contactEmail: string;
+	isPickup: boolean;
+	pickupAddress: Address;
+}
+
+export interface PaymentFormValues {
+	type: string;
+	amount: number | string;
+	description: string;
+	quantity?: number;
+	unit?: string;
+	scheduledDate?: string;
+	scheduledTime?: string;
+	contactPhone: string;
+	contactEmail: string;
+	isPickup?: boolean;
+	pickupAddress?: Address;
 }

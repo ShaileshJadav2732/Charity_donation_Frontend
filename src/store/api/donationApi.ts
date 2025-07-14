@@ -32,6 +32,7 @@ export const donationApi = apiSlice.injectEndpoints({
 				}
 				return response;
 			},
+			invalidatesTags: ["Donations"],
 		}),
 		getDonationById: builder.query<
 			{ success: boolean; data: Donation },
@@ -53,6 +54,7 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "GET",
 				params,
 			}),
+			providesTags: ["Donations"],
 		}),
 		getDonorDonations: builder.query<
 			ApiResponse<DonationResponse>,
@@ -62,24 +64,28 @@ export const donationApi = apiSlice.injectEndpoints({
 				url: "/donations",
 				params: { status, type, page, limit },
 			}),
+			providesTags: ["Donations"],
 		}),
 		getDonorStats: builder.query<DonorDonationsResponse, void>({
 			query: () => ({
 				url: "/donations/donor/stats",
 				method: "GET",
 			}),
+			providesTags: ["Donations"],
 		}),
 		getItemDonationAnalytics: builder.query<ApiResponse<unknown>, void>({
 			query: () => ({
 				url: "/donations/items/analytics",
 				method: "GET",
 			}),
+			providesTags: ["Donations"],
 		}),
 		getItemDonationTypeAnalytics: builder.query<ApiResponse<unknown>, string>({
 			query: (type) => ({
 				url: `/donations/items/${type}/analytics`,
 				method: "GET",
 			}),
+			providesTags: ["Donations"],
 		}),
 
 		// Mark donation as received with photo upload

@@ -1,6 +1,6 @@
 "use client";
 
-import EnhancedDonationCard from "@/components/donation/EnhancedDonationCard";
+import DonationCard from "@/components/donation/DonationCard";
 import {
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
@@ -25,15 +25,18 @@ interface DonorStatsResponse {
 	totalCauses: number;
 }
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
 	FaBoxOpen,
 	FaChartLine,
 	FaHandHoldingHeart,
 	FaHeart,
+	FaSync,
 } from "react-icons/fa";
 
 export default function DonationsPage() {
+	const searchParams = useSearchParams();
 	const [activeTab, setActiveTab] = useState<
 		| "all"
 		| "money"
@@ -50,11 +53,13 @@ export default function DonationsPage() {
 		data: statsData,
 		isLoading: isStatsLoading,
 		isError: isStatsError,
+		refetch: refetchStats,
 	} = useGetDonorStatsQuery();
 	const {
 		data: donationsData,
 		isLoading: isDonationsLoading,
 		isError: isDonationsError,
+		refetch: refetchDonations,
 	} = useGetDonorDonationsQuery({
 		status:
 			activeTab === "all" || activeTab === "money" || activeTab === "items"
@@ -72,6 +77,21 @@ export default function DonationsPage() {
 		page,
 		limit,
 	});
+
+	// Handle payment success - refresh data when user returns from Stripe
+	useEffect(() => {
+		const paymentStatus = searchParams.get("payment");
+		if (
+			paymentStatus === "success" ||
+			(!paymentStatus && window.location.href.includes("/dashboard/donations"))
+		) {
+			// Refresh donation data when returning from payment
+			setTimeout(() => {
+				refetchStats();
+				refetchDonations();
+			}, 1000); // Small delay to allow webhook processing
+		}
+	}, [searchParams, refetchStats, refetchDonations]);
 
 	if (isStatsLoading || isDonationsLoading) {
 		return <p className="text-gray-700 text-center py-10">Loading...</p>;
@@ -106,9 +126,24 @@ export default function DonationsPage() {
 	return (
 		<div className="max-w-7xl mx-auto">
 			<div className="mt-12 space-y-6">
-				<div>
-					<h1 className="text-2xl font-bold text-gray-900">My Donations</h1>
-					<p className="text-gray-600">Track your donations and their impact</p>
+				<div className="flex items-center justify-between">
+					<div>
+						<h1 className="text-2xl font-bold text-gray-900">My Donations</h1>
+						<p className="text-gray-600">
+							Track your donations and their impact
+						</p>
+					</div>
+					<button
+						onClick={() => {
+							refetchStats();
+							refetchDonations();
+						}}
+						className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+						title="Refresh donation data"
+					>
+						<FaSync className="h-4 w-4" />
+						Refresh
+					</button>
 				</div>
 
 				{/* Stats Overview */}
@@ -314,7 +349,7 @@ export default function DonationsPage() {
 				<div className="grid gap-6 md:grid-cols-2">
 					{donations && donations.length > 0 ? (
 						donations.map((donation: Donation) => (
-							<EnhancedDonationCard key={donation._id} donation={donation} />
+							<DonationCard key={donation._id} donation={donation} />
 						))
 					) : (
 						<p className="text-gray-600 text-center col-span-2">

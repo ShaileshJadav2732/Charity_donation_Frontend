@@ -369,6 +369,7 @@ export interface LineChartProps {
 	showLegend?: boolean;
 	showGrid?: boolean;
 	currency?: boolean;
+	dualAxis?: boolean;
 }
 export interface OrganizationStats {
 	donations: {

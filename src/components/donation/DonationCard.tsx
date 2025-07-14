@@ -22,14 +22,12 @@ import {
 } from "react-icons/fa";
 import { GiBlood } from "react-icons/gi";
 
-interface EnhancedDonationCardProps {
+interface DonationCardProps {
 	donation: Donation;
 	onFeedbackSubmitted?: () => void;
 }
 
-const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
-	donation,
-}) => {
+const DonationCard: React.FC<DonationCardProps> = ({ donation }) => {
 	const getDonationTypeIcon = (type: string) => {
 		switch (type) {
 			case "MONEY":
@@ -320,4 +318,4 @@ const EnhancedDonationCard: React.FC<EnhancedDonationCardProps> = ({
 	);
 };
 
-export default EnhancedDonationCard;
+export default DonationCard;

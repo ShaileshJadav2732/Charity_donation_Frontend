@@ -34,6 +34,7 @@ const LineChart: React.FC<LineChartProps> = ({
 	showLegend = true,
 	showGrid = true,
 	currency = false,
+	dualAxis = true,
 }) => {
 	const options = {
 		responsive: true,
@@ -62,9 +63,13 @@ const LineChart: React.FC<LineChartProps> = ({
 					label: function (context: TooltipItem<"line">) {
 						const label = context.dataset.label || "";
 						const value = context.parsed.y;
-						const formattedValue = currency
-							? `₹${value.toLocaleString()}`
-							: value.toLocaleString();
+
+						// Format based on which dataset this is
+						let formattedValue = value.toLocaleString();
+						if (currency && label === "Donation Value") {
+							formattedValue = `₹${value.toLocaleString()}`;
+						}
+
 						return `${label}: ${formattedValue}`;
 					},
 				},
@@ -86,12 +91,13 @@ const LineChart: React.FC<LineChartProps> = ({
 			},
 			y: {
 				display: true,
+				position: "left" as const,
 				grid: {
 					display: showGrid,
 					color: "rgba(0, 0, 0, 0.05)",
 				},
 				ticks: {
-					color: "#6b7280",
+					color: "#2f8077", // Color matches the value line
 					font: {
 						size: 11,
 					},
@@ -105,7 +111,43 @@ const LineChart: React.FC<LineChartProps> = ({
 					},
 				},
 				beginAtZero: true,
+				title: {
+					display: dualAxis,
+					text: "Value (₹)",
+					color: "#2f8077",
+					font: {
+						size: 12,
+						weight: "bold" as const,
+					},
+				},
 			},
+			...(dualAxis
+				? {
+						y1: {
+							display: true,
+							position: "right" as const,
+							grid: {
+								display: false, // Don't show grid lines for second axis
+							},
+							ticks: {
+								color: "#f59e0b", // Color matches the count line
+								font: {
+									size: 11,
+								},
+							},
+							beginAtZero: true,
+							title: {
+								display: true,
+								text: "Count",
+								color: "#f59e0b",
+								font: {
+									size: 12,
+									weight: "bold" as const,
+								},
+							},
+						},
+				  }
+				: {}),
 		},
 		interaction: {
 			intersect: false,

@@ -53,7 +53,6 @@ const OrganizationAnalyticsPage: React.FC = () => {
 	const campaigns = campaignsData?.campaigns || [];
 	const now = new Date();
 
-
 	const activeCampaigns = campaigns.filter((campaign) => {
 		const isActiveStatus = campaign.status?.toLowerCase() === "active";
 		const startDate = new Date(campaign.startDate);
@@ -108,7 +107,7 @@ const OrganizationAnalyticsPage: React.FC = () => {
 			}),
 			datasets: [
 				{
-					label: "Donation Amount",
+					label: "Donation Value",
 					data: data.data.charts.monthlyTrends.map(
 						(trend: Trend) => trend.amount
 					),
@@ -117,18 +116,21 @@ const OrganizationAnalyticsPage: React.FC = () => {
 					fill: true,
 					tension: 0.4,
 					pointHoverRadius: 8,
-				},
+					yAxisID: "y",
+				} as any,
 				{
 					label: "Donation Count",
 					data: data.data.charts.monthlyTrends.map(
-						(trend: Trend) => trend.count
+						(trend: Trend) => trend.count || 0
 					),
-					borderColor: "#14b8a6",
-					backgroundColor: "rgba(20, 184, 166, 0.2)",
-					fill: true,
+					borderColor: "#f59e0b", // Orange color for count
+					backgroundColor: "rgba(245, 158, 11, 0.1)",
+					borderDash: [5, 5], // Changed from borderDashed to borderDash for dotted line
+					fill: false,
 					tension: 0.4,
 					pointHoverRadius: 8,
-				},
+					yAxisID: "y1", // Use a secondary y-axis
+				} as any,
 			],
 		};
 	}, [data]);
@@ -405,19 +407,7 @@ const OrganizationAnalyticsPage: React.FC = () => {
 								display: "flex",
 								justifyContent: { xs: "center", md: "flex-start" },
 							}}
-						>
-							<Select
-								value={dateRange}
-								onChange={(e) => setDateRange(e.target.value)}
-								size="small"
-								sx={{ minWidth: 160, borderRadius: 2 }}
-								aria-label="Select date range for analytics"
-							>
-								<MenuItem value="last6Months">Last 6 Months</MenuItem>
-								<MenuItem value="last12Months">Last 12 Months</MenuItem>
-								<MenuItem value="last24Months">Last 24 Months</MenuItem>
-							</Select>
-						</Box>
+						></Box>
 					</Box>
 				</Fade>
 
@@ -476,12 +466,12 @@ const OrganizationAnalyticsPage: React.FC = () => {
 									}}
 								>
 									<LineChart
-										title="📈 Donation Trends Over Time"
+										title="📈 Donation Value & Count Over Time"
 										data={formatMonthlyTrendsData}
 										height={400}
 										currency={true}
 										showGrid={true}
-										aria-label="Donation trends over time chart"
+										aria-label="Donation value and count over time chart"
 									/>
 								</Box>
 							</Grow>
@@ -532,7 +522,7 @@ const OrganizationAnalyticsPage: React.FC = () => {
 												variant="h6"
 												sx={{ color: "#287068", fontWeight: 600 }}
 											>
-												💰 Money Donations
+												Money Donations
 											</Typography>
 											<Typography variant="body2" color="text.secondary">
 												{(() => {
@@ -556,7 +546,7 @@ const OrganizationAnalyticsPage: React.FC = () => {
 												variant="h6"
 												sx={{ color: "#f59e0b", fontWeight: 600 }}
 											>
-												📦 Item Donations
+												Item Donations
 											</Typography>
 											<Typography variant="body2" color="text.secondary">
 												{(() => {
@@ -629,7 +619,7 @@ const OrganizationAnalyticsPage: React.FC = () => {
 											variant="subtitle2"
 											sx={{ fontWeight: 600, mb: 1, color: "#374151" }}
 										>
-											📋 Item Donation Summary
+											Item Donation Summary
 										</Typography>
 										<Typography variant="body2" color="text.secondary">
 											Total Item Categories:{" "}

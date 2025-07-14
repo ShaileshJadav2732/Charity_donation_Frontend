@@ -4,7 +4,7 @@ import { DonationType } from "@/types/donation";
 import {
 	CauseWithDetails,
 	FormSubmissionHandler,
-	ImprovedDonationFormValues,
+	DonationFormValues,
 	SelectChangeEvent,
 } from "@/types/forms";
 import { CheckCircle, Home, LocalShipping } from "@mui/icons-material";
@@ -32,8 +32,8 @@ import { RootState } from "@/store/store";
 
 interface ImprovedDonationFormProps {
 	cause: CauseWithDetails;
-	onSubmit: FormSubmissionHandler<ImprovedDonationFormValues>;
-	onPaymentSubmit: FormSubmissionHandler<ImprovedDonationFormValues>;
+	onSubmit: FormSubmissionHandler<DonationFormValues>;
+	onPaymentSubmit: FormSubmissionHandler<DonationFormValues>;
 	isLoading?: boolean;
 }
 

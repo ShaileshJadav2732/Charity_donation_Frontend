@@ -1,27 +1,27 @@
 "use client";
 
-import ImprovedDonationForm from "@/components/donation/ImprovedDonationForm";
+import DonationFormComponent from "@/components/donation/DonationForm";
+import StartConversationButton from "@/components/messaging/StartConversationButton";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { useCreateDonationMutation } from "@/store/api/donationApi";
 import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
-import StartConversationButton from "@/components/messaging/StartConversationButton";
+import { RootState } from "@/store/store";
+import { DonationFormValues, PaymentFormValues } from "@/types/donation";
+
 import {
 	Box,
-	CircularProgress,
-	Typography,
 	Card,
 	CardContent,
+	CircularProgress,
 	Divider,
+	Typography,
 } from "@mui/material";
-import { useParams, useRouter } from "next/navigation";
-import React from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import toast from "react-hot-toast";
 import axios from "axios";
-import { AuthUtils } from "@/utils/authUtils";
+import { useParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
-export default function DonationForm() {
+export default function DonatePage() {
 	const params = useParams();
 	const router = useRouter();
 	const causeId = params.id;
@@ -35,25 +35,8 @@ export default function DonationForm() {
 	);
 	const [createDonation, { isLoading: creating }] = useCreateDonationMutation();
 
-	const handleDonationSubmit = async (values: {
-		type: string;
-		amount?: number | string;
-		quantity: number;
-		unit: string;
-		description: string;
-		scheduledDate: string;
-		scheduledTime: string;
-		contactPhone: string;
-		contactEmail: string;
-		isPickup: boolean;
-		pickupAddress: {
-			street: string;
-			city: string;
-			state: string;
-			zipCode: string;
-			country: string;
-		};
-	}) => {
+	const handleDonationSubmit = async (values: DonationFormValues) => {
+		console.log("--------------", values);
 		try {
 			const payload = {
 				donor: user?.id || "", // Add the donor field
@@ -86,7 +69,7 @@ export default function DonationForm() {
 						  }
 						: undefined,
 			};
-
+			console.log(payload);
 			// Actually call the API to create the donation
 			await createDonation(payload).unwrap();
 
@@ -113,25 +96,7 @@ export default function DonationForm() {
 		}
 	};
 
-	const handlePaymentSubmit = async (values: {
-		type: string;
-		amount: number | string;
-		description: string;
-		quantity?: number;
-		unit?: string;
-		scheduledDate?: string;
-		scheduledTime?: string;
-		contactPhone: string;
-		contactEmail: string;
-		isPickup?: boolean;
-		pickupAddress?: {
-			street: string;
-			city: string;
-			state: string;
-			zipCode: string;
-			country: string;
-		};
-	}) => {
+	const handlePaymentSubmit = async (values: PaymentFormValues) => {
 		try {
 			// Check if user is logged in
 			const token = localStorage.getItem("token");
@@ -173,7 +138,7 @@ export default function DonationForm() {
 						  }
 						: undefined,
 			};
-
+			console.log("doantion payload", donationPayload);
 			const res = await axios.post(
 				"http://localhost:8080/api/payments/create-checkout-session",
 				{
@@ -203,16 +168,6 @@ export default function DonationForm() {
 					data?: { message?: string };
 				};
 			};
-
-			// Handle specific authentication errors
-			// if (apiError.response?.status === 401) {
-			// 	toast.error("Authentication failed. Please log in again.");
-			// 	router.push("/login");
-			// } else if (apiError.response?.data?.message) {
-			// 	toast.error(apiError.response.data.message);
-			// } else {
-			// 	toast.error("Payment failed. Please try again.");
-			// }
 		}
 	};
 
@@ -272,7 +227,7 @@ export default function DonationForm() {
 
 			{/* Donation Form */}
 			{cause && (
-				<ImprovedDonationForm
+				<DonationFormComponent
 					cause={{
 						...cause,
 						cause: {

@@ -243,7 +243,7 @@ export default function DashboardLayout({
 		<div className="min-h-screen bg-white">
 			{/* Top Navigation Bar */}
 			<div
-				className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
+				className={`fixed top-0 left-0 right-0 z-40 bg-white  shadow-md h-16 flex items-center px-4 lg:pl-6 transition-all duration-300 ${
 					scrolled ? "shadow-lg" : ""
 				}`}
 			>
@@ -318,7 +318,7 @@ export default function DashboardLayout({
 			{/* Sidebar */}
 			<aside
 				id="mobile-sidebar"
-				className={`fixed inset-y-0 left-0 z-30 w-72 bg-white- shadow-2xl transform ${
+				className={`fixed inset-y-0 left-0 z-30 w-72 bg-white shadow-2xl transform ${
 					isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
 				} lg:translate-x-0 transition-transform duration-300 ease-in-out pt-16 overflow-y-auto`}
 			>

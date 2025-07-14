@@ -1,7 +1,7 @@
-import { DonationType, ImprovedDonationFormValues } from "./donation";
+import { DonationType, DonationFormValues } from "./donation";
 
 // Re-export to maintain compatibility
-export type { ImprovedDonationFormValues };
+export type { DonationFormValues };
 
 // Event handler types
 export interface SelectChangeEvent {
@@ -25,7 +25,7 @@ export interface FormSubmissionHandler<T> {
 // Donation form specific types
 export interface DonationFormProps {
 	cause: CauseWithDetails;
-	onSubmit: FormSubmissionHandler<ImprovedDonationFormValues>;
+	onSubmit: FormSubmissionHandler<DonationFormValues>;
 	isLoading?: boolean;
 }
 
