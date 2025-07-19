@@ -14,20 +14,7 @@ import {
 	FaUtensils,
 } from "react-icons/fa";
 import { GiBlood } from "react-icons/gi";
-
-interface DonationTypeData {
-	type: string;
-	count: number;
-	amount?: number;
-	percentage?: number;
-}
-
-interface DonationTypeChartProps {
-	title: string;
-	data: DonationTypeData[];
-	showAmount?: boolean;
-	variant?: "grid" | "list" | "chart";
-}
+import { DonationTypeChartProps } from "../../types/analytics";
 
 const DonationTypeChart: React.FC<DonationTypeChartProps> = ({
 	title,
@@ -64,9 +51,9 @@ const DonationTypeChart: React.FC<DonationTypeChartProps> = ({
 				};
 			case "BLOOD":
 				return {
-					color: "#ef4444",
-					bgColor: "#ef4444",
-					lightBg: "rgba(239, 68, 68, 0.1)",
+					color: "#ec4899", // Changed from red (#ef4444) to pink
+					bgColor: "#ec4899",
+					lightBg: "rgba(236, 72, 153, 0.1)",
 					icon: <GiBlood className="h-5 w-5" />,
 					label: "Blood",
 				};

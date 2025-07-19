@@ -1,11 +1,70 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
+	Campaign,
 	CampaignsResponse,
 	CampaignResponse,
 	CampaignQueryParams,
 	CreateCampaignBody,
 	UpdateCampaignBody,
 } from "@/types/campaings";
+
+// Types for the new detailed campaign endpoint
+interface CauseWithStats {
+	_id: string;
+	title: string;
+	description: string;
+	targetAmount: number;
+	donationItems: string[];
+	acceptanceType: "money" | "items" | "both";
+	raisedAmount: number;
+	progressPercentage: number;
+	donorCount: number;
+	totalDonations: number;
+	itemDonationsCount: number;
+	recentDonations: Array<{
+		id: string;
+		donor: { name: string; email: string };
+		type: string;
+		amount?: number;
+		description: string;
+		status: string;
+		createdAt: string;
+	}>;
+}
+
+interface CampaignWithStats extends Omit<Campaign, "causes"> {
+	totalRaisedAmount: number;
+	donorCount: number;
+	progressPercentage: number;
+	daysRemaining: number;
+	allDonationItems: string[];
+	causes: CauseWithStats[];
+}
+
+interface CampaignStatistics {
+	totalDonations: number;
+	totalMoneyDonations: number;
+	totalItemDonations: number;
+	averageDonationAmount: number;
+	causesWithProgress: number;
+	causesCompleted: number;
+}
+
+interface RecentActivity {
+	id: string;
+	donor: { name: string; email: string };
+	type: string;
+	amount?: number;
+	description: string;
+	status: string;
+	createdAt: string;
+}
+
+export interface CampaignDetailsWithDonationsResponse {
+	campaign: CampaignWithStats;
+	statistics: CampaignStatistics;
+	recentActivity: RecentActivity[];
+}
 import { RootState } from "../store";
 
 export const campaignApi = createApi({
@@ -28,33 +87,15 @@ export const campaignApi = createApi({
 	}),
 	tagTypes: ["Campaign", "Cause"],
 	endpoints: (builder) => ({
-		getCampaigns: builder.query<CampaignsResponse, CampaignQueryParams>({
-			query: (params) => ({
-				url: "/campaigns",
-				method: "GET",
-				params,
-			}),
-			transformResponse: (response: any) => {
-				// Transform backend response to match frontend expectations
-				return {
-					campaigns: response.data || [],
-					total: response.pagination?.total || 0,
-					page: response.pagination?.page || 1,
-					limit: response.pagination?.limit || 10,
-				};
-			},
-			providesTags: ["Campaign"],
-		}),
-
 		getCampaignById: builder.query<CampaignResponse, string>({
 			query: (id) => ({
 				url: `/campaigns/${id}`,
 				method: "GET",
 			}),
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
 			providesTags: (_result, _error, id) => [{ type: "Campaign", id }],
@@ -69,7 +110,10 @@ export const campaignApi = createApi({
 				method: "GET",
 				params,
 			}),
-			transformResponse: (response: any) => {
+			transformResponse: (response: {
+				data?: Campaign[];
+				pagination?: { total?: number; page?: number; limit?: number };
+			}) => {
 				// Transform backend response to match frontend expectations
 				return {
 					campaigns: response.data || [],
@@ -89,10 +133,10 @@ export const campaignApi = createApi({
 					body,
 				};
 			},
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
 			invalidatesTags: ["Campaign"],
@@ -109,13 +153,13 @@ export const campaignApi = createApi({
 					body,
 				};
 			},
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
-			invalidatesTags: (result, error, { id }) => {
+			invalidatesTags: (_result, _error, { id }) => {
 				return [{ type: "Campaign", id }];
 			},
 		}),
@@ -128,6 +172,18 @@ export const campaignApi = createApi({
 			invalidatesTags: ["Campaign"],
 		}),
 
+		// Remove cause from campaign
+		removeCauseFromCampaign: builder.mutation<
+			{ success: boolean; message: string },
+			{ campaignId: string; causeId: string }
+		>({
+			query: ({ campaignId, causeId }) => ({
+				url: `/campaigns/${campaignId}/causes/${causeId}`,
+				method: "DELETE",
+			}),
+			invalidatesTags: ["Campaign", "Cause"],
+		}),
+
 		// Add a cause to a campaign
 		addCauseToCampaign: builder.mutation<
 			CampaignResponse,
@@ -138,10 +194,10 @@ export const campaignApi = createApi({
 				method: "POST",
 				body: { causeId },
 			}),
-			transformResponse: (response: any) => {
+			transformResponse: (response: { data?: Campaign }) => {
 				// Transform backend response to match frontend expectations
 				return {
-					campaign: response.data || null,
+					campaign: response.data || ({} as Campaign),
 				};
 			},
 			invalidatesTags: (_result, _error, { campaignId }) => [
@@ -149,15 +205,35 @@ export const campaignApi = createApi({
 				"Cause",
 			],
 		}),
+
+		// Get campaign details with comprehensive donation data
+		getCampaignDetailsWithDonations: builder.query<
+			CampaignDetailsWithDonationsResponse,
+			string
+		>({
+			query: (campaignId) => ({
+				url: `/campaigns/${campaignId}/details-with-donations`,
+				method: "GET",
+			}),
+			transformResponse: (response: {
+				data?: CampaignDetailsWithDonationsResponse;
+			}) => {
+				return response.data || ({} as CampaignDetailsWithDonationsResponse);
+			},
+			providesTags: (_result, _error, campaignId) => [
+				{ type: "Campaign", id: campaignId },
+			],
+		}),
 	}),
 });
 
 export const {
-	useGetCampaignsQuery,
 	useGetCampaignByIdQuery,
 	useGetOrganizationCampaignsQuery,
 	useCreateCampaignMutation,
 	useUpdateCampaignMutation,
 	useDeleteCampaignMutation,
 	useAddCauseToCampaignMutation,
+	useRemoveCauseFromCampaignMutation,
+	useGetCampaignDetailsWithDonationsQuery,
 } = campaignApi;

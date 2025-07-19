@@ -68,6 +68,8 @@ interface CauseFormData {
 	targetAmount: string;
 	imageUrl: string;
 	tags: string[];
+	acceptanceType: "money" | "items" | "both";
+	donationItems: string[];
 }
 
 const DONATION_TYPES = [
@@ -80,6 +82,21 @@ const DONATION_TYPES = [
 	{ value: DonationType.FURNITURE, label: "Furniture" },
 	{ value: DonationType.HOUSEHOLD, label: "Household" },
 	{ value: DonationType.OTHER, label: "Other" },
+];
+
+const DONATION_ITEMS = [
+	"Clothes",
+	"Books",
+	"Toys",
+	"Food",
+	"Furniture",
+	"Electronics",
+	"Household Items",
+	"School Supplies",
+	"Medical Supplies",
+	"Hygiene Products",
+	"Baby Items",
+	"Sports Equipment",
 ];
 
 const CreateCampaignPage = () => {
@@ -121,18 +138,31 @@ const CreateCampaignPage = () => {
 		targetAmount: "",
 		imageUrl: "",
 		tags: [],
+		acceptanceType: "money",
+		donationItems: [],
 	});
 
 	// Calculate total target amount based on selected causes
 	useEffect(() => {
 		if (formData.selectedCauses.length > 0 && causesData?.causes) {
-			const total = causesData.causes
-				.filter((cause: Cause) => formData.selectedCauses.includes(cause.id))
+			const selectedCausesData = causesData.causes.filter((cause: Cause) =>
+				formData.selectedCauses.includes(cause.id)
+			);
+
+			// Calculate total from causes that accept money (money or both)
+			const total = selectedCausesData
+				.filter((cause: Cause) => cause.acceptanceType !== "items")
 				.reduce((sum: number, cause: Cause) => sum + cause.targetAmount, 0);
 
 			setFormData((prev) => ({
 				...prev,
 				totalTargetAmount: total.toString(),
+			}));
+		} else {
+			// Reset to 0 if no causes selected
+			setFormData((prev) => ({
+				...prev,
+				totalTargetAmount: "0",
 			}));
 		}
 	}, [formData.selectedCauses, causesData]);
@@ -183,6 +213,8 @@ const CreateCampaignPage = () => {
 			targetAmount: "",
 			imageUrl: "",
 			tags: [],
+			acceptanceType: "money",
+			donationItems: [],
 		});
 	};
 
@@ -266,15 +298,67 @@ const CreateCampaignPage = () => {
 			const payload: CreateCauseBody = {
 				title: causeFormData.title,
 				description: causeFormData.description,
-				targetAmount: parseFloat(causeFormData.targetAmount) || 0,
+				targetAmount:
+					causeFormData.acceptanceType === "items"
+						? 0
+						: parseFloat(causeFormData.targetAmount) || 0,
 				imageUrl: causeFormData.imageUrl,
 				tags: causeFormData.tags,
 				organizationId: user.id,
+				acceptanceType: causeFormData.acceptanceType,
+				donationItems: causeFormData.donationItems,
+				acceptedDonationTypes:
+					causeFormData.acceptanceType === "money"
+						? [DonationType.MONEY]
+						: causeFormData.acceptanceType === "both"
+						? [
+								DonationType.MONEY,
+								...causeFormData.tags
+									.filter((tag) =>
+										Object.values(DonationType).includes(tag as DonationType)
+									)
+									.map((tag) => tag as DonationType),
+						  ]
+						: undefined, // Let backend infer from donationItems for items-only causes
 			};
 
-			// Validate only the title
+			// Validate required fields
 			if (!payload.title) {
 				toast.error("Cause title is required");
+				return;
+			}
+
+			if (!payload.description) {
+				toast.error("Cause description is required");
+				return;
+			}
+
+			if (!payload.imageUrl) {
+				toast.error("Cause image is required");
+				return;
+			}
+
+			// Validate acceptance type specific requirements
+			if (
+				payload.acceptanceType === "items" ||
+				payload.acceptanceType === "both"
+			) {
+				if (!payload.donationItems || payload.donationItems.length === 0) {
+					toast.error(
+						"At least one donation item must be selected for item-based causes"
+					);
+					return;
+				}
+			}
+
+			if (
+				payload.acceptanceType !== "items" &&
+				(!causeFormData.targetAmount ||
+					parseFloat(causeFormData.targetAmount) <= 0)
+			) {
+				toast.error(
+					"Target amount must be greater than 0 for money-based causes"
+				);
 				return;
 			}
 
@@ -412,7 +496,24 @@ const CreateCampaignPage = () => {
 							label={
 								<ListItemText
 									primary={cause.title}
-									secondary={`Target: $${cause.targetAmount.toLocaleString()}`}
+									secondary={
+										<Box>
+											<Typography variant="body2" color="text.secondary">
+												Target: ₹{cause.targetAmount.toLocaleString()} • Type:{" "}
+												{cause.acceptanceType === "money"
+													? "Money"
+													: cause.acceptanceType === "items"
+													? "Items Only"
+													: "Money & Items"}
+											</Typography>
+											{cause.acceptanceType === "items" && (
+												<Typography variant="caption" color="warning.main">
+													Items-only causes don&apos;t contribute to monetary
+													target
+												</Typography>
+											)}
+										</Box>
+									}
 								/>
 							}
 							sx={{ width: "100%", m: 0, p: 1 }}
@@ -643,8 +744,8 @@ const CreateCampaignPage = () => {
 							}}
 							helperText={
 								formData.selectedCauses.length > 0
-									? "Automatically calculated from selected causes"
-									: "Enter the total target amount"
+									? "Automatically calculated from selected causes that accept money. Items-only causes don't contribute to this amount."
+									: "Enter the total target amount for monetary donations"
 							}
 						/>
 
@@ -741,79 +842,169 @@ const CreateCampaignPage = () => {
 								placeholder="Describe the cause and its impact"
 							/>
 
-							<Box
+							<FormControl
+								fullWidth
 								sx={{
-									display: "flex",
-									gap: 2,
-									flexDirection: { xs: "column", sm: "row" },
+									"& .MuiOutlinedInput-root": {
+										borderRadius: 2,
+										"&.Mui-focused": {
+											"& .MuiOutlinedInput-notchedOutline": {
+												borderColor: customColor,
+											},
+										},
+									},
 								}}
 							>
-								<FormInput
-									fullWidth
-									label="Target Amount"
-									name="targetAmount"
-									type="number"
-									value={causeFormData.targetAmount}
-									onChange={handleCauseFormChange}
-									required
-									slotProps={{
-										input: {
-											startAdornment: <span>$</span>,
-										},
+								<InputLabel>Acceptance Type</InputLabel>
+								<Select
+									name="acceptanceType"
+									value={causeFormData.acceptanceType}
+									onChange={(e) => {
+										const newAcceptanceType = e.target.value as
+											| "money"
+											| "items"
+											| "both";
+										setCauseFormData((prev) => ({
+											...prev,
+											acceptanceType: newAcceptanceType,
+											// Reset target amount to 0 for items-only causes
+											targetAmount:
+												newAcceptanceType === "items" ? "0" : prev.targetAmount,
+										}));
 									}}
-									placeholder="0"
-								/>
-
-								<FormInput
-									fullWidth
-									label="Image URL"
-									name="imageUrl"
-									value={causeFormData.imageUrl}
-									onChange={handleCauseFormChange}
 									required
-									placeholder="https://example.com/cause-image.jpg"
-								/>
-							</Box>
-
-							<Box>
-								<Typography
-									variant="subtitle2"
-									gutterBottom
-									sx={{
-										fontWeight: 600,
-										color: customColor,
-										mb: 2,
-									}}
 								>
-									Accepted Donation Types
-								</Typography>
-								<FormGroup>
-									{Object.values(DonationType).map((type) => (
-										<FormControlLabel
-											key={type}
-											control={
-												<Checkbox
-													checked={causeFormData.tags.includes(type)}
-													onChange={(e) => {
-														if (e.target.checked) {
-															setCauseFormData((prev) => ({
-																...prev,
-																tags: [...prev.tags, type],
-															}));
-														} else {
-															setCauseFormData((prev) => ({
-																...prev,
-																tags: prev.tags.filter((tag) => tag !== type),
-															}));
-														}
-													}}
+									<MenuItem value="money">Money Only</MenuItem>
+									<MenuItem value="items">Items Only</MenuItem>
+									<MenuItem value="both">Money & Items</MenuItem>
+								</Select>
+							</FormControl>
+
+							<FormInput
+								fullWidth
+								label="Target Amount"
+								name="targetAmount"
+								type="number"
+								value={causeFormData.targetAmount}
+								onChange={handleCauseFormChange}
+								required={causeFormData.acceptanceType !== "items"}
+								disabled={causeFormData.acceptanceType === "items"}
+								slotProps={{
+									input: {
+										startAdornment: <span>₹</span>,
+									},
+								}}
+								placeholder="0"
+								helperText={
+									causeFormData.acceptanceType === "items"
+										? "Target amount is not required for items-only causes"
+										: "Enter the target amount for monetary donations"
+								}
+							/>
+
+							<CloudinaryImageUpload
+								onImageUpload={(imageUrl) => {
+									setCauseFormData((prev) => ({
+										...prev,
+										imageUrl,
+									}));
+								}}
+								currentImageUrl={causeFormData.imageUrl}
+								label="Cause Image"
+								helperText="Upload an image for your cause (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
+							/>
+
+							{(causeFormData.acceptanceType === "items" ||
+								causeFormData.acceptanceType === "both") && (
+								<Box>
+									<Typography
+										variant="subtitle2"
+										gutterBottom
+										sx={{
+											fontWeight: 600,
+											color: customColor,
+											mb: 2,
+										}}
+									>
+										Donation Items *
+									</Typography>
+									<FormGroup>
+										{DONATION_ITEMS.map((item) => (
+											<FormControlLabel
+												key={item}
+												control={
+													<Checkbox
+														checked={causeFormData.donationItems.includes(item)}
+														onChange={(e) => {
+															if (e.target.checked) {
+																setCauseFormData((prev) => ({
+																	...prev,
+																	donationItems: [...prev.donationItems, item],
+																}));
+															} else {
+																setCauseFormData((prev) => ({
+																	...prev,
+																	donationItems: prev.donationItems.filter(
+																		(donationItem) => donationItem !== item
+																	),
+																}));
+															}
+														}}
+													/>
+												}
+												label={item}
+											/>
+										))}
+									</FormGroup>
+								</Box>
+							)}
+
+							{(causeFormData.acceptanceType === "money" ||
+								causeFormData.acceptanceType === "both") && (
+								<Box>
+									<Typography
+										variant="subtitle2"
+										gutterBottom
+										sx={{
+											fontWeight: 600,
+											color: customColor,
+											mb: 2,
+										}}
+									>
+										Accepted Donation Types
+									</Typography>
+									<FormGroup>
+										{Object.values(DonationType)
+											.filter((type) => type !== DonationType.MONEY)
+											.map((type) => (
+												<FormControlLabel
+													key={type}
+													control={
+														<Checkbox
+															checked={causeFormData.tags.includes(type)}
+															onChange={(e) => {
+																if (e.target.checked) {
+																	setCauseFormData((prev) => ({
+																		...prev,
+																		tags: [...prev.tags, type],
+																	}));
+																} else {
+																	setCauseFormData((prev) => ({
+																		...prev,
+																		tags: prev.tags.filter(
+																			(tag) => tag !== type
+																		),
+																	}));
+																}
+															}}
+														/>
+													}
+													label={type.charAt(0) + type.slice(1).toLowerCase()}
 												/>
-											}
-											label={type.charAt(0) + type.slice(1).toLowerCase()}
-										/>
-									))}
-								</FormGroup>
-							</Box>
+											))}
+									</FormGroup>
+								</Box>
+							)}
 
 							{causeError && (
 								<Alert severity="error">

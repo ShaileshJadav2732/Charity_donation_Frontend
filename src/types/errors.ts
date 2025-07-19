@@ -21,11 +21,6 @@ export interface ApiError extends BaseError {
 // Parse error function to convert unknown errors to typed errors
 export function parseError(error: unknown): BaseError {
 	// Debug logging in development
-	if (process.env.NODE_ENV === 'development') {
-		console.log('🔍 Parsing error:', error);
-		console.log('🔍 Error type:', typeof error);
-		console.log('🔍 Error constructor:', error?.constructor?.name);
-	}
 
 	// If it's already a BaseError, return it
 	if (typeof error === "object" && error !== null && "message" in error) {
@@ -48,14 +43,19 @@ export function parseError(error: unknown): BaseError {
 
 	// Check for RTK Query error structure first
 	if (typeof error === "object" && error !== null) {
-		const err = error as any;
+		const err = error as {
+			status?: number;
+			data?: { message?: string } | string;
+			response?: { data?: { message?: string } };
+			message?: string;
+		};
 
 		// RTK Query error structure
 		if (err.status && err.data) {
-			if (err.data.message) {
+			if (typeof err.data === "object" && err.data.message) {
 				return { message: err.data.message };
 			}
-			if (typeof err.data === 'string') {
+			if (typeof err.data === "string") {
 				return { message: err.data };
 			}
 			return { message: `Server error (${err.status})` };
@@ -67,7 +67,7 @@ export function parseError(error: unknown): BaseError {
 		}
 
 		// Fetch API error structure
-		if (err.message && typeof err.message === 'string') {
+		if (err.message && typeof err.message === "string") {
 			return { message: err.message };
 		}
 	}
@@ -104,9 +104,9 @@ export function parseError(error: unknown): BaseError {
 		typeof error === "object" &&
 		error !== null &&
 		"message" in error &&
-		typeof (error as any).message === "string"
+		typeof (error as { message: unknown }).message === "string"
 	) {
-		const errorMsg = (error as any).message.toLowerCase();
+		const errorMsg = (error as { message: string }).message.toLowerCase();
 		if (
 			errorMsg.includes("network") ||
 			errorMsg.includes("connection") ||
@@ -149,7 +149,12 @@ export function isApiError(error: unknown): error is ApiError {
 		return false;
 	}
 
-	const err = error as any;
+	const err = error as {
+		status?: number;
+		data?: unknown;
+		error?: unknown;
+		response?: { status?: number };
+	};
 
 	// RTK Query error structure
 	if (err.status && (err.data || err.error)) {

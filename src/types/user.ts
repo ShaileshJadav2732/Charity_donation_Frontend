@@ -48,8 +48,8 @@ export interface User {
 	email: string;
 	role: "donor" | "organization" | "admin";
 	profileCompleted: boolean;
+	firebaseUid?: string; // Add this field
 }
-
 export interface AuthState {
 	user: User | null;
 	token: string | null;

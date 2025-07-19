@@ -7,8 +7,7 @@ import { toast } from "react-hot-toast";
 interface ReceiptDownloadProps {
 	receiptImage?: string;
 	pdfReceiptUrl?: string;
-	// donationStatus: string; // Unused
-	// donationId: string; // Unused
+
 	className?: string;
 	showLabels?: boolean;
 	size?: "sm" | "md" | "lg";
@@ -17,8 +16,6 @@ interface ReceiptDownloadProps {
 export default function ReceiptDownload({
 	receiptImage,
 	pdfReceiptUrl,
-	// donationStatus, // Unused
-	// donationId, // Unused
 	className = "",
 	showLabels = true,
 	size = "md",
@@ -97,12 +94,12 @@ export default function ReceiptDownload({
 export function InlineReceiptLinks({
 	receiptImage,
 	pdfReceiptUrl,
-	// donationStatus, // Unused
+
 	className = "",
 }: {
 	receiptImage?: string;
 	pdfReceiptUrl?: string;
-	// donationStatus: string; // Unused
+
 	className?: string;
 }) {
 	if (!receiptImage && !pdfReceiptUrl) {

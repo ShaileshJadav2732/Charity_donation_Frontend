@@ -1,36 +1,48 @@
 "use client";
 
-import ImprovedDonationForm from "@/components/donation/ImprovedDonationForm";
+import DonationFormComponent from "@/components/donation/DonationForm";
+import StartConversationButton from "@/components/messaging/StartConversationButton";
 import { useGetCauseByIdQuery } from "@/store/api/causeApi";
 import { useCreateDonationMutation } from "@/store/api/donationApi";
 import { useGetOrganizationByCauseIdQuery } from "@/store/api/organizationApi";
-import StartConversationButton from "@/components/messaging/StartConversationButton";
-import { Box, CircularProgress, Typography, Card, CardContent, Divider } from "@mui/material";
-import { useParams, useRouter } from "next/navigation";
-import React from "react";
-import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import toast from "react-hot-toast";
-import axios from "axios";
+import { DonationFormValues, PaymentFormValues } from "@/types/donation";
 
-export default function DonationForm() {
+import {
+	Box,
+	Card,
+	CardContent,
+	CircularProgress,
+	Divider,
+	Typography,
+} from "@mui/material";
+import axios from "axios";
+import { useParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
+
+export default function DonatePage() {
 	const params = useParams();
 	const router = useRouter();
 	const causeId = params.id;
 	const { user } = useSelector((state: RootState) => state.auth);
 	const { data: cause, isLoading } = useGetCauseByIdQuery(causeId as string);
-	const { data: organizationData } = useGetOrganizationByCauseIdQuery(causeId as string, {
-		skip: !causeId,
-	});
+	const { data: organizationData } = useGetOrganizationByCauseIdQuery(
+		causeId as string,
+		{
+			skip: !causeId,
+		}
+	);
 	const [createDonation, { isLoading: creating }] = useCreateDonationMutation();
 
-	const handleDonationSubmit = async (values: any) => {
+	const handleDonationSubmit = async (values: DonationFormValues) => {
+		console.log("--------------", values);
 		try {
 			const payload = {
-
-				cause: causeId,
+				donor: user?.id || "", // Add the donor field
+				cause: causeId as string,
 				organization: cause?.cause?.organizationId || "",
-				type: values.type,
+				type: values.type as any,
 				amount: values.type === "MONEY" ? Number(values.amount) : undefined,
 				description: values.description,
 				quantity: values.type !== "MONEY" ? Number(values.quantity) : undefined,
@@ -49,17 +61,17 @@ export default function DonationForm() {
 				dropoffAddress:
 					!values.isPickup && values.type !== "MONEY"
 						? {
-							street: "ORGANIZATION_ADDRESS",
-							city: "",
-							state: "",
-							zipCode: "",
-							country: "",
-						}
+								street: "ORGANIZATION_ADDRESS",
+								city: "",
+								state: "",
+								zipCode: "",
+								country: "",
+						  }
 						: undefined,
 			};
-
-			console.log("Submitting donation with payload:", payload);
-
+			console.log(payload);
+			// Actually call the API to create the donation
+			await createDonation(payload).unwrap();
 
 			toast.success("Donation created successfully!");
 
@@ -67,23 +79,27 @@ export default function DonationForm() {
 			setTimeout(() => {
 				router.push("/dashboard/donations");
 			}, 1500);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			// Handle specific authentication errors
-			if (error?.status === 401) {
+			const apiError = error as {
+				status?: number;
+				data?: { message?: string };
+			};
+			if (apiError?.status === 401) {
 				toast.error("Authentication failed. Please log in again.");
 				router.push("/login");
-			} else if (error?.data?.message) {
-				toast.error(error.data.message);
+			} else if (apiError?.data?.message) {
+				toast.error(apiError.data.message);
 			} else {
 				toast.error("Failed to create donation. Please try again.");
 			}
 		}
 	};
 
-	const handlePaymentSubmit = async (values: any) => {
+	const handlePaymentSubmit = async (values: PaymentFormValues) => {
 		try {
 			// Check if user is logged in
-			const token = localStorage.getItem('token');
+			const token = localStorage.getItem("token");
 			if (!token) {
 				toast.error("Please log in to make a donation");
 				router.push("/login");
@@ -114,32 +130,28 @@ export default function DonationForm() {
 				dropoffAddress:
 					!values.isPickup && values.type !== "MONEY"
 						? {
-							street: "ORGANIZATION_ADDRESS",
-							city: "",
-							state: "",
-							zipCode: "",
-							country: "",
-						}
+								street: "ORGANIZATION_ADDRESS",
+								city: "",
+								state: "",
+								zipCode: "",
+								country: "",
+						  }
 						: undefined,
 			};
-
-			console.log("Creating Stripe checkout session with:", donationPayload);
-
-
+			console.log("doantion payload", donationPayload);
 			const res = await axios.post(
 				"http://localhost:8080/api/payments/create-checkout-session",
 				{
-
 					amount: donationPayload.amount,
 					organizationId: donationPayload.organization,
 					causeId,
 					description: donationPayload.description,
 					contactPhone: donationPayload.contactPhone,
-					contactEmail: donationPayload.contactEmail
+					contactEmail: donationPayload.contactEmail,
 				},
 				{
 					headers: {
-						Authorization: `Bearer ${localStorage.getItem('token')}`,
+						Authorization: `Bearer ${token}`,
 					},
 				}
 			);
@@ -149,13 +161,13 @@ export default function DonationForm() {
 			} else {
 				throw new Error("No checkout URL received");
 			}
-		} catch (err: any) {
-			console.error("Error redirecting to Stripe:", err);
-			if (err.response?.data?.message) {
-				toast.error(err.response.data.message);
-			} else {
-				toast.error("Payment failed. Please try again.");
-			}
+		} catch (err: unknown) {
+			const apiError = err as {
+				response?: {
+					status?: number;
+					data?: { message?: string };
+				};
+			};
 		}
 	};
 
@@ -194,7 +206,8 @@ export default function DonationForm() {
 							Have Questions About This Cause?
 						</Typography>
 						<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-							Message {organizationData.organization.name} directly to ask questions about this cause before donating.
+							Message {organizationData.organization.name} directly to ask
+							questions about this cause before donating.
 						</Typography>
 						{/* Use organization.userId (direct User ID) for organizations */}
 						<StartConversationButton
@@ -213,12 +226,20 @@ export default function DonationForm() {
 			<Divider sx={{ mb: 3 }} />
 
 			{/* Donation Form */}
-			<ImprovedDonationForm
-				cause={cause}
-				onSubmit={handleDonationSubmit}
-				onPaymentSubmit={handlePaymentSubmit}
-				isLoading={creating}
-			/>
+			{cause && (
+				<DonationFormComponent
+					cause={{
+						...cause,
+						cause: {
+							...cause.cause,
+							_id: cause.cause.id,
+						},
+					}}
+					onSubmit={handleDonationSubmit}
+					onPaymentSubmit={handlePaymentSubmit}
+					isLoading={creating}
+				/>
+			)}
 		</Box>
 	);
 }

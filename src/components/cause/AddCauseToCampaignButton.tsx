@@ -136,9 +136,16 @@ const AddCauseToCampaignButton: React.FC<AddCauseToCampaignButtonProps> = ({
 										<em>Select a campaign</em>
 									</MenuItem>
 									{campaignsData.campaigns
-										.filter(
-											(campaign) => (campaign.status as string) === "active"
-										)
+										.filter((campaign) => {
+											if ((campaign.status as string) !== "active") {
+												return false;
+											}
+											// Check if campaign is currently running (between start and end dates)
+											const now = new Date();
+											const startDate = new Date(campaign.startDate);
+											const endDate = new Date(campaign.endDate);
+											return startDate <= now && endDate >= now;
+										})
 										.map((campaign) => (
 											<MenuItem key={campaign.id} value={campaign.id}>
 												{campaign.title}

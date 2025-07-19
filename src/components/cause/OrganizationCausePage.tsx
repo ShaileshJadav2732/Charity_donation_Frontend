@@ -15,12 +15,16 @@ import {
 	Delete as DeleteIcon,
 	Restaurant as FoodIcon,
 	Chair as FurnitureIcon,
+	GridView as AllIcon,
 	Home as HouseholdIcon,
+	Inventory as ItemsIcon,
 	AttachMoney as MoneyIcon,
 	Category as OtherIcon,
 	Search as SearchIcon,
+	SwapHoriz as BothIcon,
 	GpsFixed as Target,
 	Toys as ToysIcon,
+	Edit as EditIcon,
 } from "@mui/icons-material";
 import {
 	Alert,
@@ -38,15 +42,19 @@ import {
 	DialogTitle,
 	IconButton,
 	LinearProgress,
+	Pagination,
 	Paper,
 	Stack,
 	TextField,
+	ToggleButton,
+	ToggleButtonGroup,
 	Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSelector } from "react-redux";
+import CauseCampaignAssociations from "./CauseCampaignAssociations";
 
 const DonationTypeIcons = {
 	[DonationType.MONEY]: MoneyIcon,
@@ -64,49 +72,96 @@ const CausesPage = () => {
 	const router = useRouter();
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [searchTerm, setSearchTerm] = useState("");
+	const [donationTypeFilter, setDonationTypeFilter] = useState<string>("all");
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [createCauseDialogOpen, setCreateCauseDialogOpen] = useState(false);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [causeToDelete, setCauseToDelete] = useState<{
+		id: string;
+		title: string;
+	} | null>(null);
+
+	// Pagination state
+	const [page, setPage] = useState(1);
+	const limit = 10;
 
 	const {
 		data: causesData,
 		isLoading,
 		error,
 		refetch,
-	} = useGetCausesQuery({ organizationId: user?.id });
+	} = useGetCausesQuery({
+		organizationId: user?.id,
+		page,
+		limit,
+		search: searchTerm.trim() || undefined,
+		acceptanceType:
+			donationTypeFilter !== "all"
+				? (donationTypeFilter as "money" | "items" | "both")
+				: undefined,
+	});
 
 	const [deleteCause] = useDeleteCauseMutation();
 
-	const filteredCauses = causesData?.causes?.filter(
-		(cause: Cause) =>
-			cause.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.tags?.some((tag) =>
-				tag?.toLowerCase().includes(searchTerm.toLowerCase())
-			)
-	);
+	// Server-side filtering is now handled by API
+	const causes = causesData?.causes || [];
+	const totalCauses = causesData?.total || 0;
+	const totalPages = Math.ceil(totalCauses / limit);
 
 	const handleCreateCause = () => {
 		router.push("/dashboard/causes/create");
+	};
+
+	const handlePageChange = (
+		_event: React.ChangeEvent<unknown>,
+		newPage: number
+	) => {
+		setPage(newPage);
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+		setPage(1); // Reset to first page when searching
+	};
+
+	const handleDonationTypeFilterChange = (newValue: string | null) => {
+		if (newValue !== null) {
+			setDonationTypeFilter(newValue);
+			setPage(1); // Reset to first page when filtering
+		}
 	};
 
 	const handleEditCause = (id: string) => {
 		router.push(`/dashboard/causes/${id}/edit`);
 	};
 
-	const handleDeleteCause = async (id: string) => {
-		if (window.confirm("Are you sure you want to delete this cause?")) {
-			try {
-				setIsDeleting(true);
-				await deleteCause(id).unwrap();
-				toast.success("Cause deleted successfully!");
-				refetch();
-			} catch (err) {
-				console.error("Failed to delete cause:", err);
-				toast.error("Failed to delete cause. Please try again.");
-			} finally {
-				setIsDeleting(false);
-			}
+	const handleDeleteCause = (id: string, title: string) => {
+		setCauseToDelete({ id, title });
+		setDeleteDialogOpen(true);
+	};
+
+	const handleConfirmDelete = async () => {
+		if (!causeToDelete) return;
+
+		try {
+			setIsDeleting(true);
+			const result = await deleteCause(causeToDelete.id).unwrap();
+			toast.success(result.message || "Cause deleted successfully!");
+			refetch();
+			handleCloseDeleteDialog();
+		} catch (error: any) {
+			// Handle specific error messages from the backend
+			const errorMessage =
+				error?.data?.message || "Failed to delete cause. Please try again.";
+			toast.error(errorMessage);
+		} finally {
+			setIsDeleting(false);
 		}
+	};
+
+	const handleCloseDeleteDialog = () => {
+		setDeleteDialogOpen(false);
+		setCauseToDelete(null);
 	};
 
 	const handleCloseCreateCauseDialog = () => {
@@ -165,9 +220,7 @@ const CausesPage = () => {
 						<TextField
 							placeholder="Search causes..."
 							value={searchTerm}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-								setSearchTerm(e.target.value)
-							}
+							onChange={handleSearchChange}
 							size="medium"
 							slotProps={{
 								input: {
@@ -200,33 +253,104 @@ const CausesPage = () => {
 							Create Cause
 						</Button>
 					</Stack>
+
+					{/* Donation Type Filter */}
+					<Box mt={3}>
+						<Typography
+							variant="body2"
+							sx={{ mb: 2, fontWeight: 600, color: "#1a1a1a" }}
+						>
+							Filter by Donation Type:
+						</Typography>
+						<ToggleButtonGroup
+							value={donationTypeFilter}
+							exclusive
+							onChange={(_, newValue) =>
+								handleDonationTypeFilterChange(newValue)
+							}
+							sx={{
+								gap: 1,
+								flexWrap: "wrap",
+								"& .MuiToggleButton-root": {
+									border: "2px solid #e0e0e0",
+									borderRadius: 2,
+									px: 2,
+									py: 1,
+									color: "#666",
+									backgroundColor: "white",
+									"&:hover": {
+										backgroundColor: "#f8f9fa",
+										borderColor: "#287068",
+									},
+									"&.Mui-selected": {
+										backgroundColor: "#287068",
+										color: "white",
+										borderColor: "#287068",
+										"&:hover": {
+											backgroundColor: "#1f5a52",
+										},
+									},
+								},
+							}}
+						>
+							<ToggleButton value="all">
+								<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+									<AllIcon sx={{ fontSize: 18 }} />
+									<Typography variant="body2" sx={{ fontWeight: 500 }}>
+										All Types
+									</Typography>
+								</Box>
+							</ToggleButton>
+							<ToggleButton value="money">
+								<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+									<MoneyIcon sx={{ fontSize: 18 }} />
+									<Typography variant="body2" sx={{ fontWeight: 500 }}>
+										Money Only
+									</Typography>
+								</Box>
+							</ToggleButton>
+							<ToggleButton value="items">
+								<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+									<ItemsIcon sx={{ fontSize: 18 }} />
+									<Typography variant="body2" sx={{ fontWeight: 500 }}>
+										Items Only
+									</Typography>
+								</Box>
+							</ToggleButton>
+							<ToggleButton value="both">
+								<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+									<BothIcon sx={{ fontSize: 18 }} />
+									<Typography variant="body2" sx={{ fontWeight: 500 }}>
+										Both
+									</Typography>
+								</Box>
+							</ToggleButton>
+						</ToggleButtonGroup>
+					</Box>
 				</Paper>
 
 				{/* Campaign Reminder */}
-				{!isLoading &&
-					!error &&
-					filteredCauses &&
-					filteredCauses.length > 0 && (
-						<Alert
-							severity="info"
-							sx={{
-								mb: 4,
-								borderRadius: 2,
-								border: "1px solid #e3f2fd",
-								backgroundColor: "#f8faff",
-							}}
-						>
-							<Typography variant="subtitle2" fontWeight="600" sx={{ mb: 1 }}>
-								Important: Causes must be added to active campaigns to be
-								visible to donors
-							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								After creating a cause, make sure to add it to an active
-								campaign from the cause detail page. Donors can only see causes
-								that are part of active campaigns.
-							</Typography>
-						</Alert>
-					)}
+				{!isLoading && !error && causes && causes.length > 0 && (
+					<Alert
+						severity="info"
+						sx={{
+							mb: 4,
+							borderRadius: 2,
+							border: "1px solid #e3f2fd",
+							backgroundColor: "#f8faff",
+						}}
+					>
+						<Typography variant="subtitle2" fontWeight="600" sx={{ mb: 1 }}>
+							Important: Causes must be added to active campaigns to be visible
+							to donors
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							After creating a cause, make sure to add it to an active campaign
+							from the cause detail page. Donors can only see causes that are
+							part of active campaigns.
+						</Typography>
+					</Alert>
+				)}
 
 				{/* Causes List */}
 				{isLoading ? (
@@ -244,7 +368,7 @@ const CausesPage = () => {
 					>
 						Failed to load causes
 					</Alert>
-				) : filteredCauses?.length === 0 ? (
+				) : causes?.length === 0 ? (
 					<Paper
 						sx={{
 							p: 6,
@@ -259,8 +383,8 @@ const CausesPage = () => {
 							No causes found
 						</Typography>
 						<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-							{searchTerm
-								? "Try adjusting your search terms"
+							{searchTerm || donationTypeFilter !== "all"
+								? "Try adjusting your search terms or filters"
 								: "Create your first cause to get started!"}
 						</Typography>
 						{!searchTerm && (
@@ -289,16 +413,16 @@ const CausesPage = () => {
 							gap: 3,
 						}}
 					>
-						{filteredCauses?.map((cause: Cause) => {
+						{causes?.map((cause: Cause) => {
 							// Fix progress calculation with safe defaults
 							const raisedAmount = cause.raisedAmount || 0;
 							const targetAmount = cause.targetAmount || 1; // Prevent division by zero
 							const progress =
 								targetAmount > 0
 									? Math.min(
-										100,
-										Math.round((raisedAmount / targetAmount) * 100)
-									)
+											100,
+											Math.round((raisedAmount / targetAmount) * 100)
+									  )
 									: 0;
 
 							const acceptanceType = cause.acceptanceType || "money";
@@ -317,7 +441,7 @@ const CausesPage = () => {
 							const getUrgencyColor = (urgency: string) => {
 								switch (urgency) {
 									case "high":
-										return "#ef4444";
+										return "#000000bb";
 									case "medium":
 										return "#f59e0b";
 									case "low":
@@ -347,7 +471,7 @@ const CausesPage = () => {
 										{/* Header with image or icon */}
 										<Box
 											sx={{
-												height: 120,
+												height: 220,
 												position: "relative",
 												overflow: "hidden",
 											}}
@@ -396,8 +520,8 @@ const CausesPage = () => {
 														acceptanceType === "money"
 															? "Funding"
 															: acceptanceType === "items"
-																? "Items"
-																: "Mixed"
+															? "Items"
+															: "Mixed"
 													}
 													size="small"
 													sx={{
@@ -440,7 +564,7 @@ const CausesPage = () => {
 												{cause.description}
 											</Typography>
 
-											{/* Progress Section */}
+											{/* Progress Section - show for money and both types */}
 											{acceptanceType !== "items" && (
 												<Box sx={{ mb: 2 }}>
 													<Box
@@ -471,14 +595,10 @@ const CausesPage = () => {
 																backgroundColor: getUrgencyColor(urgency),
 																borderRadius: 4,
 															},
+															mb: 1,
 														}}
 													/>
-												</Box>
-											)}
-
-											{/* Target Information Section */}
-											<Box sx={{ mb: 2 }}>
-												{acceptanceType === "money" ? (
+													{/* Show raised/goal below progress bar for money and both types */}
 													<Box
 														sx={{
 															display: "flex",
@@ -505,46 +625,36 @@ const CausesPage = () => {
 																variant="body2"
 																color="text.secondary"
 															>
-																Goal/Money
+																Goal
 															</Typography>
 															<Typography variant="h6" sx={{ fontWeight: 600 }}>
 																₹{(cause.targetAmount || 0).toLocaleString()}
 															</Typography>
 														</Box>
 													</Box>
-												) : acceptanceType === "items" ? (
-													<>
-														<Typography
-															variant="body2"
-															color="text.secondary"
-															sx={{ fontWeight: 500, mb: 1 }}
-														>
-															Needed Items:
-														</Typography>
-														{cause.donationItems &&
-															cause.donationItems.length > 0 ? (
-															<Box display="flex" gap={0.5} flexWrap="wrap">
-																{cause.donationItems
-																	.slice(0, 2)
-																	.map((item, index) => (
-																		<Chip
-																			key={index}
-																			label={item}
-																			size="small"
-																			variant="outlined"
-																			sx={{
-																				borderRadius: 1,
-																				fontSize: "0.7rem",
-																				height: 22,
-																				borderColor: getUrgencyColor(urgency),
-																				color: getUrgencyColor(urgency),
-																			}}
-																		/>
-																	))}
-																{cause.donationItems.length > 2 && (
+												</Box>
+											)}
+
+											{/* Items Section - show for items and both types */}
+											{acceptanceType !== "money" && (
+												<Box sx={{ mb: 2 }}>
+													<Typography
+														variant="body2"
+														color="text.secondary"
+														sx={{ fontWeight: 500, mb: 1 }}
+													>
+														Needed Items:
+													</Typography>
+													{cause.donationItems &&
+													Array.isArray(cause.donationItems) &&
+													cause.donationItems.length > 0 ? (
+														<Box display="flex" gap={0.5} flexWrap="wrap">
+															{[...new Set(cause.donationItems)]
+																.slice(0, 2)
+																.map((item, index) => (
 																	<Chip
-																		label={`+${cause.donationItems.length - 2
-																			} more`}
+																		key={`donation-item-${index}-${item}`}
+																		label={item}
 																		size="small"
 																		variant="outlined"
 																		sx={{
@@ -555,93 +665,91 @@ const CausesPage = () => {
 																			color: getUrgencyColor(urgency),
 																		}}
 																	/>
-																)}
-															</Box>
-														) : (
-															<Typography
-																variant="caption"
-																color="text.secondary"
-															>
-																Accepting various item donations
-															</Typography>
-														)}
-													</>
-												) : (
-													<Box
-														sx={{
-															display: "flex",
-															justifyContent: "space-between",
-															alignItems: "center",
-														}}
-													>
-														<Box>
-															<Typography
-																variant="body2"
-																color="text.secondary"
-															>
-																Raised
-															</Typography>
-															<Typography
-																variant="h6"
-																sx={{ fontWeight: 600, color: "#287068" }}
-															>
-																{raisedAmount.toLocaleString()}
-															</Typography>
+																))}
+															{[...new Set(cause.donationItems)].length > 2 && (
+																<Chip
+																	label={`+${
+																		[...new Set(cause.donationItems)].length - 2
+																	} more`}
+																	size="small"
+																	variant="outlined"
+																	sx={{
+																		borderRadius: 1,
+																		fontSize: "0.7rem",
+																		height: 22,
+																		borderColor: getUrgencyColor(urgency),
+																		color: getUrgencyColor(urgency),
+																	}}
+																/>
+															)}
 														</Box>
-														<Box sx={{ textAlign: "right" }}>
-															<Typography
-																variant="body2"
-																color="text.secondary"
-															>
-																Goal/Items
-															</Typography>
-															<Typography variant="h6" sx={{ fontWeight: 600 }}>
-																{(cause.targetAmount || 0).toLocaleString()}
-															</Typography>
+													) : (
+														<Typography
+															variant="caption"
+															color="text.secondary"
+														>
+															Accepting various item donations
+														</Typography>
+													)}
+												</Box>
+											)}
+
+											{/* Tags Section */}
+											{cause.tags &&
+												Array.isArray(cause.tags) &&
+												cause.tags.length > 0 && (
+													<Box sx={{ mb: 2 }}>
+														<Box display="flex" gap={0.5} flexWrap="wrap">
+															{cause.tags.slice(0, 2).map((tag, index) => (
+																<Chip
+																	key={`tag-${index}-${tag}`}
+																	label={tag}
+																	size="small"
+																	variant="filled"
+																	sx={{
+																		backgroundColor: `${getUrgencyColor(
+																			urgency
+																		)}20`,
+																		color: getUrgencyColor(urgency),
+																		borderRadius: 1,
+																		fontSize: "0.7rem",
+																		height: 22,
+																		fontWeight: 500,
+																	}}
+																/>
+															))}
+															{cause.tags.length > 2 && (
+																<Chip
+																	label={`+${cause.tags.length - 2}`}
+																	size="small"
+																	variant="outlined"
+																	sx={{
+																		borderRadius: 1,
+																		fontSize: "0.7rem",
+																		height: 22,
+																		borderColor: getUrgencyColor(urgency),
+																		color: getUrgencyColor(urgency),
+																	}}
+																/>
+															)}
 														</Box>
 													</Box>
 												)}
-											</Box>
 
-											{/* Tags Section */}
-											{cause.tags && cause.tags.length > 0 && (
-												<Box sx={{ mb: 2 }}>
-													<Box display="flex" gap={0.5} flexWrap="wrap">
-														{cause.tags.slice(0, 2).map((tag, index) => (
-															<Chip
-																key={index}
-																label={tag}
-																size="small"
-																variant="filled"
-																sx={{
-																	backgroundColor: `${getUrgencyColor(
-																		urgency
-																	)}20`,
-																	color: getUrgencyColor(urgency),
-																	borderRadius: 1,
-																	fontSize: "0.7rem",
-																	height: 22,
-																	fontWeight: 500,
-																}}
-															/>
-														))}
-														{cause.tags.length > 2 && (
-															<Chip
-																label={`+${cause.tags.length - 2}`}
-																size="small"
-																variant="outlined"
-																sx={{
-																	borderRadius: 1,
-																	fontSize: "0.7rem",
-																	height: 22,
-																	borderColor: getUrgencyColor(urgency),
-																	color: getUrgencyColor(urgency),
-																}}
-															/>
-														)}
-													</Box>
-												</Box>
-											)}
+											{/* Campaign Associations */}
+											<Box sx={{ mb: 2 }}>
+												<Typography
+													variant="body2"
+													color="text.secondary"
+													sx={{ fontWeight: 500, mb: 1 }}
+												>
+													Campaign Associations:
+												</Typography>
+												<CauseCampaignAssociations
+													causeId={cause.id}
+													onCampaignRemoved={refetch}
+												/>
+											</Box>
 										</CardContent>
 										<CardActions
 											sx={{ justifyContent: "space-between", p: 3, pt: 0 }}
@@ -663,7 +771,7 @@ const CausesPage = () => {
 											</Button>
 											<IconButton
 												size="small"
-												onClick={() => handleDeleteCause(cause.id)}
+												onClick={() => handleDeleteCause(cause.id, cause.title)}
 												disabled={isDeleting}
 												sx={{
 													color: "#ef4444",
@@ -679,6 +787,51 @@ const CausesPage = () => {
 								</Box>
 							);
 						})}
+					</Box>
+				)}
+
+				{/* Results Summary */}
+				{!isLoading && !error && totalCauses > 0 && (
+					<Box sx={{ mt: 4, mb: 2 }}>
+						<Typography
+							variant="body2"
+							color="text.secondary"
+							sx={{ textAlign: "center" }}
+						>
+							Showing {(page - 1) * limit + 1}-
+							{Math.min(page * limit, totalCauses)} of {totalCauses} causes
+						</Typography>
+					</Box>
+				)}
+
+				{/* Pagination */}
+				{totalPages > 1 && (
+					<Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+						<Pagination
+							count={totalPages}
+							page={page}
+							onChange={handlePageChange}
+							color="primary"
+							size="large"
+							showFirstButton
+							showLastButton
+							sx={{
+								"& .MuiPaginationItem-root": {
+									color: "#287068",
+									borderColor: "#287068",
+									"&:hover": {
+										backgroundColor: "rgba(40, 112, 104, 0.1)",
+									},
+									"&.Mui-selected": {
+										backgroundColor: "#287068",
+										color: "white",
+										"&:hover": {
+											backgroundColor: "#1f5a52",
+										},
+									},
+								},
+							}}
+						/>
 					</Box>
 				)}
 			</Box>
@@ -720,6 +873,82 @@ const CausesPage = () => {
 						}}
 					>
 						Create Cause
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Delete Cause Confirmation Dialog */}
+			<Dialog
+				open={deleteDialogOpen}
+				onClose={handleCloseDeleteDialog}
+				maxWidth="sm"
+				fullWidth
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: 3,
+							p: 1,
+						},
+					},
+				}}
+			>
+				<DialogTitle
+					sx={{
+						fontWeight: 600,
+						color: "#ef4444",
+						display: "flex",
+						alignItems: "center",
+						gap: 1,
+					}}
+				>
+					<DeleteIcon />
+					Delete Cause
+				</DialogTitle>
+				<DialogContent>
+					<DialogContentText sx={{ color: "#666", lineHeight: 1.6, mb: 2 }}>
+						Are you sure you want to delete the cause{" "}
+						<strong>"{causeToDelete?.title}"</strong>?
+					</DialogContentText>
+					<DialogContentText
+						sx={{ color: "#ef4444", lineHeight: 1.6, fontSize: "0.9rem" }}
+					>
+						⚠️ <strong>Important:</strong> Causes with existing donations or
+						associated with campaigns cannot be deleted. You'll need to remove
+						the cause from all campaigns first.
+					</DialogContentText>
+					<DialogContentText
+						sx={{ color: "#666", lineHeight: 1.6, fontSize: "0.9rem", mt: 1 }}
+					>
+						This action cannot be undone.
+					</DialogContentText>
+				</DialogContent>
+				<DialogActions sx={{ p: 3, pt: 1 }}>
+					<Button
+						onClick={handleCloseDeleteDialog}
+						sx={{ color: "#666" }}
+						disabled={isDeleting}
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleConfirmDelete}
+						variant="contained"
+						color="error"
+						disabled={isDeleting}
+						sx={{
+							backgroundColor: "#ef4444",
+							"&:hover": { backgroundColor: "#dc2626" },
+							minWidth: 120,
+						}}
+					>
+						{isDeleting ? (
+							<>
+								<CircularProgress size={16} sx={{ mr: 1, color: "white" }} />
+								Deleting...
+							</>
+						) : (
+							"Delete Cause"
+						)}
 					</Button>
 				</DialogActions>
 			</Dialog>

@@ -249,11 +249,11 @@ const SignupForm = () => {
 												name="email"
 												value={formData.email}
 												onChange={handleChange}
-												onFocus={() => handleFocus("email")}
-												onBlur={handleBlur}
 												required
 												className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${
-													focusedField === "email"
+													errors.email
+														? "border-red-500"
+														: focusedField === "email"
 														? "border-teal-500 ring-1 ring-teal-200"
 														: "border-gray-200"
 												} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
@@ -261,6 +261,11 @@ const SignupForm = () => {
 												aria-describedby="email"
 											/>
 										</div>
+										{errors.email && (
+											<p className="text-xs text-red-500 mt-1">
+												{errors.email}
+											</p>
+										)}
 									</div>
 
 									{/* Password Field */}
@@ -289,7 +294,9 @@ const SignupForm = () => {
 												required
 												minLength={6}
 												className={`appearance-none block w-full pl-10 pr-3 py-2.5 rounded-md border ${
-													focusedField === "password"
+													errors.password
+														? "border-red-500"
+														: focusedField === "password"
 														? "border-teal-500 ring-1 ring-teal-200"
 														: "border-gray-200"
 												} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
@@ -297,6 +304,11 @@ const SignupForm = () => {
 												aria-describedby="password"
 											/>
 										</div>
+										{errors.password && (
+											<p className="text-xs text-red-500 mt-1">
+												{errors.password}
+											</p>
+										)}
 										{formData.password && (
 											<div className="mt-2">
 												<div className="flex items-center">
@@ -350,7 +362,9 @@ const SignupForm = () => {
 												onBlur={handleBlur}
 												required
 												className={`appearance-none block w-full pl-10 pr-10 py-2.5 rounded-md border ${
-													focusedField === "confirmPassword"
+													errors.confirmPassword
+														? "border-red-500"
+														: focusedField === "confirmPassword"
 														? "border-teal-500 ring-1 ring-teal-200"
 														: "border-gray-200"
 												} focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all duration-200 placeholder-gray-400 text-gray-900 sm:text-sm bg-gray-50`}
@@ -382,13 +396,11 @@ const SignupForm = () => {
 												</div>
 											)}
 										</div>
-										{formData.password &&
-											formData.confirmPassword &&
-											formData.password !== formData.confirmPassword && (
-												<p className="text-xs text-red-500 mt-1">
-													Passwords do not match
-												</p>
-											)}
+										{errors.confirmPassword && (
+											<p className="text-xs text-red-500 mt-1">
+												{errors.confirmPassword}
+											</p>
+										)}
 									</div>
 
 									{/* Next Button */}

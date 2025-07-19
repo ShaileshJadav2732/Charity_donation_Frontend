@@ -6,11 +6,11 @@ import {
 import { UpdateCauseBody } from "@/types/cause";
 import { DonationType } from "@/types/donation";
 import {
+	Alert,
 	Box,
 	Button,
 	Chip,
 	CircularProgress,
-	Grid,
 	Paper,
 	TextField,
 	Typography,
@@ -29,18 +29,6 @@ import { useEffect, useState } from "react";
 import * as Yup from "yup";
 import CloudinaryImageUpload from "@/components/cloudinary/CloudinaryImageUpload";
 import { toast } from "react-hot-toast";
-
-interface Cause {
-	id: string;
-	title: string;
-	description: string;
-	targetAmount: number;
-	imageUrl: string;
-	tags: string[];
-	acceptanceType?: "money" | "items" | "both";
-	donationItems?: string[];
-	acceptedDonationTypes?: DonationType[];
-}
 
 const DONATION_ITEMS = [
 	"Clothes",
@@ -74,7 +62,7 @@ const createValidationSchema = (acceptanceType: string) => {
 	});
 };
 
-export const UpdateCauseForm = () => {
+const UpdateCauseForm = () => {
 	const params = useParams<{ id: string }>();
 	const id = params.id;
 	const router = useRouter();
@@ -85,7 +73,6 @@ export const UpdateCauseForm = () => {
 	>("money");
 	const [donationItems, setDonationItems] = useState<string[]>([]);
 	const [imageUrl, setImageUrl] = useState<string>("");
-	const [imagePublicId, setImagePublicId] = useState<string>("");
 
 	const { data: causesResponse } = useGetCauseByIdQuery(id || "");
 	const [updateCause, { isLoading: isUpdating }] = useUpdateCauseMutation();
@@ -186,11 +173,9 @@ export const UpdateCauseForm = () => {
 		setDonationItems(value);
 	};
 
-	const handleImageUpload = (newImageUrl: string, publicId: string) => {
+	const handleImageUpload = (newImageUrl: string) => {
 		setImageUrl(newImageUrl);
-		setImagePublicId(publicId);
 	};
-
 	const handleSubmit = async (values: UpdateCauseBody) => {
 		// Convert donation items to DonationType enum values
 		const acceptedDonationTypes: DonationType[] = [];
@@ -234,7 +219,9 @@ export const UpdateCauseForm = () => {
 			targetAmount = 0;
 		} else {
 			// For money or both, parse as number
-			targetAmount = parseFloat(values.targetAmount.toString()) || 0;
+			targetAmount = values.targetAmount
+				? parseFloat(values.targetAmount.toString()) || 0
+				: 0;
 		}
 
 		const body = {
@@ -247,8 +234,14 @@ export const UpdateCauseForm = () => {
 			acceptedDonationTypes,
 		};
 
-		await updateCause({ id, body }).unwrap();
-		router.push(`/dashboard/causes/${id}`);
+		try {
+			await updateCause({ id, body }).unwrap();
+			toast.success("Cause updated successfully");
+			router.push(`/dashboard/causes/${id}`);
+		} catch (error) {
+			console.error("Update cause error:", error);
+			toast.error("Failed to update cause. Please try again.");
+		}
 	};
 
 	return (
@@ -264,8 +257,8 @@ export const UpdateCauseForm = () => {
 			>
 				{({ errors, touched }) => (
 					<Form>
-						<Grid container spacing={3}>
-							<Grid item xs={12}>
+						<Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+							<Box>
 								<Field
 									as={TextField}
 									fullWidth
@@ -275,9 +268,9 @@ export const UpdateCauseForm = () => {
 									error={touched.title && !!errors.title}
 									helperText={<ErrorMessage name="title" />}
 								/>
-							</Grid>
+							</Box>
 
-							<Grid item xs={12}>
+							<Box>
 								<Field
 									as={TextField}
 									fullWidth
@@ -289,11 +282,11 @@ export const UpdateCauseForm = () => {
 									error={touched.description && !!errors.description}
 									helperText={<ErrorMessage name="description" />}
 								/>
-							</Grid>
+							</Box>
 
 							{/* Target Amount - only show for money or both acceptance types */}
 							{acceptanceType !== "items" && (
-								<Grid item xs={12} md={6}>
+								<Box sx={{ maxWidth: { xs: "100%", md: "50%" } }}>
 									<Field
 										as={TextField}
 										fullWidth
@@ -309,35 +302,32 @@ export const UpdateCauseForm = () => {
 											},
 										}}
 									/>
-								</Grid>
+								</Box>
 							)}
 
-							{/* Optional target for items-only causes */}
+							{/* Info message for items-only causes */}
 							{acceptanceType === "items" && (
-								<Grid item xs={12} md={6}>
-									<Field
-										as={TextField}
-										fullWidth
-										name="targetAmount"
-										label="Target Description (Optional)"
-										type="text"
-										variant="outlined"
-										placeholder="e.g., 100 units of food, 50 books, etc."
-										helperText="Describe your target goal for item donations (optional)"
-									/>
-								</Grid>
+								<Box sx={{ maxWidth: { xs: "100%", md: "50%" } }}>
+									<Alert severity="info" sx={{ mt: 1 }}>
+										<Typography variant="body2">
+											<strong>Items-only causes</strong> don&apos;t require a
+											monetary target amount. The target is based on the
+											specific items you&apos;re collecting.
+										</Typography>
+									</Alert>
+								</Box>
 							)}
 
-							<Grid item xs={12}>
+							<Box>
 								<CloudinaryImageUpload
 									onImageUpload={handleImageUpload}
 									currentImageUrl={imageUrl}
 									label="Cause Image"
 									helperText="Upload a new image for your cause (max 5MB). Supported formats: JPG, PNG, WebP, GIF"
 								/>
-							</Grid>
+							</Box>
 
-							<Grid item xs={12}>
+							<Box>
 								<FormControl fullWidth>
 									<InputLabel id="acceptance-type-label">
 										Acceptance Type
@@ -354,10 +344,10 @@ export const UpdateCauseForm = () => {
 										<MenuItem value="both">Both Money and Items</MenuItem>
 									</Select>
 								</FormControl>
-							</Grid>
+							</Box>
 
 							{acceptanceType !== "money" && (
-								<Grid item xs={12}>
+								<Box>
 									<FormControl fullWidth>
 										<InputLabel id="donation-items-label">
 											Donation Items
@@ -381,10 +371,10 @@ export const UpdateCauseForm = () => {
 											))}
 										</Select>
 									</FormControl>
-								</Grid>
+								</Box>
 							)}
 
-							<Grid item xs={12}>
+							<Box>
 								<Box sx={{ mb: 2 }}>
 									<Typography variant="subtitle1" gutterBottom>
 										Tags
@@ -393,7 +383,7 @@ export const UpdateCauseForm = () => {
 										<TextField
 											value={tagInput}
 											onChange={(e) => setTagInput(e.target.value)}
-											onKeyPress={(e) =>
+											onKeyDown={(e) =>
 												e.key === "Enter" &&
 												(e.preventDefault(), handleAddTag())
 											}
@@ -420,9 +410,9 @@ export const UpdateCauseForm = () => {
 										))}
 									</Box>
 								</Box>
-							</Grid>
+							</Box>
 
-							<Grid item xs={12}>
+							<Box>
 								<Box
 									sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}
 								>
@@ -446,8 +436,8 @@ export const UpdateCauseForm = () => {
 										)}
 									</Button>
 								</Box>
-							</Grid>
-						</Grid>
+							</Box>
+						</Box>
 					</Form>
 				)}
 			</Formik>

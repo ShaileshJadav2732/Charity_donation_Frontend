@@ -2,14 +2,32 @@ import { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 	images: {
-		domains: [
-			"lh3.googleusercontent.com",
-			"storage.googleapis.com",
-			"firebasestorage.googleapis.com",
-			"st2.depositphotos.com",
-			"localhost",
-			"res.cloudinary.com",
-			"cloudinary.com",
+		remotePatterns: [
+			{
+				protocol: "https",
+				hostname: "lh3.googleusercontent.com",
+			},
+			{
+				protocol: "https",
+				hostname: "storage.googleapis.com",
+			},
+			{
+				protocol: "https",
+				hostname: "firebasestorage.googleapis.com",
+			},
+			{
+				protocol: "https",
+				hostname: "st2.depositphotos.com",
+			},
+
+			{
+				protocol: "https",
+				hostname: "res.cloudinary.com",
+			},
+			{
+				protocol: "https",
+				hostname: "cloudinary.com",
+			},
 		],
 	},
 	reactStrictMode: true,
@@ -17,7 +35,9 @@ const nextConfig: NextConfig = {
 		return [
 			{
 				source: "/api/:path*",
-				destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/:path*`,
+				destination: `${
+					process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+				}/api/:path*`,
 			},
 		];
 	},

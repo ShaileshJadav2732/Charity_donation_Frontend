@@ -11,6 +11,8 @@ import StartConversationButton from "@/components/messaging/StartConversationBut
 import {
 	Bloodtype as BloodIcon,
 	MenuBook as BooksIcon,
+	GridView as AllIcon,
+	Inventory as ItemsIcon,
 	LocalMall as ClothesIcon,
 	Favorite as FavoriteIcon,
 	Fastfood as FoodIcon,
@@ -19,6 +21,7 @@ import {
 	MonetizationOn as MoneyIcon,
 	MoreHoriz as OtherIcon,
 	Search as SearchIcon,
+	SwapHoriz as BothIcon,
 	Toys as ToysIcon,
 } from "@mui/icons-material";
 import {
@@ -30,8 +33,11 @@ import {
 	Chip,
 	InputAdornment,
 	LinearProgress,
+	Pagination,
 	Skeleton,
 	TextField,
+	ToggleButton,
+	ToggleButtonGroup,
 	Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
@@ -55,15 +61,19 @@ const CausesPage = () => {
 
 	const { user } = useSelector((state: RootState) => state.auth);
 	const [searchTerm, setSearchTerm] = useState("");
-
+	const [donationTypeFilter, setDonationTypeFilter] = useState<string>("all");
 	const [page, setPage] = useState(1);
+	const limit = 10;
 
 	const {
 		data: organizationCausesData,
 		isLoading: isLoadingOrgCauses,
 		error: orgCausesError,
 	} = useGetCausesQuery(
-		{ organizationId: user?.id },
+		{
+			organizationId: user?.id,
+			acceptanceTypes: "both", // Adding the required field
+		},
 		{ skip: user?.role !== "organization" }
 	);
 
@@ -72,7 +82,15 @@ const CausesPage = () => {
 		data: activeCampaignCausesData,
 		isLoading: isLoadingActiveCauses,
 		error: activeCausesError,
-	} = useGetActiveCampaignCausesQuery({});
+	} = useGetActiveCampaignCausesQuery({
+		page,
+		limit,
+		search: searchTerm.trim() || undefined,
+		acceptanceType:
+			donationTypeFilter !== "all"
+				? (donationTypeFilter as "money" | "items" | "both")
+				: undefined,
+	});
 
 	// Determine which data to use based on user role
 	const causesData =
@@ -84,18 +102,32 @@ const CausesPage = () => {
 	const error =
 		user?.role === "organization" ? orgCausesError : activeCausesError;
 
-	// Client-side filtering for search (similar to organization page)
-	const filteredCauses = causesData?.causes?.filter(
-		(cause: Cause) =>
-			cause.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			cause.tags?.some((tag) =>
-				tag?.toLowerCase().includes(searchTerm.toLowerCase())
-			)
-	);
+	// Server-side filtering is now handled by API
+	const causes = causesData?.causes || [];
+	const totalCauses = causesData?.total || 0;
+	const totalPages = Math.ceil(totalCauses / limit);
 
 	const handleViewCause = (id: string) => {
 		router.push(`/dashboard/causes/${id}`);
+	};
+
+	const handlePageChange = (
+		_event: React.ChangeEvent<unknown>,
+		newPage: number
+	) => {
+		setPage(newPage);
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+		setPage(1); // Reset to first page when searching
+	};
+
+	const handleDonationTypeFilterChange = (newValue: string | null) => {
+		if (newValue !== null) {
+			setDonationTypeFilter(newValue);
+			setPage(1); // Reset to first page when filtering
+		}
 	};
 
 	// Collect all unique tags for filtering
@@ -105,21 +137,13 @@ const CausesPage = () => {
 	});
 
 	return (
-		<Box sx={{ p: 3, maxWidth: "1200px", mx: "auto" }}>
+		<Box sx={{ p: 3, maxWidth: "1300px", mx: "auto" }}>
 			<Typography
-				variant="h4"
+				variant="h6"
 				component="h1"
 				sx={{ fontWeight: "bold", mb: 2, color: "#1a1a1a" }}
 			>
 				Browse Active Causes
-			</Typography>
-			<Typography
-				variant="body1"
-				color="text.secondary"
-				sx={{ mb: 4, maxWidth: 600 }}
-			>
-				Discover causes from active campaigns that need your support. Every
-				donation makes a difference.
 			</Typography>
 
 			{/* Search and Filters */}
@@ -130,7 +154,7 @@ const CausesPage = () => {
 							fullWidth
 							placeholder="Search causes by title, description, or tags..."
 							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							onChange={handleSearchChange}
 							slotProps={{
 								input: {
 									startAdornment: (
@@ -164,6 +188,78 @@ const CausesPage = () => {
 							}}
 						/>
 					</Box>
+				</Box>
+
+				{/* Donation Type Filter */}
+				<Box mt={3}>
+					<Typography
+						variant="body2"
+						sx={{ mb: 2, fontWeight: 600, color: "#1a1a1a" }}
+					>
+						Filter by Donation Type:
+					</Typography>
+					<ToggleButtonGroup
+						value={donationTypeFilter}
+						exclusive
+						onChange={(_, newValue) => handleDonationTypeFilterChange(newValue)}
+						sx={{
+							gap: 1,
+							flexWrap: "wrap",
+							"& .MuiToggleButton-root": {
+								border: "2px solid #e0e0e0",
+								borderRadius: 2,
+								px: 2,
+								py: 1,
+								color: "#666",
+								backgroundColor: "white",
+								"&:hover": {
+									backgroundColor: "#f8f9fa",
+									borderColor: "#287068",
+								},
+								"&.Mui-selected": {
+									backgroundColor: "#287068",
+									color: "white",
+									borderColor: "#287068",
+									"&:hover": {
+										backgroundColor: "#1f5a52",
+									},
+								},
+							},
+						}}
+					>
+						<ToggleButton value="all">
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+								<AllIcon sx={{ fontSize: 18 }} />
+								<Typography variant="body2" sx={{ fontWeight: 500 }}>
+									All Types
+								</Typography>
+							</Box>
+						</ToggleButton>
+						<ToggleButton value="money">
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+								<MoneyIcon sx={{ fontSize: 18 }} />
+								<Typography variant="body2" sx={{ fontWeight: 500 }}>
+									Money Only
+								</Typography>
+							</Box>
+						</ToggleButton>
+						<ToggleButton value="items">
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+								<ItemsIcon sx={{ fontSize: 18 }} />
+								<Typography variant="body2" sx={{ fontWeight: 500 }}>
+									Items Only
+								</Typography>
+							</Box>
+						</ToggleButton>
+						<ToggleButton value="both">
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+								<BothIcon sx={{ fontSize: 18 }} />
+								<Typography variant="body2" sx={{ fontWeight: 500 }}>
+									Both
+								</Typography>
+							</Box>
+						</ToggleButton>
+					</ToggleButtonGroup>
 				</Box>
 			</Box>
 
@@ -213,7 +309,7 @@ const CausesPage = () => {
 				>
 					Failed to load causes. Please try again later.
 				</Alert>
-			) : filteredCauses?.length === 0 ? (
+			) : causes?.length === 0 ? (
 				<Alert
 					severity="info"
 					sx={{
@@ -226,7 +322,7 @@ const CausesPage = () => {
 						},
 					}}
 				>
-					{searchTerm
+					{searchTerm || donationTypeFilter !== "all"
 						? "No causes match your search criteria. Try adjusting your filters."
 						: "No active causes available at the moment. Check back soon!"}
 				</Alert>
@@ -238,23 +334,18 @@ const CausesPage = () => {
 						gap: 3,
 					}}
 				>
-					{filteredCauses?.map((cause: Cause) => {
+					{causes?.map((cause: Cause) => {
 						// Ensure we have valid numbers for calculation
-						const raisedAmount = typeof cause.raisedAmount === 'number' ? cause.raisedAmount : 0;
-						const targetAmount = typeof cause.targetAmount === 'number' && cause.targetAmount > 0 ? cause.targetAmount : 1;
+						const raisedAmount =
+							typeof cause.raisedAmount === "number" ? cause.raisedAmount : 0;
+						const targetAmount =
+							typeof cause.targetAmount === "number" && cause.targetAmount > 0
+								? cause.targetAmount
+								: 1;
 						const progress =
 							targetAmount > 0
 								? Math.min(100, Math.round((raisedAmount / targetAmount) * 100))
 								: 0;
-
-						// Debug logging for progress issues
-						console.log(`🔍 Cause Progress: ${cause.title}`, {
-							raisedAmount,
-							targetAmount,
-							progress,
-							originalRaised: cause.raisedAmount,
-							originalTarget: cause.targetAmount
-						});
 
 						const primaryDonationType =
 							cause.acceptedDonationTypes?.[0] || DonationType.MONEY;
@@ -265,7 +356,7 @@ const CausesPage = () => {
 						let urgencyColor = "#10b981";
 						if (progress < 30) {
 							urgency = "High";
-							urgencyColor = "#ef4444";
+							urgencyColor = "#000000bb";
 						} else if (progress < 70) {
 							urgency = "Medium";
 							urgencyColor = "#f59e0b";
@@ -274,15 +365,6 @@ const CausesPage = () => {
 						const formatCurrency = (amount: number) => {
 							return `₹${amount.toLocaleString()}`;
 						};
-
-						// Debug logging for each cause
-						console.log('🔍 CAUSE MESSAGE BUTTON DEBUG:', {
-							causeId: cause.id,
-							organizationId: cause.organizationId,
-							organizationUserId: cause.organizationUserId,
-							organizationName: cause.organizationName,
-							strategy: "Use cause.organizationUserId (populated from organization.userId)"
-						});
 
 						return (
 							<Card
@@ -396,43 +478,130 @@ const CausesPage = () => {
 										{cause.description}
 									</Typography>
 
-									{/* Progress Section */}
-									<Box sx={{ mb: 3 }}>
-										<Box
-											sx={{
-												display: "flex",
-												justifyContent: "space-between",
-												mb: 1,
-											}}
-										>
-											<Typography variant="body2" color="text.secondary">
-												Progress
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(raisedAmount)} /{" "}
-												{formatCurrency(cause.targetAmount || 0)}
-											</Typography>
+									{/* Progress Section - show for causes with monetary targets */}
+									{cause.acceptanceType !== "items" &&
+									cause.targetAmount > 0 ? (
+										<Box sx={{ mb: 3 }}>
+											<Box
+												sx={{
+													display: "flex",
+													justifyContent: "space-between",
+													mb: 1,
+												}}
+											>
+												<Typography variant="body2" color="text.secondary">
+													Progress
+												</Typography>
+												<Typography variant="body2" sx={{ fontWeight: 600 }}>
+													{progress}% funded
+												</Typography>
+											</Box>
+											<LinearProgress
+												variant="determinate"
+												value={progress}
+												sx={{
+													height: 8,
+													borderRadius: 4,
+													backgroundColor: "#f0f0f0",
+													"& .MuiLinearProgress-bar": {
+														backgroundColor: urgencyColor,
+													},
+													mb: 1,
+												}}
+											/>
+											<Box
+												sx={{
+													display: "flex",
+													justifyContent: "space-between",
+													alignItems: "center",
+												}}
+											>
+												<Box>
+													<Typography variant="body2" color="text.secondary">
+														Raised
+													</Typography>
+													<Typography
+														variant="h6"
+														sx={{ fontWeight: 600, color: "#287068" }}
+													>
+														{formatCurrency(raisedAmount)}
+													</Typography>
+												</Box>
+												<Box sx={{ textAlign: "right" }}>
+													<Typography variant="body2" color="text.secondary">
+														Goal
+													</Typography>
+													<Typography variant="h6" sx={{ fontWeight: 600 }}>
+														{formatCurrency(cause.targetAmount || 0)}
+													</Typography>
+												</Box>
+											</Box>
 										</Box>
-										<LinearProgress
-											variant="determinate"
-											value={progress}
-											sx={{
-												height: 8,
-												borderRadius: 4,
-												backgroundColor: "#f0f0f0",
-												"& .MuiLinearProgress-bar": {
-													backgroundColor: urgencyColor,
-												},
-											}}
-										/>
-										<Typography
-											variant="caption"
-											color="text.secondary"
-											sx={{ mt: 0.5, display: "block" }}
-										>
-											{progress}% funded
-										</Typography>
-									</Box>
+									) : null}
+
+									{/* Items Section - show for items and both types */}
+									{cause.acceptanceType !== "money" ? (
+										<Box sx={{ mb: 3 }}>
+											{cause.acceptanceType === "items" ? (
+												<Alert severity="info" sx={{ py: 1, mb: 2 }}>
+													<Typography variant="body2">
+														<strong>Items-only cause</strong> - This cause
+														accepts item donations only
+													</Typography>
+												</Alert>
+											) : (
+												<Typography
+													variant="body2"
+													color="text.secondary"
+													sx={{ fontWeight: 500, mb: 1 }}
+												>
+													Needed Items:
+												</Typography>
+											)}
+											{cause.donationItems && cause.donationItems.length > 0 ? (
+												<Box display="flex" gap={1} flexWrap="wrap">
+													{[...new Set(cause.donationItems)]
+														.slice(0, 3)
+														.map((item, index) => (
+															<Chip
+																key={index}
+																label={item}
+																size="small"
+																variant="outlined"
+																sx={{
+																	borderRadius: 2,
+																	fontSize: "0.75rem",
+																	height: 28,
+																	borderColor: urgencyColor,
+																	color: urgencyColor,
+																	fontWeight: 500,
+																}}
+															/>
+														))}
+													{[...new Set(cause.donationItems)].length > 3 && (
+														<Chip
+															label={`+${
+																[...new Set(cause.donationItems)].length - 3
+															} more`}
+															size="small"
+															variant="outlined"
+															sx={{
+																borderRadius: 2,
+																fontSize: "0.75rem",
+																height: 28,
+																borderColor: "#6c757d",
+																color: "#6c757d",
+															}}
+														/>
+													)}
+												</Box>
+											) : (
+												<Typography variant="caption" color="text.secondary">
+													Accepting various item donations
+												</Typography>
+											)}
+										</Box>
+									) : null}
 
 									{/* Tags */}
 									{cause.tags && cause.tags.length > 0 && (
@@ -472,9 +641,16 @@ const CausesPage = () => {
 
 									{/* Action Buttons */}
 									<Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-										{/* Message Button - Use cause.organizationUserId (populated from organization.userId) */}
+										{/* Message Button */}
 										<StartConversationButton
-											recipientId={cause.organizationId.userId || "6838302f0060c3ec49a0e80e"}
+											recipientId={
+												cause.organizationUserId ||
+												(typeof cause.organizationId === "object" &&
+												cause.organizationId &&
+												"_id" in cause.organizationId
+													? (cause.organizationId as { _id: string })._id
+													: (cause.organizationId as string))
+											}
 											recipientType="user"
 											recipientName={cause.organizationName || "Organization"}
 											recipientRole="organization"
@@ -517,76 +693,48 @@ const CausesPage = () => {
 				</Box>
 			)}
 
-			{/* Pagination - Update to use filteredCauses */}
-			{causesData && causesData.totalPages > 1 && !searchTerm && (
-				<Box display="flex" justifyContent="center" mt={5} gap={3}>
-					<Button
-						disabled={page === 1}
-						onClick={() => setPage((p) => Math.max(1, p - 1))}
-						variant="outlined"
-						sx={{
-							borderRadius: 3,
-							textTransform: "none",
-							fontWeight: 600,
-							px: 3,
-							py: 1.5,
-							borderColor: "#287068",
-							color: "#287068",
-							borderWidth: 2,
-							transition: "all 0.3s ease",
-							"&:hover": {
-								backgroundColor: "#287068",
-								color: "white",
-								borderColor: "#287068",
-							},
-							"&:disabled": {
-								borderColor: "#e0e0e0",
-								color: "#9e9e9e",
-							},
-						}}
-					>
-						Previous
-					</Button>
+			{/* Results Summary */}
+			{!isLoading && !error && totalCauses > 0 && (
+				<Box sx={{ mt: 4, mb: 2 }}>
 					<Typography
-						variant="body1"
-						sx={{
-							alignSelf: "center",
-							fontWeight: 500,
-							color: "#287068",
-							px: 2,
-						}}
+						variant="body2"
+						color="text.secondary"
+						sx={{ textAlign: "center" }}
 					>
-						Page {page} of {causesData.totalPages}
+						Showing {(page - 1) * limit + 1}-
+						{Math.min(page * limit, totalCauses)} of {totalCauses} causes
 					</Typography>
-					<Button
-						disabled={page === causesData.totalPages}
-						onClick={() =>
-							setPage((p) => Math.min(causesData.totalPages, p + 1))
-						}
-						variant="outlined"
+				</Box>
+			)}
+
+			{/* Pagination */}
+			{totalPages > 1 && (
+				<Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+					<Pagination
+						count={totalPages}
+						page={page}
+						onChange={handlePageChange}
+						color="primary"
+						size="large"
+						showFirstButton
+						showLastButton
 						sx={{
-							borderRadius: 3,
-							textTransform: "none",
-							fontWeight: 600,
-							px: 3,
-							py: 1.5,
-							borderColor: "#287068",
-							color: "#287068",
-							borderWidth: 2,
-							transition: "all 0.3s ease",
-							"&:hover": {
-								backgroundColor: "#287068",
-								color: "white",
+							"& .MuiPaginationItem-root": {
+								color: "#287068",
 								borderColor: "#287068",
-							},
-							"&:disabled": {
-								borderColor: "#e0e0e0",
-								color: "#9e9e9e",
+								"&:hover": {
+									backgroundColor: "rgba(40, 112, 104, 0.1)",
+								},
+								"&.Mui-selected": {
+									backgroundColor: "#287068",
+									color: "white",
+									"&:hover": {
+										backgroundColor: "#1f5a52",
+									},
+								},
 							},
 						}}
-					>
-						Next
-					</Button>
+					/>
 				</Box>
 			)}
 		</Box>

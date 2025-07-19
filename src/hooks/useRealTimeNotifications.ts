@@ -1,19 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-
-interface Notification {
-	id: string;
-	type: string;
-	title: string;
-	message: string;
-	data?: Record<string, any>;
-	isRead: boolean;
-	createdAt: string;
-}
 
 export const useRealTimeNotifications = () => {
 	const {
@@ -23,7 +10,6 @@ export const useRealTimeNotifications = () => {
 		unreadCount,
 		markNotificationAsRead,
 	} = useSocket();
-	const { user } = useSelector((state: RootState) => state.auth);
 
 	// Use socket notifications directly (already sorted by creation date in context)
 	const allNotifications = socketNotifications;

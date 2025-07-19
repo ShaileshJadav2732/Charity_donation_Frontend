@@ -34,7 +34,7 @@ interface DeleteImageResponse {
 export const uploadApi = createApi({
 	reducerPath: "uploadApi",
 	baseQuery,
-	tagTypes: ["Upload"],
+	tagTypes: ["Upload", "OrganizationProfile"],
 	endpoints: (builder) => ({
 		// Upload cause image
 		uploadCauseImage: builder.mutation<UploadResponse, FormData>({
@@ -61,6 +61,7 @@ export const uploadApi = createApi({
 				method: "POST",
 				body: formData,
 			}),
+			invalidatesTags: ["OrganizationProfile"],
 		}),
 
 		// Delete image

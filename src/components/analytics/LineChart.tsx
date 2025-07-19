@@ -11,10 +11,11 @@ import {
 	Tooltip,
 	Legend,
 	Filler,
+	TooltipItem,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Paper, Typography, Box } from "@mui/material";
-
+import { LineChartProps } from "../../types/analytics";
 ChartJS.register(
 	CategoryScale,
 	LinearScale,
@@ -26,27 +27,6 @@ ChartJS.register(
 	Filler
 );
 
-interface LineChartData {
-	labels: string[];
-	datasets: {
-		label: string;
-		data: number[];
-		borderColor?: string;
-		backgroundColor?: string;
-		fill?: boolean;
-		tension?: number;
-	}[];
-}
-
-interface LineChartProps {
-	title: string;
-	data: LineChartData;
-	height?: number;
-	showLegend?: boolean;
-	showGrid?: boolean;
-	currency?: boolean;
-}
-
 const LineChart: React.FC<LineChartProps> = ({
 	title,
 	data,
@@ -54,6 +34,7 @@ const LineChart: React.FC<LineChartProps> = ({
 	showLegend = true,
 	showGrid = true,
 	currency = false,
+	dualAxis = true,
 }) => {
 	const options = {
 		responsive: true,
@@ -79,12 +60,16 @@ const LineChart: React.FC<LineChartProps> = ({
 				cornerRadius: 8,
 				displayColors: true,
 				callbacks: {
-					label: function (context: any) {
+					label: function (context: TooltipItem<"line">) {
 						const label = context.dataset.label || "";
 						const value = context.parsed.y;
-						const formattedValue = currency
-							? `₹${value.toLocaleString()}`
-							: value.toLocaleString();
+
+						// Format based on which dataset this is
+						let formattedValue = value.toLocaleString();
+						if (currency && label === "Donation Value") {
+							formattedValue = `₹${value.toLocaleString()}`;
+						}
+
 						return `${label}: ${formattedValue}`;
 					},
 				},
@@ -106,24 +91,63 @@ const LineChart: React.FC<LineChartProps> = ({
 			},
 			y: {
 				display: true,
+				position: "left" as const,
 				grid: {
 					display: showGrid,
 					color: "rgba(0, 0, 0, 0.05)",
 				},
 				ticks: {
-					color: "#6b7280",
+					color: "#2f8077", // Color matches the value line
 					font: {
 						size: 11,
 					},
-					callback: function (value: any) {
+					callback: function (value: string | number) {
+						const numValue =
+							typeof value === "string" ? parseFloat(value) : value;
 						if (currency) {
-							return `₹${value.toLocaleString()}`;
+							return `₹${numValue.toLocaleString()}`;
 						}
-						return value.toLocaleString();
+						return numValue.toLocaleString();
 					},
 				},
 				beginAtZero: true,
+				title: {
+					display: dualAxis,
+					text: "Value (₹)",
+					color: "#2f8077",
+					font: {
+						size: 12,
+						weight: "bold" as const,
+					},
+				},
 			},
+			...(dualAxis
+				? {
+						y1: {
+							display: true,
+							position: "right" as const,
+							grid: {
+								display: false, // Don't show grid lines for second axis
+							},
+							ticks: {
+								color: "#f59e0b", // Color matches the count line
+								font: {
+									size: 11,
+								},
+							},
+							beginAtZero: true,
+							title: {
+								display: true,
+								text: "Count",
+								color: "#f59e0b",
+								font: {
+									size: 12,
+									weight: "bold" as const,
+								},
+							},
+						},
+				  }
+				: {}),
 		},
 		interaction: {
 			intersect: false,

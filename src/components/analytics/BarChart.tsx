@@ -12,6 +12,7 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import { Paper, Typography, Box } from "@mui/material";
+import { BarChartProps } from "../../types/analytics";
 
 ChartJS.register(
 	CategoryScale,
@@ -21,29 +22,6 @@ ChartJS.register(
 	Tooltip,
 	Legend
 );
-
-interface BarChartData {
-	labels: string[];
-	datasets: {
-		label: string;
-		data: number[];
-		backgroundColor?: string | string[];
-		borderColor?: string | string[];
-		borderWidth?: number;
-		borderRadius?: number;
-		borderSkipped?: boolean;
-	}[];
-}
-
-interface BarChartProps {
-	title: string;
-	data: BarChartData;
-	height?: number;
-	showLegend?: boolean;
-	showGrid?: boolean;
-	currency?: boolean;
-	horizontal?: boolean;
-}
 
 const BarChart: React.FC<BarChartProps> = ({
 	title,
@@ -79,7 +57,10 @@ const BarChart: React.FC<BarChartProps> = ({
 				cornerRadius: 8,
 				displayColors: true,
 				callbacks: {
-					label: function (context: any) {
+					label: function (context: {
+						dataset: { label?: string };
+						parsed: { x: number; y: number };
+					}) {
 						const label = context.dataset.label || "";
 						const value = context.parsed[horizontal ? "x" : "y"];
 						const formattedValue = currency
@@ -102,11 +83,13 @@ const BarChart: React.FC<BarChartProps> = ({
 					font: {
 						size: 11,
 					},
-					callback: function (value: any) {
+					callback: function (value: string | number) {
+						const numValue =
+							typeof value === "string" ? parseFloat(value) : value;
 						if (horizontal && currency) {
-							return `₹${value.toLocaleString()}`;
+							return `₹${numValue.toLocaleString()}`;
 						}
-						return horizontal ? value.toLocaleString() : this.getLabelForValue(value);
+						return numValue.toLocaleString();
 					},
 				},
 				beginAtZero: horizontal,
@@ -122,11 +105,13 @@ const BarChart: React.FC<BarChartProps> = ({
 					font: {
 						size: 11,
 					},
-					callback: function (value: any) {
+					callback: function (value: string | number) {
+						const numValue =
+							typeof value === "string" ? parseFloat(value) : value;
 						if (!horizontal && currency) {
-							return `₹${value.toLocaleString()}`;
+							return `₹${numValue.toLocaleString()}`;
 						}
-						return !horizontal ? value.toLocaleString() : this.getLabelForValue(value);
+						return numValue.toLocaleString();
 					},
 				},
 				beginAtZero: !horizontal,

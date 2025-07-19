@@ -59,10 +59,6 @@ export default function DonorProfileForm() {
 		setErrors((prev) => ({ ...prev, [name]: "" }));
 	};
 
-	const handleImageUpdate = (imageUrl: string) => {
-		setFormData((prev) => ({ ...prev, profileImage: imageUrl }));
-	};
-
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
@@ -90,14 +86,6 @@ export default function DonorProfileForm() {
 			animate={{ opacity: 1 }}
 			transition={{ duration: 0.3 }}
 		>
-			{/* Profile Image Upload */}
-			<div className="flex justify-center">
-				<ProfileImageUpload
-					currentImage={formData.profileImage}
-					onImageUpdate={handleImageUpdate}
-				/>
-			</div>
-
 			{/* First Name */}
 			<div>
 				<label

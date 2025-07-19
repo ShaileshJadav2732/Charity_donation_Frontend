@@ -2,16 +2,17 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import authReducer from "./slices/authSlice";
-import apiSlice from "./api/apiSlice";
+import apiSlice from "./slices/apiSlice";
 import { profileApi } from "./api/profileApi";
 import { campaignApi } from "./api/campaignApi";
 import { uploadApi } from "./api/uploadApi";
 import { causeApi } from "./api/causeApi";
 import { dashboardApi } from "./api/dashboardApi";
 import { organizationApi } from "./api/organizationApi";
-import { paymentApi } from "./api/paymentApi";
 import { notificationApi } from "./api/notificationApi";
 import { messageApi } from "./api/messageApi";
+import voiceCommandApi from "./api/voiceCommandApi";
+import "./api/authApi";
 
 // Configure Redux store
 export const store = configureStore({
@@ -23,9 +24,9 @@ export const store = configureStore({
 		[causeApi.reducerPath]: causeApi.reducer,
 		[dashboardApi.reducerPath]: dashboardApi.reducer,
 		[organizationApi.reducerPath]: organizationApi.reducer,
-		[paymentApi.reducerPath]: paymentApi.reducer,
 		[notificationApi.reducerPath]: notificationApi.reducer,
 		[messageApi.reducerPath]: messageApi.reducer,
+		[voiceCommandApi.reducerPath]: voiceCommandApi.reducer,
 		auth: authReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
@@ -37,9 +38,9 @@ export const store = configureStore({
 			.concat(dashboardApi.middleware)
 			.concat(uploadApi.middleware)
 			.concat(organizationApi.middleware)
-			.concat(paymentApi.middleware)
 			.concat(notificationApi.middleware)
-			.concat(messageApi.middleware),
+			.concat(messageApi.middleware)
+			.concat(voiceCommandApi.middleware),
 	devTools: process.env.NODE_ENV !== "production",
 });
 

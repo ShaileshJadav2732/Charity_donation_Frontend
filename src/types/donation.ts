@@ -50,8 +50,8 @@ export interface DonationFormData {
 	dropoffAddress?: Address;
 }
 
-// Enhanced form values interface for ImprovedDonationForm
-export interface ImprovedDonationFormValues {
+// Enhanced form values interface for DonationForm
+export interface DonationFormValues {
 	type: DonationType;
 	amount: string | number;
 	description: string;
@@ -123,7 +123,7 @@ export interface Donor {
 	email?: string;
 }
 
-export interface Cause {
+export interface DonationCause {
 	title?: string;
 }
 
@@ -152,7 +152,7 @@ export interface organizationDonation {
 	unit?: string;
 	amount?: number;
 	type?: string;
-	cause?: Cause;
+	cause?: DonationCause;
 	description?: string;
 	scheduledDate?: string; // ISO date string (e.g., "2025-05-20T00:00:00.000Z")
 	scheduledTime?: string;
@@ -205,8 +205,8 @@ export interface Donation {
 		title: string;
 	};
 	amount?: number;
-	type: string;
-	status: string;
+	type: DonationType; // Use enum for type safety
+	status: DonationStatus; // Use enum for type safety
 	quantity?: number;
 	unit?: string;
 	description: string;
@@ -230,4 +230,32 @@ export interface Donation {
 	notes?: string;
 	createdAt: string;
 	updatedAt?: string;
+}
+
+export interface DonationFormValues {
+	type: DonationType;
+	amount: string | number;
+	quantity: number;
+	unit: string;
+	description: string;
+	scheduledDate: string;
+	scheduledTime: string;
+	contactPhone: string;
+	contactEmail: string;
+	isPickup: boolean;
+	pickupAddress: Address;
+}
+
+export interface PaymentFormValues {
+	type: string;
+	amount: number | string;
+	description: string;
+	quantity?: number;
+	unit?: string;
+	scheduledDate?: string;
+	scheduledTime?: string;
+	contactPhone: string;
+	contactEmail: string;
+	isPickup?: boolean;
+	pickupAddress?: Address;
 }

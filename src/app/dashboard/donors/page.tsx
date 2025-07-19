@@ -437,9 +437,7 @@ const DonorsPage: React.FC = () => {
 														fontSize: "18px",
 														fontWeight: "bold",
 													}}
-												>
-													{donor.name.charAt(0).toUpperCase()}
-												</Avatar>
+												></Avatar>
 												<Box>
 													<Typography
 														variant="subtitle1"

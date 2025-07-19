@@ -1,6 +1,7 @@
 import { DonationType } from "./donation";
 export interface Cause {
 	id: string;
+	_id?: string; // Backend sometimes returns _id
 	title: string;
 	description: string;
 	targetAmount: number;
@@ -13,9 +14,10 @@ export interface Cause {
 	createdAt: string;
 	updatedAt: string;
 	donorCount?: number;
-	acceptedDonationTypes?: DonationType[];
-	acceptanceType?: "money" | "items" | "both";
-	donationItems?: string[];
+	itemDonations?: number; // Number of items donated
+	acceptedDonationTypes: DonationType[]; // Required field from backend
+	acceptanceType: "money" | "items" | "both"; // Required field from backend
+	donationItems: string[]; // Required field from backend
 }
 
 export interface CreateCauseBody {
@@ -25,6 +27,9 @@ export interface CreateCauseBody {
 	imageUrl: string;
 	tags: string[];
 	organizationId: string;
+	acceptanceType?: "money" | "items" | "both";
+	donationItems?: string[];
+	acceptedDonationTypes?: DonationType[];
 }
 
 export interface UpdateCauseBody {
@@ -47,6 +52,7 @@ export interface CauseQueryParams {
 	page?: number;
 	limit?: number;
 	search?: string;
+	tag?: string;
 	tags?: string[];
 	organizationId?: string;
 	minTarget?: number;
@@ -54,11 +60,14 @@ export interface CauseQueryParams {
 	minRaised?: number;
 	maxRaised?: number;
 	donationType?: DonationType;
+	acceptanceType?: "money" | "items" | "both";
+	acceptanceTypes?: "money" | "items" | "both";
 }
 
 export interface CauseResponse {
 	cause: {
 		id: string;
+		_id?: string;
 		title: string;
 		description: string;
 		targetAmount: number;
@@ -71,9 +80,10 @@ export interface CauseResponse {
 		createdAt: string;
 		updatedAt: string;
 		donorCount?: number;
-		acceptedDonationTypes?: DonationType[];
-		acceptanceType?: "money" | "items" | "both";
-		donationItems?: string[];
-		endDate: Date;
+		itemDonations?: number;
+		acceptedDonationTypes: DonationType[];
+		acceptanceType: "money" | "items" | "both";
+		donationItems: string[];
+		endDate?: Date; // Optional since not always present
 	};
 }

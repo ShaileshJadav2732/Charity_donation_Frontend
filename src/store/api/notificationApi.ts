@@ -26,8 +26,7 @@ export enum NotificationType {
 	DONATION_STATUS_UPDATED = "DONATION_STATUS_UPDATED",
 	CAMPAIGN_CREATED = "CAMPAIGN_CREATED",
 	CAMPAIGN_UPDATED = "CAMPAIGN_UPDATED",
-	FEEDBACK_RECEIVED = "FEEDBACK_RECEIVED",
-	FEEDBACK_RESPONSE = "FEEDBACK_RESPONSE",
+
 	SYSTEM_NOTIFICATION = "SYSTEM_NOTIFICATION",
 }
 
@@ -51,7 +50,7 @@ export const notificationApi = createApi({
 		>({
 			query: ({ userId, limit = 50, unreadOnly = false }) =>
 				`/notifications/${userId}?limit=${limit}&unreadOnly=${unreadOnly}`,
-			providesTags: (result, error, { userId }) =>
+			providesTags: (result, _error, { userId }) =>
 				result
 					? [
 							{ type: "Notifications", id: userId },
@@ -77,7 +76,7 @@ export const notificationApi = createApi({
 				url: `/notifications/${notificationId}/read`,
 				method: "PATCH",
 			}),
-			invalidatesTags: (result, error, notificationId) => [
+			invalidatesTags: (_result, _error, notificationId) => [
 				{ type: "Notifications", id: notificationId },
 			],
 		}),
@@ -86,7 +85,7 @@ export const notificationApi = createApi({
 				url: `/notifications/${notificationId}`,
 				method: "DELETE",
 			}),
-			invalidatesTags: (result, error, notificationId) => [
+			invalidatesTags: (_result, _error, notificationId) => [
 				{ type: "Notifications", id: notificationId },
 			],
 		}),

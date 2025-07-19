@@ -46,3 +46,25 @@ export const getProgressPercentage = (
 	const percentage = (raised / target) * 100;
 	return Math.min(percentage, 100);
 };
+
+// Avatar utility function to generate consistent fallback text
+export const getFallbackAvatarText = (
+	userRole: string,
+	donorProfile?: { firstName?: string; lastName?: string },
+	orgProfile?: { name?: string },
+	userEmail?: string
+): string => {
+	if (userRole === "donor" && donorProfile) {
+		const firstName = donorProfile.firstName;
+		const lastName = donorProfile.lastName;
+		if (firstName && lastName) {
+			return `${firstName[0] || ""}${lastName[0] || ""}`;
+		} else if (firstName) {
+			return firstName[0];
+		}
+	} else if (userRole === "organization" && orgProfile?.name) {
+		return orgProfile.name[0];
+	}
+	// Fallback to email first character
+	return userEmail?.[0]?.toUpperCase() || "?";
+};

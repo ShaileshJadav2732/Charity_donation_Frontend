@@ -3,7 +3,7 @@ export * from "./errors";
 export * from "./user";
 export * from "./donation";
 export * from "./forms";
-export * from "./payment";
+
 export * from "./analytics";
 export * from "./cause";
 export * from "./profile";

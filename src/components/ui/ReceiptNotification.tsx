@@ -1,7 +1,7 @@
 "use client";
 
 import { getReceiptImageUrl } from "@/utils/url";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FaDownload, FaFilePdf, FaTimes } from "react-icons/fa";
 
 interface ReceiptNotificationProps {
@@ -25,6 +25,13 @@ export default function ReceiptNotification({
 }: ReceiptNotificationProps) {
 	const [isVisible, setIsVisible] = useState(false);
 
+	const handleClose = useCallback(() => {
+		setIsVisible(false);
+		setTimeout(() => {
+			onClose();
+		}, 300);
+	}, [onClose]);
+
 	useEffect(() => {
 		if (show) {
 			setIsVisible(true);
@@ -35,14 +42,7 @@ export default function ReceiptNotification({
 				return () => clearTimeout(timer);
 			}
 		}
-	}, [show, autoHide, autoHideDelay]);
-
-	const handleClose = () => {
-		setIsVisible(false);
-		setTimeout(() => {
-			onClose();
-		}, 300); // Wait for animation to complete
-	};
+	}, [show, autoHide, autoHideDelay, handleClose]);
 
 	const handleDownload = () => {
 		if (pdfReceiptUrl) {

@@ -2,7 +2,7 @@
 
 import {
 	useDeleteCampaignMutation,
-	useGetCampaignsQuery,
+	useGetOrganizationCampaignsQuery,
 } from "@/store/api/campaignApi";
 import { RootState } from "@/store/store";
 import { Campaign, CampaignStatus } from "@/types/campaings";
@@ -33,6 +33,7 @@ import {
 	InputLabel,
 	LinearProgress,
 	MenuItem,
+	Pagination,
 	Paper,
 	Select,
 	Stack,
@@ -54,8 +55,7 @@ const StatusChip = ({ status }: { status: string }) => {
 				return "warning";
 			case CampaignStatus.COMPLETED:
 				return "info";
-			case CampaignStatus.CANCELLED:
-				return "error";
+
 			default:
 				return "default";
 		}
@@ -96,26 +96,26 @@ const CampaignsPage = () => {
 	);
 	const [deleteError, setDeleteError] = useState<string | null>(null);
 
-	// Fetch campaigns
-	const { data, isLoading, error, refetch } = useGetCampaignsQuery({
-		organizations: user?.id,
+	// Pagination state
+	const [page, setPage] = useState(1);
+	const limit = 10;
+
+	// Fetch campaigns with pagination
+	const { data, isLoading, error, refetch } = useGetOrganizationCampaignsQuery({
+		organizationId: user?.id || "",
+		page,
+		limit,
+		search: searchTerm.trim() || undefined,
+		status: statusFilter !== "all" ? (statusFilter as any) : undefined,
 	});
 
 	const [deleteCampaign, { isLoading: isDeleting }] =
 		useDeleteCampaignMutation();
 
-	// Process campaigns data - Fixed to handle the data structure properly
+	// Process campaigns data - server-side filtering is now handled by API
 	const campaigns: Campaign[] = data?.campaigns || [];
-
-	const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
-		const matchesSearch = campaign.title
-			?.toLowerCase()
-			.includes(searchTerm.toLowerCase());
-		const matchesStatus =
-			statusFilter === "all" ||
-			campaign.status?.toLowerCase() === statusFilter.toLowerCase();
-		return matchesSearch && matchesStatus;
-	});
+	const totalCampaigns = data?.total || 0;
+	const totalPages = Math.ceil(totalCampaigns / limit);
 
 	// Handlers
 	const handleCreateCampaign = () => router.push("/dashboard/campaigns/create");
@@ -127,6 +127,23 @@ const CampaignsPage = () => {
 	const handleDeleteClick = (id: string) => {
 		setSelectedCampaignId(id);
 		setDeleteDialogOpen(true);
+	};
+
+	const handlePageChange = (
+		_event: React.ChangeEvent<unknown>,
+		newPage: number
+	) => {
+		setPage(newPage);
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+		setPage(1); // Reset to first page when searching
+	};
+
+	const handleStatusFilterChange = (value: string) => {
+		setStatusFilter(value);
+		setPage(1); // Reset to first page when filtering
 	};
 
 	const handleDeleteConfirm = async () => {
@@ -152,7 +169,7 @@ const CampaignsPage = () => {
 					p: 2,
 					mb: 2,
 					borderRadius: 0,
-					backgroundImage: "linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%)",
+					backgroundImage: "linear-gradient(#287068, #2f8077)",
 					color: "white",
 				}}
 			>
@@ -177,7 +194,7 @@ const CampaignsPage = () => {
 						<TextField
 							placeholder="Search campaigns..."
 							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							onChange={handleSearchChange}
 							size="small"
 							slotProps={{
 								input: {
@@ -191,13 +208,12 @@ const CampaignsPage = () => {
 								<InputLabel>Status</InputLabel>
 								<Select
 									value={statusFilter}
-									onChange={(e) => setStatusFilter(e.target.value)}
+									onChange={(e) => handleStatusFilterChange(e.target.value)}
 									label="Status"
 								>
 									<MenuItem value="all">All</MenuItem>
 									<MenuItem value="active">Active</MenuItem>
 									<MenuItem value="draft">Draft</MenuItem>
-									<MenuItem value="paused">Paused</MenuItem>
 									<MenuItem value="completed">Completed</MenuItem>
 								</Select>
 							</FormControl>
@@ -214,6 +230,17 @@ const CampaignsPage = () => {
 					</Stack>
 				</Paper>
 
+				{/* Results Summary */}
+				{!isLoading && !error && totalCampaigns > 0 && (
+					<Box sx={{ mb: 2 }}>
+						<Typography variant="body2" color="text.secondary">
+							Showing {(page - 1) * limit + 1}-
+							{Math.min(page * limit, totalCampaigns)} of {totalCampaigns}{" "}
+							campaigns
+						</Typography>
+					</Box>
+				)}
+
 				{/* Campaign List */}
 				{isLoading ? (
 					<Box display="flex" justifyContent="center" p={4}>
@@ -221,7 +248,7 @@ const CampaignsPage = () => {
 					</Box>
 				) : error ? (
 					<Alert severity="error">Failed to load campaigns</Alert>
-				) : filteredCampaigns.length === 0 ? (
+				) : campaigns.length === 0 ? (
 					<Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
 						<Typography variant="h6" gutterBottom>
 							No campaigns found
@@ -250,7 +277,7 @@ const CampaignsPage = () => {
 							gap: 2,
 						}}
 					>
-						{filteredCampaigns.map((campaign) => {
+						{campaigns.map((campaign) => {
 							const progress = getProgressPercentage(
 								campaign.totalRaisedAmount,
 								campaign.totalTargetAmount
@@ -266,7 +293,30 @@ const CampaignsPage = () => {
 											height: "100%",
 											display: "flex",
 											flexDirection: "column",
+											cursor: "pointer",
+											transition: "all 0.2s ease",
+											position: "relative",
+											"&:hover": {
+												transform: "translateY(-2px)",
+												boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+												"&::after": {
+													content: '"Click to view details"',
+													position: "absolute",
+													top: 10,
+													right: 10,
+													backgroundColor: "rgba(40, 112, 104, 0.9)",
+													color: "white",
+													padding: "4px 8px",
+													borderRadius: 1,
+													fontSize: "0.75rem",
+													fontWeight: 500,
+													zIndex: 2,
+												},
+											},
 										}}
+										onClick={() =>
+											router.push(`/dashboard/campaigns/${campaignId}`)
+										}
 									>
 										{/* Campaign Image */}
 										<CardMedia
@@ -315,57 +365,113 @@ const CampaignsPage = () => {
 												{campaign.description?.substring(0, 100)}...
 											</Typography>
 
-											{/* Progress Bar */}
-											<Box sx={{ mb: 2 }}>
-												<Box
-													display="flex"
-													justifyContent="space-between"
-													mb={0.5}
-												>
-													<Typography variant="body2" color="text.secondary">
-														Progress
-													</Typography>
-													<Typography variant="body2" fontWeight="bold">
-														{progress.toFixed(0)}%
-													</Typography>
+											{/* Progress Bar - only show for campaigns with monetary targets */}
+											{campaign.totalTargetAmount > 0 ? (
+												<>
+													<Box
+														sx={{
+															display: "grid",
+															gridTemplateColumns: "1fr 1fr",
+															gap: 1,
+															mb: 1,
+														}}
+													></Box>
+												</>
+											) : (
+												<Box sx={{ mb: 2 }}>
+													<Alert severity="info" sx={{ py: 1 }}>
+														<Typography variant="body2">
+															<strong>Items-only campaign</strong> - No monetary
+															target set
+														</Typography>
+													</Alert>
 												</Box>
-												<LinearProgress
-													variant="determinate"
-													value={progress}
-													sx={{ height: 6, borderRadius: 3 }}
-												/>
-											</Box>
+											)}
 
-											{/* Raised vs Goal */}
-											<Box
-												sx={{
-													display: "grid",
-													gridTemplateColumns: "1fr 1fr",
-													gap: 1,
-													mb: 1,
-												}}
-											>
-												<Box>
-													<Typography variant="body2" color="text.secondary">
-														Raised
-													</Typography>
-													<Typography
-														variant="body2"
-														fontWeight="bold"
-														color="primary"
-													>
-														${campaign.totalRaisedAmount.toLocaleString()}
-													</Typography>
-												</Box>
-												<Box sx={{ textAlign: "right" }}>
-													<Typography variant="body2" color="text.secondary">
-														Goal
-													</Typography>
-													<Typography variant="body2" fontWeight="bold">
-														${campaign.totalTargetAmount.toLocaleString()}
-													</Typography>
-												</Box>
-											</Box>
+											{(() => {
+												const allDonationItems =
+													campaign.causes
+														?.filter(
+															(cause) =>
+																cause.donationItems &&
+																Array.isArray(cause.donationItems) &&
+																cause.donationItems.length > 0
+														)
+														?.flatMap((cause) => cause.donationItems || [])
+														?.filter(
+															(item, index, array) =>
+																item &&
+																typeof item === "string" &&
+																array.indexOf(item) === index
+														) || [];
+
+												if (allDonationItems.length > 0) {
+													return (
+														<Box sx={{ mb: 2 }}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+																sx={{ fontWeight: 500, mb: 1 }}
+															>
+																Needed Items from Campaign Causes:
+															</Typography>
+															<Box display="flex" gap={0.5} flexWrap="wrap">
+																{allDonationItems
+																	.slice(0, 3)
+																	.map((item, index) => (
+																		<Chip
+																			key={index}
+																			label={item}
+																			size="small"
+																			variant="outlined"
+																			sx={{
+																				borderRadius: 1,
+																				fontSize: "0.7rem",
+																				height: 22,
+																				borderColor: "#287068",
+																				color: "#287068",
+																			}}
+																		/>
+																	))}
+																{allDonationItems.length > 3 && (
+																	<Chip
+																		label={`+${
+																			allDonationItems.length - 3
+																		} more`}
+																		size="small"
+																		variant="outlined"
+																		sx={{
+																			borderRadius: 1,
+																			fontSize: "0.7rem",
+																			height: 22,
+																			borderColor: "#6c757d",
+																			color: "#6c757d",
+																		}}
+																	/>
+																)}
+															</Box>
+														</Box>
+													);
+												}
+
+												// Show debug info if no items found but causes exist
+												if (campaign.causes && campaign.causes.length > 0) {
+													return (
+														<Box sx={{ mb: 2 }}>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+																sx={{ fontStyle: "italic" }}
+															>
+																Campaign has {campaign.causes.length} cause(s)
+																but no donation items configured.
+															</Typography>
+														</Box>
+													);
+												}
+
+												return null;
+											})()}
 
 											{/* Metadata */}
 											<Box display="flex" justifyContent="space-between" mt={1}>
@@ -393,11 +499,17 @@ const CampaignsPage = () => {
 										</CardContent>
 
 										{/* Actions */}
-										<CardActions sx={{ justifyContent: "space-between" }}>
+										<CardActions
+											sx={{ justifyContent: "space-between" }}
+											onClick={(e) => e.stopPropagation()} // Prevent card click when clicking buttons
+										>
 											<Button
 												size="small"
 												startIcon={<EditIcon />}
-												onClick={() => handleEditCampaign(campaignId)}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleEditCampaign(campaignId);
+												}}
 											>
 												Edit
 											</Button>
@@ -405,7 +517,10 @@ const CampaignsPage = () => {
 												size="small"
 												color="error"
 												startIcon={<DeleteIcon />}
-												onClick={() => handleDeleteClick(campaignId)}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDeleteClick(campaignId);
+												}}
 												disabled={isDeleting}
 											>
 												Delete
@@ -415,6 +530,21 @@ const CampaignsPage = () => {
 								</Box>
 							);
 						})}
+					</Box>
+				)}
+
+				{/* Pagination */}
+				{totalPages > 1 && (
+					<Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+						<Pagination
+							count={totalPages}
+							page={page}
+							onChange={handlePageChange}
+							color="primary"
+							size="large"
+							showFirstButton
+							showLastButton
+						/>
 					</Box>
 				)}
 			</Box>

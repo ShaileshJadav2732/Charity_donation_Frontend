@@ -18,7 +18,12 @@ import {
 	Checkbox,
 	OutlinedInput,
 	SelectChangeEvent,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 } from "@mui/material";
+import { Add as AddIcon } from "@mui/icons-material";
 import { useCreateCauseMutation } from "@/store/api/causeApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -31,7 +36,6 @@ interface FormData {
 	title: string;
 	description: string;
 	targetAmount: string;
-	targetDescription?: string;
 	imageUrl: string;
 	tags: string[];
 	acceptanceType: "money" | "items" | "both";
@@ -107,6 +111,12 @@ const CreateCausePage = () => {
 		donationItems: [],
 	});
 
+	// State for custom donation items
+	const [customItem, setCustomItem] = useState("");
+	const [customItemDialogOpen, setCustomItemDialogOpen] = useState(false);
+	const [availableDonationItems, setAvailableDonationItems] =
+		useState<string[]>(DONATION_ITEMS);
+
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
 	) => {
@@ -147,6 +157,37 @@ const CreateCausePage = () => {
 			...prev,
 			donationItems: value,
 		}));
+	};
+
+	// Handle adding custom donation items
+	const handleAddCustomItem = () => {
+		if (
+			customItem.trim() &&
+			!availableDonationItems.includes(customItem.trim())
+		) {
+			const newItem = customItem.trim();
+			setAvailableDonationItems((prev) => [...prev, newItem]);
+			setFormData((prev) => ({
+				...prev,
+				donationItems: [...prev.donationItems, newItem],
+			}));
+			setCustomItem("");
+			setCustomItemDialogOpen(false);
+			toast.success(`Added "${newItem}" to donation items!`);
+		} else if (availableDonationItems.includes(customItem.trim())) {
+			toast.error("This item already exists in the list!");
+		} else {
+			toast.error("Please enter a valid item name!");
+		}
+	};
+
+	const handleOpenCustomItemDialog = () => {
+		setCustomItemDialogOpen(true);
+	};
+
+	const handleCloseCustomItemDialog = () => {
+		setCustomItemDialogOpen(false);
+		setCustomItem("");
 	};
 
 	const handleImageUpload = (imageUrl: string) => {
@@ -212,17 +253,17 @@ const CreateCausePage = () => {
 		} catch (apiError: unknown) {
 			const errorMessage =
 				typeof apiError === "object" &&
-					apiError !== null &&
-					"data" in apiError &&
-					typeof apiError.data === "object" &&
-					apiError.data !== null &&
-					"message" in apiError.data
+				apiError !== null &&
+				"data" in apiError &&
+				typeof apiError.data === "object" &&
+				apiError.data !== null &&
+				"message" in apiError.data
 					? apiError.data.message
 					: typeof apiError === "object" &&
-						apiError !== null &&
-						"error" in apiError
-						? (apiError as { error: string }).error
-						: "Failed to create cause. Please try again.";
+					  apiError !== null &&
+					  "error" in apiError
+					? (apiError as { error: string }).error
+					: "Failed to create cause. Please try again.";
 			toast.error(`Error: ${errorMessage}`);
 		}
 	};
@@ -289,18 +330,15 @@ const CreateCausePage = () => {
 							/>
 						)}
 
-						{/* Optional target for items-only causes */}
+						{/* Info message for items-only causes */}
 						{formData.acceptanceType === "items" && (
-							<TextField
-								fullWidth
-								label="Target Description (Optional)"
-								name="targetDescription"
-								type="text"
-								value={formData.targetDescription || ""}
-								onChange={handleChange}
-								placeholder="e.g., 100 units of food, 50 books, etc."
-								helperText="Describe your target goal for item donations (optional)"
-							/>
+							<Alert severity="info">
+								<Typography variant="body2">
+									<strong>Items-only causes</strong> don&apos;t require a
+									monetary target amount. The target is based on the specific
+									items you&apos;re collecting.
+								</Typography>
+							</Alert>
 						)}
 
 						<CloudinaryImageUpload
@@ -338,46 +376,76 @@ const CreateCausePage = () => {
 						{/* Campaign selection removed - causes can now be created independently */}
 
 						{formData.acceptanceType !== "money" && (
-							<FormControl fullWidth>
-								<InputLabel id="donation-items-label">
-									Donation Items
-								</InputLabel>
-								<Select
-									labelId="donation-items-label"
-									id="donation-items"
-									multiple
-									value={formData.donationItems}
-									onChange={handleDonationItemsChange}
-									input={<OutlinedInput label="Donation Items" />}
-									renderValue={(selected) => selected.join(", ")}
+							<Box>
+								<FormControl fullWidth>
+									<InputLabel id="donation-items-label">
+										Donation Items
+									</InputLabel>
+									<Select
+										labelId="donation-items-label"
+										id="donation-items"
+										multiple
+										value={formData.donationItems}
+										onChange={handleDonationItemsChange}
+										input={<OutlinedInput label="Donation Items" />}
+										renderValue={(selected) => selected.join(", ")}
+									>
+										{availableDonationItems.map((item) => (
+											<MenuItem key={item} value={item}>
+												<Checkbox
+													checked={formData.donationItems.indexOf(item) > -1}
+												/>
+												<ListItemText
+													primary={item}
+													secondary={
+														DONATION_ITEMS_MAP[item]
+															? DONATION_ITEMS_MAP[item] === DonationType.OTHER
+																? "Categorized as: Other"
+																: `Categorized as: ${DONATION_ITEMS_MAP[item]}`
+															: "Categorized as: Other (Custom Item)"
+													}
+												/>
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+
+								{/* Add Custom Item Button */}
+								<Box
+									sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}
 								>
-									{DONATION_ITEMS.map((item) => (
-										<MenuItem key={item} value={item}>
-											<Checkbox
-												checked={formData.donationItems.indexOf(item) > -1}
-											/>
-											<ListItemText
-												primary={item}
-												secondary={
-													DONATION_ITEMS_MAP[item] === DonationType.OTHER
-														? "Categorized as: Other"
-														: `Categorized as: ${DONATION_ITEMS_MAP[item]}`
-												}
-											/>
-										</MenuItem>
-									))}
-								</Select>
+									<Button
+										variant="outlined"
+										size="small"
+										onClick={handleOpenCustomItemDialog}
+										startIcon={<AddIcon />}
+										sx={{
+											borderColor: "#287068",
+											color: "#287068",
+											"&:hover": {
+												borderColor: "#1f5a52",
+												backgroundColor: "rgba(40, 112, 104, 0.04)",
+											},
+										}}
+									>
+										Add Custom Item
+									</Button>
+									<Typography variant="caption" color="text.secondary">
+										Can't find what you need? Add your own custom donation item.
+									</Typography>
+								</Box>
+
 								<Typography
 									variant="caption"
 									color="text.secondary"
-									sx={{ mt: 1 }}
+									sx={{ mt: 1, display: "block" }}
 								>
 									Select the specific items your cause needs. These will be
 									shown to donors when they make item donations. Items are
 									automatically categorized into donation types for analytics
 									purposes.
 								</Typography>
-							</FormControl>
+							</Box>
 						)}
 
 						<Box>
@@ -418,6 +486,50 @@ const CreateCausePage = () => {
 					</Box>
 				</form>
 			</Paper>
+
+			{/* Custom Item Dialog */}
+			<Dialog
+				open={customItemDialogOpen}
+				onClose={handleCloseCustomItemDialog}
+				maxWidth="sm"
+				fullWidth
+			>
+				<DialogTitle>Add Custom Donation Item</DialogTitle>
+				<DialogContent>
+					<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+						Enter a custom donation item that's not in our predefined list. This
+						item will be categorized as "Other" for analytics purposes.
+					</Typography>
+					<TextField
+						autoFocus
+						fullWidth
+						label="Custom Item Name"
+						value={customItem}
+						onChange={(e) => setCustomItem(e.target.value)}
+						placeholder="e.g., Wheelchairs, Art Supplies, etc."
+						onKeyPress={(e) => {
+							if (e.key === "Enter") {
+								handleAddCustomItem();
+							}
+						}}
+						sx={{ mt: 1 }}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={handleCloseCustomItemDialog}>Cancel</Button>
+					<Button
+						onClick={handleAddCustomItem}
+						variant="contained"
+						disabled={!customItem.trim()}
+						sx={{
+							backgroundColor: "#287068",
+							"&:hover": { backgroundColor: "#1f5a52" },
+						}}
+					>
+						Add Item
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 };

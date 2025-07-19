@@ -4,10 +4,9 @@ import {
 	DonationFormData,
 	DonationResponse,
 	DonorDonationsResponse,
-	UpdateDonationStatusRequest,
 	UpdateDonationStatusResponse,
 } from "@/types/donation";
-import apiSlice from "./apiSlice";
+import apiSlice from "../slices/apiSlice";
 
 export const donationApi = apiSlice.injectEndpoints({
 	endpoints: (builder) => ({
@@ -16,20 +15,24 @@ export const donationApi = apiSlice.injectEndpoints({
 			DonationFormData
 		>({
 			query: (data) => {
-				console.log("Creating donation with data:", data);
 				return {
 					url: "/donations",
 					method: "POST",
 					body: data,
 				};
 			},
-			transformErrorResponse: (response: any) => {
+			transformErrorResponse: (response: unknown) => {
 				console.error("Donation creation error response:", response);
-				if (response.status === 401) {
+				const errorResponse = response as {
+					status?: number;
+					data?: { message?: string };
+				};
+				if (errorResponse.status === 401) {
 					console.error("Authentication failed - user not authenticated");
 				}
 				return response;
 			},
+			invalidatesTags: ["Donations"],
 		}),
 		getDonationById: builder.query<
 			{ success: boolean; data: Donation },
@@ -51,6 +54,7 @@ export const donationApi = apiSlice.injectEndpoints({
 				method: "GET",
 				params,
 			}),
+			providesTags: ["Donations"],
 		}),
 		getDonorDonations: builder.query<
 			ApiResponse<DonationResponse>,
@@ -60,36 +64,28 @@ export const donationApi = apiSlice.injectEndpoints({
 				url: "/donations",
 				params: { status, type, page, limit },
 			}),
+			providesTags: ["Donations"],
 		}),
 		getDonorStats: builder.query<DonorDonationsResponse, void>({
 			query: () => ({
 				url: "/donations/donor/stats",
 				method: "GET",
 			}),
+			providesTags: ["Donations"],
 		}),
 		getItemDonationAnalytics: builder.query<ApiResponse<unknown>, void>({
 			query: () => ({
 				url: "/donations/items/analytics",
 				method: "GET",
 			}),
+			providesTags: ["Donations"],
 		}),
 		getItemDonationTypeAnalytics: builder.query<ApiResponse<unknown>, string>({
 			query: (type) => ({
 				url: `/donations/items/${type}/analytics`,
 				method: "GET",
 			}),
-		}),
-
-		updateDonationStatus: builder.mutation<
-			UpdateDonationStatusResponse,
-			UpdateDonationStatusRequest
-		>({
-			query: ({ donationId, status }) => ({
-				url: `/donations/${donationId}/status`,
-				method: "PATCH",
-				body: { status },
-			}),
-			invalidatesTags: ["Donations"],
+			providesTags: ["Donations"],
 		}),
 
 		// Mark donation as received with photo upload
@@ -117,7 +113,8 @@ export const donationApi = apiSlice.injectEndpoints({
 					// Don't set Content-Type - let the browser set it for FormData
 
 					const response = await fetch(
-						`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+						`${
+							process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
 						}/donations/${donationId}/received`,
 						{
 							method: "PATCH",
@@ -178,6 +175,22 @@ export const donationApi = apiSlice.injectEndpoints({
 				{ type: "Donations", id: donationId },
 			],
 		}),
+
+		// Update donation status (for organizations to approve/reject donations)
+		updateDonationStatus: builder.mutation<
+			UpdateDonationStatusResponse,
+			{ donationId: string; status: string }
+		>({
+			query: ({ donationId, status }) => ({
+				url: `/donations/${donationId}/status`,
+				method: "PATCH",
+				body: { status },
+			}),
+			invalidatesTags: (_result, _error, { donationId }) => [
+				"Donations",
+				{ type: "Donations", id: donationId },
+			],
+		}),
 	}),
 	overrideExisting: true,
 });
@@ -190,8 +203,8 @@ export const {
 	useGetDonorStatsQuery,
 	useGetItemDonationAnalyticsQuery,
 	useGetItemDonationTypeAnalyticsQuery,
-	useUpdateDonationStatusMutation,
 	useMarkDonationAsReceivedMutation,
 	useConfirmDonationReceiptMutation,
 	useMarkDonationAsConfirmedMutation,
+	useUpdateDonationStatusMutation,
 } = donationApi;

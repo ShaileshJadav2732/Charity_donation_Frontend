@@ -33,13 +33,23 @@ export const getStaticFileUrl = (path: string): string => {
 export const getProfileImageUrl = (imagePath?: string): string => {
 	if (!imagePath) return "";
 
-	// If it's already a full URL (Cloudinary), return as is
-	if (imagePath.startsWith('http')) {
-		return imagePath;
+	// AGGRESSIVE FILTERING: Only allow Cloudinary URLs
+	if (imagePath.startsWith("http")) {
+		// Only allow Cloudinary URLs
+		if (
+			imagePath.includes("cloudinary.com") ||
+			imagePath.includes("res.cloudinary.com")
+		) {
+			return imagePath;
+		} else {
+			console.warn("Non-Cloudinary URL blocked:", imagePath);
+			return "";
+		}
 	}
 
-	// Otherwise, construct local URL
-	return getStaticFileUrl(imagePath);
+	// Block ALL local file paths - we only use Cloudinary now
+	console.warn("Local file path blocked, using fallback avatar:", imagePath);
+	return "";
 };
 
 /**
@@ -50,7 +60,7 @@ export const getReceiptImageUrl = (imagePath?: string): string => {
 	if (!imagePath) return "";
 
 	// If it's already a full URL (Cloudinary), return as is
-	if (imagePath.startsWith('http')) {
+	if (imagePath.startsWith("http")) {
 		return imagePath;
 	}
 

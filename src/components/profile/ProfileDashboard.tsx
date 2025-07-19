@@ -9,10 +9,13 @@ import {
 	useGetOrganizationProfileQuery,
 } from "@/store/api/profileApi";
 import { getProfileImageUrl } from "@/utils/url";
+import { getFallbackAvatarText } from "@/utils/utils";
 import {
 	useGetDonorDonationsQuery,
 	useGetDonorStatsQuery,
 } from "@/store/api/donationApi";
+import { useGetOrganizationAnalyticsQuery } from "@/store/api/analyticsApi";
+import { useGetOrganizationCampaignsQuery } from "@/store/api/campaignApi";
 import EditProfileForm from "./EditProfileForm";
 import {
 	FaMapMarkerAlt,
@@ -53,6 +56,19 @@ export default function ProfileDashboard() {
 		skip: user?.role !== "donor",
 	});
 
+	// Get organization analytics data
+	const { data: orgAnalyticsData, isLoading: isOrgAnalyticsLoading } =
+		useGetOrganizationAnalyticsQuery(undefined, {
+			skip: user?.role !== "organization",
+		});
+
+	// Get organization campaigns data
+	const { data: campaignsData, isLoading: isCampaignsLoading } =
+		useGetOrganizationCampaignsQuery(
+			{ organizationId: user?.id || "" },
+			{ skip: user?.role !== "organization" }
+		);
+
 	// Extract the actual donations from the API response
 	const actualDonations = Array.isArray(donationData?.data)
 		? donationData?.data
@@ -62,20 +78,20 @@ export default function ProfileDashboard() {
 	const donorStats: DonationStats = {
 		totalDonated:
 			donorStatsData?.data &&
-				typeof donorStatsData.data === "object" &&
-				"totalDonated" in donorStatsData.data
+			typeof donorStatsData.data === "object" &&
+			"totalDonated" in donorStatsData.data
 				? (donorStatsData.data as unknown as DonationStats).totalDonated || 0
 				: 0,
 		totalCauses:
 			donorStatsData?.data &&
-				typeof donorStatsData.data === "object" &&
-				"totalCauses" in donorStatsData.data
+			typeof donorStatsData.data === "object" &&
+			"totalCauses" in donorStatsData.data
 				? (donorStatsData.data as unknown as DonationStats).totalCauses || 0
 				: 0,
 		averageDonation:
 			donorStatsData?.data &&
-				typeof donorStatsData.data === "object" &&
-				"averageDonation" in donorStatsData.data
+			typeof donorStatsData.data === "object" &&
+			"averageDonation" in donorStatsData.data
 				? (donorStatsData.data as unknown as DonationStats).averageDonation || 0
 				: 0,
 	};
@@ -86,25 +102,77 @@ export default function ProfileDashboard() {
 	const profile = isDonor ? donorProfile : orgProfile;
 	const recentDonations = donorData?.recentDonations || [];
 
+	// Filter active campaigns (must be active status AND currently running)
+	const now = new Date();
+	const activeCampaigns =
+		campaignsData?.campaigns?.filter((campaign) => {
+			if (campaign.status?.toLowerCase() !== "active") {
+				return false;
+			}
+			// Check if campaign is currently running (between start and end dates)
+			const startDate = new Date(campaign.startDate);
+			const endDate = new Date(campaign.endDate);
+			return startDate <= now && endDate >= now;
+		}) || [];
+
 	// Calculate membership duration
 	const [membershipDuration, setMembershipDuration] = useState("");
 
 	useEffect(() => {
-		if (profile?.joinDate) {
-			const joinDate = new Date(profile.joinDate);
+		// Try multiple date sources for join date
+		let joinDateSource: string | undefined;
+
+		// Check for joinDate in profile
+		if ("joinDate" in (profile || {})) {
+			joinDateSource = (profile as { joinDate?: string }).joinDate;
+		}
+
+		// Fallback to createdAt in profile
+		if (!joinDateSource && "createdAt" in (profile || {})) {
+			joinDateSource = (profile as { createdAt?: string }).createdAt;
+		}
+
+		// Fallback to createdAt in specific profile types
+		if (!joinDateSource) {
+			if (isDonor && donorProfile && "createdAt" in donorProfile) {
+				joinDateSource = (donorProfile as { createdAt?: string }).createdAt;
+			} else if (!isDonor && orgProfile && "createdAt" in orgProfile) {
+				joinDateSource = (orgProfile as { createdAt?: string }).createdAt;
+			}
+		}
+
+		if (joinDateSource) {
+			const joinDate = new Date(joinDateSource);
 			const now = new Date();
 			const diffTime = Math.abs(now.getTime() - joinDate.getTime());
 			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-			if (diffDays < 30) {
+			if (diffDays === 0) {
+				setMembershipDuration("today");
+			} else if (diffDays === 1) {
+				setMembershipDuration("1 day");
+			} else if (diffDays < 30) {
 				setMembershipDuration(`${diffDays} days`);
 			} else if (diffDays < 365) {
-				setMembershipDuration(`${Math.floor(diffDays / 30)} months`);
+				const months = Math.floor(diffDays / 30);
+				setMembershipDuration(`${months} month${months > 1 ? "s" : ""}`);
 			} else {
-				setMembershipDuration(`${Math.floor(diffDays / 365)} years`);
+				const years = Math.floor(diffDays / 365);
+				const remainingMonths = Math.floor((diffDays % 365) / 30);
+				if (remainingMonths > 0) {
+					setMembershipDuration(
+						`${years} year${years > 1 ? "s" : ""}, ${remainingMonths} month${
+							remainingMonths > 1 ? "s" : ""
+						}`
+					);
+				} else {
+					setMembershipDuration(`${years} year${years > 1 ? "s" : ""}`);
+				}
 			}
+		} else {
+			setMembershipDuration("recently");
 		}
-	}, [profile]);
+	}, [profile, donorProfile, orgProfile, user, isDonor]);
 
 	if (!profile) {
 		return (
@@ -190,13 +258,12 @@ export default function ProfileDashboard() {
 					<div className="h-48 bg-gradient-to-r from-teal-500 to-green-400 relative">
 						<div className="absolute -bottom-16 left-8">
 							<div className="h-32 w-32 rounded-full border-4 border-white overflow-hidden bg-gray-200">
-								{(isDonor && donorProfile?.profileImage) ||
-									(orgProfile?.logo) ? (
+								{(isDonor && donorProfile?.profileImage) || orgProfile?.logo ? (
 									<Image
 										src={getProfileImageUrl(
 											(isDonor && donorProfile?.profileImage) ||
-											orgProfile?.logo ||
-											""
+												orgProfile?.logo ||
+												""
 										)}
 										alt="Profile"
 										className="h-full w-full object-cover"
@@ -210,9 +277,12 @@ export default function ProfileDashboard() {
 								) : (
 									<div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-teal-400 to-green-500">
 										<span className="text-white text-2xl font-bold">
-											{isDonor && donorProfile
-												? `${donorProfile.firstName?.[0] || ''}${donorProfile.lastName?.[0] || ''}`
-												: orgProfile?.name?.[0] || user?.email?.[0]?.toUpperCase() || '?'}
+											{getFallbackAvatarText(
+												user?.role || "",
+												isDonor ? donorProfile : undefined,
+												!isDonor ? orgProfile : undefined,
+												user?.email
+											)}
 										</span>
 									</div>
 								)}
@@ -233,8 +303,13 @@ export default function ProfileDashboard() {
 									<span>{user?.email || profile.email}</span>
 								</div>
 								<div className="flex items-center mt-1 text-gray-600">
-									<FaCalendarAlt className="mr-2" />
-									<span>Member for {membershipDuration}</span>
+									<FaCalendarAlt className="mr-2 text-teal-500" />
+									<span className="text-sm">
+										Member for{" "}
+										<span className="font-medium text-gray-700">
+											{membershipDuration}
+										</span>
+									</span>
 								</div>
 							</div>
 
@@ -254,39 +329,44 @@ export default function ProfileDashboard() {
 						<div className="flex overflow-x-auto">
 							<button
 								onClick={() => setActiveTab("overview")}
-								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "overview"
-									? "border-b-2 border-teal-500 text-teal-600"
-									: "text-gray-500 hover:text-gray-700"
-									}`}
+								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+									activeTab === "overview"
+										? "border-b-2 border-teal-500 text-teal-600"
+										: "text-gray-500 hover:text-gray-700"
+								}`}
 							>
 								Overview
 							</button>
 							<button
 								onClick={() => setActiveTab("activity")}
-								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "activity"
-									? "border-b-2 border-teal-500 text-teal-600"
-									: "text-gray-500 hover:text-gray-700"
-									}`}
+								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+									activeTab === "activity"
+										? "border-b-2 border-teal-500 text-teal-600"
+										: "text-gray-500 hover:text-gray-700"
+								}`}
 							>
 								Activity
 							</button>
 							{isDonor && (
 								<button
 									onClick={() => setActiveTab("badges")}
-									className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "badges"
-										? "border-b-2 border-teal-500 text-teal-600"
-										: "text-gray-500 hover:text-gray-700"
-										}`}
+									className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+										activeTab === "badges"
+											? "border-b-2 border-teal-500 text-teal-600"
+											: "text-gray-500 hover:text-gray-700"
+									}`}
 								>
 									Badges & Achievements
 								</button>
 							)}
+
 							<button
 								onClick={() => setActiveTab("details")}
-								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === "details"
-									? "border-b-2 border-teal-500 text-teal-600"
-									: "text-gray-500 hover:text-gray-700"
-									}`}
+								className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+									activeTab === "details"
+										? "border-b-2 border-teal-500 text-teal-600"
+										: "text-gray-500 hover:text-gray-700"
+								}`}
 							>
 								Details
 							</button>
@@ -303,27 +383,12 @@ export default function ProfileDashboard() {
 							<div className="col-span-2">
 								<div className="bg-white shadow rounded-lg p-6">
 									<h2 className="text-lg font-medium text-gray-900 mb-4">
-										{isDonor
-											? "Donation Statistics"
-											: "Organization Statistics"}
+										{isDonor ? "" : "Organization Statistics"}
 									</h2>
 
-									<div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+									<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
 										{isDonor && donorProfile?.stats && (
 											<>
-												<div className="bg-gradient-to-br from-teal-50 to-teal-100 overflow-hidden shadow rounded-lg">
-													<div className="px-4 py-5 sm:p-6">
-														<dt className="text-sm font-medium text-teal-800 truncate">
-															Total Donations
-														</dt>
-														<dd className="mt-1 text-3xl font-semibold text-teal-900">
-															$
-															{donorStats.totalDonated ||
-																donorProfile?.stats?.totalDonations ||
-																0}
-														</dd>
-													</div>
-												</div>
 												<div className="bg-gradient-to-br from-green-50 to-green-100 overflow-hidden shadow rounded-lg">
 													<div className="px-4 py-5 sm:p-6">
 														<dt className="text-sm font-medium text-green-800 truncate">
@@ -354,36 +419,35 @@ export default function ProfileDashboard() {
 
 										{!isDonor && orgProfile && (
 											<>
-												<div className="bg-gradient-to-br from-teal-50 to-teal-100 overflow-hidden shadow rounded-lg">
-													<div className="px-4 py-5 sm:p-6">
-														<dt className="text-sm font-medium text-teal-800 truncate">
-															Total Campaigns
-														</dt>
-														<dd className="mt-1 text-3xl font-semibold text-teal-900">
-															{/* Use actual data when available */}
-															{3}
-														</dd>
-													</div>
-												</div>
-												<div className="bg-gradient-to-br from-green-50 to-green-100 overflow-hidden shadow rounded-lg">
-													<div className="px-4 py-5 sm:p-6">
-														<dt className="text-sm font-medium text-green-800 truncate">
-															Active Causes
-														</dt>
-														<dd className="mt-1 text-3xl font-semibold text-green-900">
-															{/* Use actual data when available */}
-															{7}
-														</dd>
-													</div>
-												</div>
 												<div className="bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden shadow rounded-lg">
 													<div className="px-4 py-5 sm:p-6">
 														<dt className="text-sm font-medium text-blue-800 truncate">
-															Total Donors
+															Total Funds Raised
 														</dt>
 														<dd className="mt-1 text-3xl font-semibold text-blue-900">
-															{/* Use actual data when available */}
-															{24}
+															{isOrgAnalyticsLoading ? (
+																<div className="animate-pulse bg-blue-200 h-8 w-20 rounded"></div>
+															) : (
+																`₹${
+																	orgAnalyticsData?.data?.stats?.donations
+																		?.totalAmount || 0
+																}`
+															)}
+														</dd>
+													</div>
+												</div>
+												<div className="bg-gradient-to-br from-purple-50 to-purple-100 overflow-hidden shadow rounded-lg">
+													<div className="px-4 py-5 sm:p-6">
+														<dt className="text-sm font-medium text-purple-800 truncate">
+															Total Donations
+														</dt>
+														<dd className="mt-1 text-3xl font-semibold text-purple-900">
+															{isOrgAnalyticsLoading ? (
+																<div className="animate-pulse bg-purple-200 h-8 w-16 rounded"></div>
+															) : (
+																orgAnalyticsData?.data?.stats?.donations
+																	?.totalDonations || 0
+															)}
 														</dd>
 													</div>
 												</div>
@@ -402,9 +466,9 @@ export default function ProfileDashboard() {
 									<p className="text-gray-700">
 										{isDonor && donorProfile
 											? donorProfile.bio ||
-											"No bio provided yet. Edit your profile to add a bio."
+											  "No bio provided yet. Edit your profile to add a bio."
 											: orgProfile?.description ||
-											"No description provided yet."}
+											  "No description provided yet."}
 									</p>
 								</div>
 							</div>
@@ -419,7 +483,7 @@ export default function ProfileDashboard() {
 							</h2>
 
 							{isDonor &&
-								(actualDonations.length > 0 || recentDonations.length > 0) ? (
+							(actualDonations.length > 0 || recentDonations.length > 0) ? (
 								<div className="flow-root">
 									<ul className="-mb-8">
 										{/* Use actual donations from API if available, otherwise fall back to recentDonations */}
@@ -433,12 +497,12 @@ export default function ProfileDashboard() {
 														(actualDonations.length > 0
 															? actualDonations.length
 															: recentDonations.length) -
-														1 && (
-															<span
-																className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
-																aria-hidden="true"
-															></span>
-														)}
+															1 && (
+														<span
+															className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
+															aria-hidden="true"
+														></span>
+													)}
 													<div className="relative flex space-x-3">
 														<div>
 															<span className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ring-8 ring-white">
@@ -460,14 +524,37 @@ export default function ProfileDashboard() {
 														<div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
 															<div>
 																<p className="text-sm text-gray-700">
-																	Donated{" "}
-																	<span className="font-medium text-gray-900">
-																		${donation.amount}
-																	</span>{" "}
-																	to{" "}
-																	<span className="font-medium text-gray-900">
-																		{donation.cause?.title || donation.cause}
-																	</span>
+																	{donation.type === "MONEY" ? (
+																		<>
+																			Donated{" "}
+																			<span className="font-medium text-gray-900">
+																				₹{donation.amount || 0}
+																			</span>{" "}
+																			to{" "}
+																			<span className="font-medium text-gray-900">
+																				{donation.cause?.title ||
+																					donation.cause ||
+																					"Unknown Cause"}
+																			</span>
+																		</>
+																	) : (
+																		<>
+																			Donated{" "}
+																			<span className="font-medium text-gray-900">
+																				{donation.quantity || 1}{" "}
+																				{donation.unit || "item"}
+																				{donation.description
+																					? ` of ${donation.description}`
+																					: ""}
+																			</span>{" "}
+																			to{" "}
+																			<span className="font-medium text-gray-900">
+																				{donation.cause?.title ||
+																					donation.cause ||
+																					"Unknown Cause"}
+																			</span>
+																		</>
+																	)}
 																</p>
 															</div>
 															<div className="text-right text-sm whitespace-nowrap text-gray-500">
@@ -488,76 +575,130 @@ export default function ProfileDashboard() {
 								</div>
 							) : !isDonor ? (
 								<div className="flow-root">
-									<ul className="-mb-8">
-										{[...Array(3)].map((_, index) => (
-											<li key={index}>
-												<div className="relative pb-8">
-													{index !== 2 && (
-														<span
-															className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
-															aria-hidden="true"
-														></span>
-													)}
-													<div className="relative flex space-x-3">
-														<div>
-															<span className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center ring-8 ring-white">
-																<svg
-																	className="h-5 w-5 text-blue-600"
-																	xmlns="http://www.w3.org/2000/svg"
-																	viewBox="0 0 20 20"
-																	fill="currentColor"
-																	aria-hidden="true"
-																>
-																	<path
-																		fillRule="evenodd"
-																		d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z"
-																		clipRule="evenodd"
-																	/>
-																</svg>
-															</span>
-														</div>
-														<div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-															<div>
-																<p className="text-sm text-gray-700">
-																	{index === 0 ? (
-																		<>
-																			Created a new cause{" "}
-																			<span className="font-medium text-gray-900">
-																				Clean Water Initiative
-																			</span>
-																		</>
-																	) : index === 1 ? (
-																		<>
-																			Received{" "}
-																			<span className="font-medium text-gray-900">
-																				5 new donations
-																			</span>
-																		</>
-																	) : (
-																		<>
-																			Launched a new campaign{" "}
-																			<span className="font-medium text-gray-900">
-																				Summer Fundraiser
-																			</span>
-																		</>
-																	)}
-																</p>
-															</div>
-															<div className="text-right text-sm whitespace-nowrap text-gray-500">
-																<time>
-																	{index === 0
-																		? "2 days ago"
-																		: index === 1
-																			? "1 week ago"
-																			: "2 weeks ago"}
-																</time>
-															</div>
-														</div>
+									{isOrgAnalyticsLoading ? (
+										<div className="space-y-4">
+											{[...Array(3)].map((_, index) => (
+												<div
+													key={index}
+													className="animate-pulse flex space-x-3"
+												>
+													<div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+													<div className="flex-1 space-y-2">
+														<div className="h-4 bg-gray-200 rounded w-3/4"></div>
+														<div className="h-3 bg-gray-200 rounded w-1/2"></div>
 													</div>
 												</div>
-											</li>
-										))}
-									</ul>
+											))}
+										</div>
+									) : orgAnalyticsData?.data?.recentActivities?.donations &&
+									  orgAnalyticsData.data.recentActivities.donations.length >
+											0 ? (
+										<ul className="-mb-8">
+											{orgAnalyticsData.data.recentActivities.donations
+												.slice(0, 5)
+												.map((activity, index) => (
+													<li key={activity.id || index}>
+														<div className="relative pb-8">
+															{index !==
+																Math.min(
+																	4,
+																	orgAnalyticsData.data.recentActivities
+																		.donations.length - 1
+																) && (
+																<span
+																	className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
+																	aria-hidden="true"
+																></span>
+															)}
+															<div className="relative flex space-x-3">
+																<div>
+																	<span className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ring-8 ring-white">
+																		<svg
+																			className="h-5 w-5 text-green-600"
+																			xmlns="http://www.w3.org/2000/svg"
+																			viewBox="0 0 20 20"
+																			fill="currentColor"
+																			aria-hidden="true"
+																		>
+																			<path
+																				fillRule="evenodd"
+																				d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z"
+																				clipRule="evenodd"
+																			/>
+																		</svg>
+																	</span>
+																</div>
+																<div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+																	<div>
+																		<p className="text-sm text-gray-700">
+																			{activity.type === "MONEY" ? (
+																				<>
+																					Received{" "}
+																					<span className="font-medium text-gray-900">
+																						₹{activity.amount || 0}
+																					</span>{" "}
+																					donation for{" "}
+																					<span className="font-medium text-gray-900">
+																						{activity.campaignName ||
+																							"Unknown Campaign"}
+																					</span>
+																				</>
+																			) : (
+																				<>
+																					Received{" "}
+																					<span className="font-medium text-gray-900">
+																						{(activity as any).quantity || 1}{" "}
+																						{(activity as any).unit || "item"}
+																						{(activity as any).description
+																							? ` of ${
+																									(activity as any).description
+																							  }`
+																							: ""}
+																					</span>{" "}
+																					donation for{" "}
+																					<span className="font-medium text-gray-900">
+																						{activity.campaignName ||
+																							"Unknown Campaign"}
+																					</span>
+																				</>
+																			)}
+																		</p>
+																	</div>
+																	<div className="text-right text-sm whitespace-nowrap text-gray-500">
+																		<time dateTime={activity.timestamp}>
+																			{formatDate(activity.timestamp)}
+																		</time>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</li>
+												))}
+										</ul>
+									) : (
+										<div className="text-center py-8">
+											<svg
+												className="mx-auto h-12 w-12 text-gray-400"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												aria-hidden="true"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth="2"
+													d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+												/>
+											</svg>
+											<h3 className="mt-2 text-sm font-medium text-gray-900">
+												No recent activity
+											</h3>
+											<p className="mt-1 text-sm text-gray-500">
+												Recent donations and activities will appear here.
+											</p>
+										</div>
+									)}
 								</div>
 							) : (
 								<div className="text-center py-8">
@@ -658,7 +799,7 @@ export default function ProfileDashboard() {
 										donorProfile?.stats?.totalDonations ||
 										0) < 100 ? (
 										<>
-											Donate $
+											Donate ₹
 											{100 -
 												(donorStats.totalDonated ||
 													donorProfile?.stats?.totalDonations ||
@@ -666,10 +807,10 @@ export default function ProfileDashboard() {
 											more to earn the &quot;Supporter&quot; badge
 										</>
 									) : (donorStats.totalDonated ||
-										donorProfile?.stats?.totalDonations ||
-										0) < 500 ? (
+											donorProfile?.stats?.totalDonations ||
+											0) < 500 ? (
 										<>
-											Donate $
+											Donate ₹
 											{500 -
 												(donorStats.totalDonated ||
 													donorProfile?.stats?.totalDonations ||
@@ -677,10 +818,10 @@ export default function ProfileDashboard() {
 											more to earn the &quot;Regular Donor&quot; badge
 										</>
 									) : (donorStats.totalDonated ||
-										donorProfile?.stats?.totalDonations ||
-										0) < 1000 ? (
+											donorProfile?.stats?.totalDonations ||
+											0) < 1000 ? (
 										<>
-											Donate $
+											Donate ₹
 											{1000 -
 												(donorStats.totalDonated ||
 													donorProfile?.stats?.totalDonations ||
@@ -692,6 +833,124 @@ export default function ProfileDashboard() {
 									)}
 								</p>
 							</div>
+						</div>
+					)}
+
+					{/* Campaigns Tab */}
+					{activeTab === "campaigns" && !isDonor && (
+						<div className="bg-white shadow rounded-lg p-6">
+							<div className="flex justify-between items-center mb-6">
+								<h2 className="text-lg font-medium text-gray-900">
+									Active Campaigns
+								</h2>
+								<button
+									onClick={() =>
+										(window.location.href = "/dashboard/campaigns")
+									}
+									className="px-4 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-md hover:bg-teal-100 transition-colors"
+								>
+									View All Campaigns
+								</button>
+							</div>
+
+							{isCampaignsLoading ? (
+								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+									{[...Array(3)].map((_, index) => (
+										<div key={index} className="animate-pulse">
+											<div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+											<div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+											<div className="h-3 bg-gray-200 rounded w-1/2"></div>
+										</div>
+									))}
+								</div>
+							) : activeCampaigns.length > 0 ? (
+								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+									{activeCampaigns.slice(0, 6).map((campaign) => (
+										<div
+											key={campaign.id}
+											className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+											onClick={() =>
+												(window.location.href = `/dashboard/campaigns/${campaign.id}`)
+											}
+										>
+											<div className="h-48 bg-gradient-to-r from-teal-400 to-green-400 relative">
+												{campaign.imageUrl ? (
+													<Image
+														src={campaign.imageUrl}
+														alt={campaign.title}
+														fill
+														className="object-cover"
+														onError={(e) => {
+															// Fallback to gradient background on error
+															e.currentTarget.style.display = "none";
+														}}
+													/>
+												) : (
+													<div className="w-full h-full flex items-center justify-center">
+														<span className="text-white text-lg font-medium">
+															{campaign.title?.charAt(0)}
+														</span>
+													</div>
+												)}
+												<div className="absolute top-2 right-2">
+													<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+														Active
+													</span>
+												</div>
+											</div>
+											<div className="p-4">
+												<h3 className="text-lg font-medium text-gray-900 mb-2 line-clamp-2">
+													{campaign.title}
+												</h3>
+												<p className="text-sm text-gray-600 mb-3 line-clamp-2">
+													{campaign.description}
+												</p>
+												<div className="flex justify-between items-center text-sm text-gray-500">
+													<span>
+														{campaign.causes?.length || 0} cause
+														{campaign.causes?.length !== 1 ? "s" : ""}
+													</span>
+													<span>{formatDate(campaign.endDate)}</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							) : (
+								<div className="text-center py-12">
+									<svg
+										className="mx-auto h-12 w-12 text-gray-400"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										aria-hidden="true"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth="2"
+											d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+										/>
+									</svg>
+									<h3 className="mt-2 text-sm font-medium text-gray-900">
+										No active campaigns
+									</h3>
+									<p className="mt-1 text-sm text-gray-500">
+										Create your first campaign to start raising funds for your
+										causes.
+									</p>
+									<div className="mt-6">
+										<button
+											onClick={() =>
+												(window.location.href = "/dashboard/campaigns/create")
+											}
+											className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+										>
+											Create Campaign
+										</button>
+									</div>
+								</div>
+							)}
 						</div>
 					)}
 

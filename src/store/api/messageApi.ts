@@ -1,8 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../store";
 import {
-	Message,
-	Conversation,
 	CreateMessageRequest,
 	CreateConversationRequest,
 	MessageQueryParams,
@@ -16,23 +14,25 @@ import {
 export const messageApi = createApi({
 	reducerPath: "messageApi",
 	baseQuery: fetchBaseQuery({
-		baseUrl: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"}/messages`,
+		baseUrl: `${
+			process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+		}/messages`,
 		prepareHeaders: (headers, { getState }) => {
 			const token = (getState() as RootState).auth.token;
 			if (token) {
 				headers.set("authorization", `Bearer ${token}`);
 			}
-			// Ensure JSON content type for non-FormData requests
-			if (!headers.get("content-type")) {
-				headers.set("content-type", "application/json");
-			}
+			// Set JSON content type for all requests
 			return headers;
 		},
 	}),
 	tagTypes: ["Message", "Conversation", "UnreadCount"],
 	endpoints: (builder) => ({
 		// Get all conversations for the current user
-		getConversations: builder.query<ConversationsResponse, ConversationQueryParams>({
+		getConversations: builder.query<
+			ConversationsResponse,
+			ConversationQueryParams
+		>({
 			query: (params) => ({
 				url: "/conversations",
 				params: {
@@ -48,7 +48,7 @@ export const messageApi = createApi({
 		// Get a specific conversation
 		getConversation: builder.query<ConversationResponse, string>({
 			query: (conversationId) => `/conversations/${conversationId}`,
-			providesTags: (result, error, conversationId) => [
+			providesTags: (_result, _error, conversationId) => [
 				{ type: "Conversation", id: conversationId },
 			],
 		}),
@@ -63,13 +63,16 @@ export const messageApi = createApi({
 					...(params.before && { before: params.before }),
 				},
 			}),
-			providesTags: (result, error, params) => [
+			providesTags: (_result, _error, params) => [
 				{ type: "Message", id: params.conversationId },
 			],
 		}),
 
 		// Create a new conversation
-		createConversation: builder.mutation<ConversationResponse, CreateConversationRequest>({
+		createConversation: builder.mutation<
+			ConversationResponse,
+			CreateConversationRequest
+		>({
 			query: (data) => ({
 				url: "/conversations",
 				method: "POST",
@@ -81,41 +84,40 @@ export const messageApi = createApi({
 		// Send a message
 		sendMessage: builder.mutation<MessageResponse, CreateMessageRequest>({
 			query: (data) => {
-				const formData = new FormData();
-				formData.append("content", data.content);
-				if (data.conversationId) formData.append("conversationId", data.conversationId);
-				formData.append("recipientId", data.recipientId);
-				if (data.messageType) formData.append("messageType", data.messageType);
-				if (data.replyTo) formData.append("replyTo", data.replyTo);
-				if (data.relatedDonation) formData.append("relatedDonation", data.relatedDonation);
-				if (data.relatedCause) formData.append("relatedCause", data.relatedCause);
-
-				// Handle file attachments
-				if (data.attachments) {
-					data.attachments.forEach((file, index) => {
-						formData.append(`attachments`, file);
-					});
-				}
+				const body = {
+					content: data.content,
+					recipientId: data.recipientId,
+					messageType: data.messageType || "text",
+					...(data.conversationId && { conversationId: data.conversationId }),
+					...(data.replyTo && { replyTo: data.replyTo }),
+					...(data.relatedDonation && {
+						relatedDonation: data.relatedDonation,
+					}),
+					...(data.relatedCause && { relatedCause: data.relatedCause }),
+				};
 
 				return {
 					url: "/send",
 					method: "POST",
-					body: formData,
+					body,
 				};
 			},
-			invalidatesTags: (result, error, data) => [
+			invalidatesTags: (_result, _error, data) => [
 				"Conversation",
 				{ type: "Message", id: data.conversationId },
 			],
 		}),
 
 		// Mark message as read
-		markMessageAsRead: builder.mutation<{ success: boolean }, { messageId: string; conversationId: string }>({
-			query: ({ messageId, conversationId }) => ({
+		markMessageAsRead: builder.mutation<
+			{ success: boolean },
+			{ messageId: string; conversationId: string }
+		>({
+			query: ({ messageId }) => ({
 				url: `/messages/${messageId}/read`,
 				method: "PATCH",
 			}),
-			invalidatesTags: (result, error, { conversationId }) => [
+			invalidatesTags: (_result, _error, { conversationId }) => [
 				{ type: "Message", id: conversationId },
 				"UnreadCount",
 			],
@@ -127,7 +129,7 @@ export const messageApi = createApi({
 				url: `/conversations/${conversationId}/read`,
 				method: "PATCH",
 			}),
-			invalidatesTags: (result, error, conversationId) => [
+			invalidatesTags: (_result, _error, conversationId) => [
 				{ type: "Message", id: conversationId },
 				{ type: "Conversation", id: conversationId },
 				"UnreadCount",
@@ -141,36 +143,47 @@ export const messageApi = createApi({
 		}),
 
 		// Delete a message
-		deleteMessage: builder.mutation<{ success: boolean }, { messageId: string; conversationId: string }>({
+		deleteMessage: builder.mutation<
+			{ success: boolean },
+			{ messageId: string; conversationId: string }
+		>({
 			query: ({ messageId }) => ({
 				url: `/messages/${messageId}`,
 				method: "DELETE",
 			}),
-			invalidatesTags: (result, error, { conversationId }) => [
+			invalidatesTags: (_result, _error, { conversationId }) => [
 				{ type: "Message", id: conversationId },
 				"Conversation",
 			],
 		}),
 
 		// Edit a message
-		editMessage: builder.mutation<MessageResponse, { messageId: string; content: string; conversationId: string }>({
+		editMessage: builder.mutation<
+			MessageResponse,
+			{ messageId: string; content: string; conversationId: string }
+		>({
 			query: ({ messageId, content }) => ({
 				url: `/messages/${messageId}`,
 				method: "PATCH",
 				body: { content },
 			}),
-			invalidatesTags: (result, error, { conversationId }) => [
+			invalidatesTags: (_result, _error, { conversationId }) => [
 				{ type: "Message", id: conversationId },
 			],
 		}),
 
 		// Search messages
-		searchMessages: builder.query<MessagesResponse, { query: string; conversationId?: string }>({
+		searchMessages: builder.query<
+			MessagesResponse,
+			{ query: string; conversationId?: string }
+		>({
 			query: (params) => ({
 				url: "/search",
 				params: {
 					q: params.query,
-					...(params.conversationId && { conversationId: params.conversationId }),
+					...(params.conversationId && {
+						conversationId: params.conversationId,
+					}),
 				},
 			}),
 		}),

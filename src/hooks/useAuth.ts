@@ -2,11 +2,7 @@
 
 import { auth, googleProvider } from "@/lib/firebase";
 import { RootState } from "@/store/store";
-import {
-	useLoginMutation,
-	useRegisterMutation,
-	useVerifyTokenMutation,
-} from "@/store/api/authApi";
+import { useLoginMutation, useRegisterMutation } from "@/store/api/authApi";
 import {
 	clearCredentials,
 	setCredentials,
@@ -16,120 +12,27 @@ import {
 import { ApiError, LoginFormData, parseError, SignupFormData } from "@/types";
 import {
 	createUserWithEmailAndPassword,
-	User as FirebaseUser,
-	onAuthStateChanged,
 	signInWithEmailAndPassword,
 	signInWithPopup,
 	signOut,
 } from "firebase/auth";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-
-// Public routes that don't require authentication
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/select-role"];
+import { CookieManager } from "@/utils/cookieManager";
+import { ROUTES } from "@/config/routes";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export const useAuth = () => {
 	const dispatch = useDispatch();
 	const router = useRouter();
-	const pathname = usePathname();
-	const { user, token, isAuthenticated, isLoading, error } = useSelector(
+	const { user, isAuthenticated, isLoading, error } = useSelector(
 		(state: RootState) => state.auth
 	);
-
-	const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-	const [authInitialized, setAuthInitialized] = useState(false);
+	const { isInitialized } = useAuthContext();
 
 	// RTK Query mutations
 	const [register] = useRegisterMutation();
 	const [login] = useLoginMutation();
-	const [verifyToken] = useVerifyTokenMutation();
-
-	// Debounce function to delay redirects
-	const debounce = <T>(fn: (...args: T[]) => void, ms: number) => {
-		let timeoutId: NodeJS.Timeout;
-		return (...args: T[]) => {
-			clearTimeout(timeoutId);
-			timeoutId = setTimeout(() => fn(...args), ms);
-		};
-	};
-
-	// Listen for Firebase auth state changes
-	useEffect(() => {
-		if (typeof window === "undefined") {
-			return;
-		}
-
-		const unsubscribe = onAuthStateChanged(auth, async (user) => {
-			setFirebaseUser(user);
-			setAuthInitialized(true);
-
-			const handleAuthState = debounce(async () => {
-				// If user is authenticated and trying to access login page, redirect to dashboard
-				// Explicitly check for login page only, allowing access to signup
-				if (user && pathname === "/login") {
-					router.push("/dashboard/home");
-					return;
-				}
-
-				// Don't redirect if on public route (except login when authenticated)
-				if (PUBLIC_ROUTES.includes(pathname) && pathname !== "/login") {
-					if (!user) {
-						dispatch(clearCredentials());
-					}
-					return;
-				}
-
-				if (user) {
-					try {
-						const idToken = await user.getIdToken();
-
-						// Set authToken cookie
-						document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
-
-						// Verify token with backend
-
-						const response = await verifyToken({ idToken }).unwrap();
-
-						dispatch(
-							setCredentials({
-								user: response.user,
-								token: response.token,
-							})
-						);
-
-						// Redirect based on profile completion
-						if (!response.user.profileCompleted) {
-							router.push("/complete-profile");
-						} else if (pathname === "/login") {
-							router.push("/dashboard/home");
-						}
-					} catch (error: unknown) {
-						const apiError = error as ApiError;
-						if (apiError.status === 404) {
-							router.push("/select-role");
-						} else {
-							dispatch(clearCredentials());
-							if (!PUBLIC_ROUTES.includes(pathname)) {
-								router.push("/login");
-							}
-						}
-					}
-				} else {
-					dispatch(clearCredentials());
-					if (!PUBLIC_ROUTES.includes(pathname)) {
-						router.push("/login");
-					}
-				}
-			}, 200);
-
-			handleAuthState();
-		});
-
-		return () => {
-			unsubscribe();
-		};
-	}, [dispatch, verifyToken, router, pathname]);
 
 	// Signup with email and password
 	const signup = async (formData: SignupFormData) => {
@@ -147,7 +50,7 @@ export const useAuth = () => {
 			const firebaseUser = userCredential.user;
 
 			const idToken = await firebaseUser.getIdToken();
-			document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+			CookieManager.setAuthToken(idToken);
 
 			const response = await register({
 				email,
@@ -162,9 +65,8 @@ export const useAuth = () => {
 				})
 			);
 
-			// Always redirect to complete profile after signup
-
-			router.push("/complete-profile");
+			// Redirect handled by AuthContext
+			router.push(ROUTES.COMPLETE_PROFILE);
 
 			return response;
 		} catch (error: unknown) {
@@ -192,7 +94,7 @@ export const useAuth = () => {
 			const firebaseUser = userCredential.user;
 
 			const idToken = await firebaseUser.getIdToken();
-			document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+			CookieManager.setAuthToken(idToken);
 
 			const response = await login({
 				firebaseUid: firebaseUser.uid,
@@ -205,12 +107,7 @@ export const useAuth = () => {
 				})
 			);
 
-			if (!response.user.profileCompleted) {
-				router.push("/complete-profile");
-			} else {
-				router.push("/dashboard/home");
-			}
-
+			// Redirect handled by AuthContext
 			return response;
 		} catch (error: unknown) {
 			const parsedError = parseError(error);
@@ -235,21 +132,6 @@ export const useAuth = () => {
 			// Use signInWithPopup with explicit error handling
 			const result = await signInWithPopup(auth, googleProvider).catch(
 				(error) => {
-					if (error.code === "auth/popup-blocked") {
-						throw new Error(
-							"Popup was blocked by the browser. Please allow popups for this site."
-						);
-					} else if (error.code === "auth/popup-closed-by-user") {
-						throw new Error("Sign-in was cancelled. Please try again.");
-					} else if (error.code === "auth/cancelled-popup-request") {
-						throw new Error(
-							"Multiple popup requests were made. Please try again."
-						);
-					} else if (error.code === "auth/network-request-failed") {
-						throw new Error(
-							"Network error occurred. Please check your internet connection."
-						);
-					}
 					throw error;
 				}
 			);
@@ -268,7 +150,7 @@ export const useAuth = () => {
 
 			// Get the ID token with force refresh to ensure it's new
 			const idToken = await firebaseUser.getIdToken(true);
-			document.cookie = `authToken=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+			CookieManager.setAuthToken(idToken);
 
 			try {
 				const response = await login({
@@ -282,12 +164,7 @@ export const useAuth = () => {
 					})
 				);
 
-				if (!response.user.profileCompleted) {
-					router.push("/complete-profile");
-				} else {
-					router.push("/dashboard/home");
-				}
-
+				// Redirect handled by AuthContext
 				return response;
 			} catch (error: unknown) {
 				const apiError = error as ApiError;
@@ -301,7 +178,7 @@ export const useAuth = () => {
 							})
 						);
 					}
-					router.push("/select-role");
+					router.push(ROUTES.SELECT_ROLE);
 					return null;
 				}
 				throw error;
@@ -320,9 +197,9 @@ export const useAuth = () => {
 		try {
 			await signOut(auth);
 			dispatch(clearCredentials());
-			document.cookie = "authToken=; path=/; max-age=0";
+			CookieManager.removeAuthToken();
 
-			router.push("/"); // Redirect to home page after logout
+			router.push(ROUTES.HOME); // Redirect to home page after logout
 		} catch (error: unknown) {
 			const parsedError = parseError(error);
 			dispatch(setError(parsedError.message || "Failed to log out"));
@@ -331,12 +208,10 @@ export const useAuth = () => {
 
 	return {
 		user,
-		firebaseUser,
-		token,
 		isAuthenticated,
 		isLoading,
 		error,
-		authInitialized,
+		isInitialized,
 		signup,
 		loginWithEmail,
 		loginWithGoogle,

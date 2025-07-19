@@ -17,7 +17,7 @@ interface Notification {
 	type: string;
 	title: string;
 	message: string;
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 	isRead: boolean;
 	createdAt: string;
 }
@@ -80,7 +80,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
 		newSocket.on("disconnect", () => {
 			setIsConnected(false);
-			toast.error("Disconnected from notifications", { position: "top-right" });
 		});
 
 		newSocket.on("connect_error", (err) => {
@@ -99,10 +98,18 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
 		newSocket.on("notification:new", (notification: Notification) => {
 			setNotifications((prev) => [notification, ...prev]);
-			toast.success(notification.title, {
-				icon: "🔔",
+
+			// Show toast notification with appropriate styling based on type
+			const isMessageNotification = notification.type === "MESSAGE_RECEIVED";
+
+			toast.success(notification.message || notification.title, {
+				icon: isMessageNotification ? "💬" : "🔔",
 				position: "top-right",
-				style: { background: "#10B981", color: "white" },
+				style: {
+					background: isMessageNotification ? "#2f8077" : "#10B981",
+					color: "white",
+				},
+				duration: isMessageNotification ? 4000 : 3000,
 			});
 		});
 
@@ -113,7 +120,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 		});
 
 		setSocket(newSocket);
-		return () => newSocket.close();
+		return () => {
+			newSocket.close();
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [token, user]);
 
 	const markNotificationAsRead = useCallback(

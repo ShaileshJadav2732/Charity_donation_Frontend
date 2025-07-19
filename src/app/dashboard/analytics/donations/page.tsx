@@ -132,7 +132,7 @@ export default function DonationAnalyticsPage() {
 				<div className="flex items-center justify-between">
 					<div>
 						<Link
-							href="/dashboard/analytics"
+							href="/dashboard/donations"
 							className="inline-flex items-center text-teal-600 hover:text-teal-700 mb-2"
 						>
 							<FaArrowLeft className="mr-2" /> Back to Analytics

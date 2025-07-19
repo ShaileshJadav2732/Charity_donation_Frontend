@@ -1,12 +1,14 @@
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/providers";
+import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-	title: "Charity Donation Platform",
+	favicon: "@/public/favicon-g.png",
+	title: "GreenGive",
 	description:
 		"Connect with charitable organizations and contribute to causes you care about.",
 };
@@ -20,8 +22,10 @@ export default function RootLayout({
 		<html lang="en">
 			<body className={inter.className} suppressHydrationWarning>
 				<Providers>
-					<Toaster position="top-right" />
-					{children}
+					<AuthProvider>
+						<Toaster position="top-right" />
+						{children}
+					</AuthProvider>
 				</Providers>
 			</body>
 		</html>

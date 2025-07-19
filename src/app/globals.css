@@ -1,14 +1,13 @@
-@tailwind base;
-@tailwind components;
+@import "tailwindcss/preflight";
 @tailwind utilities;
 @import "tailwindcss";
 
-body{
-   margin:0;
-   padding:0;
-   width:100%;
-   height:100%;
-   /* overflow :hidden; */
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	/* overflow :hidden; */
 }
 
 /* Add cursor pointer to all buttons and clickable elements */
@@ -24,7 +23,7 @@ a,
 .group:hover .group-hover\:opacity-100,
 motion-button,
 .motion-button {
-   cursor: pointer !important;
+	cursor: pointer !important;
 }
 
 /* Add cursor pointer to interactive elements */
@@ -34,5 +33,78 @@ motion-button,
 .transition-all,
 .transition-colors,
 .transition-opacity {
-   cursor: pointer !important;
+	cursor: pointer !important;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+/* Base body styles */
+body {
+	font-family: "Inter", sans-serif;
+	line-height: 1.5;
+	background-color: #fff;
+	color: #111;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Default link styles */
+a {
+	color: inherit;
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+/* Button Reset */
+button {
+	border: none;
+	outline: none;
+	background: none;
+	font: inherit;
+}
+/* 
+*:focus {
+	outline: 2px solid #38bdf8;
+	outline-offset: 2px;
+} */
+
+img,
+svg,
+video,
+canvas {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+::placeholder {
+	color: #2c7a72;
+	opacity: 1;
+}
+
+.noselect {
+	user-select: none;
+}
+
+.body-no-scroll {
+	overflow: hidden;
+}
+
+.hidden-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+.hidden-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+/* Replace any red color variables with alternatives */
+:root {
+	--error-color: #101313; /* Changed from red to orange */
+	--danger-color: #101313; /* Changed from red to orange */
+	/* Keep your existing teal theme colors */
+	--primary-color: #287068;
+	--secondary-color: #2f8077;
 }
