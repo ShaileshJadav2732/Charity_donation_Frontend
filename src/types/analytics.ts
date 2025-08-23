@@ -205,26 +205,29 @@ export interface Trend {
 	count: number;
 }
 
-export interface DonationType {
+export interface DonationTypeAnalytics {
 	type: string;
 	amount: number;
 	count: number;
 }
 
-export interface Campaign {
+// Consolidated Analytics Campaign interface (renamed to avoid conflict with campaigns.ts)
+export interface AnalyticsCampaign {
 	title: string;
 	targetAmount: number;
 	raisedAmount: number;
 	status?: string;
 }
 
-export interface Cause {
+// Consolidated Analytics Cause interface (renamed to avoid conflict with cause.ts)
+export interface AnalyticsCause {
 	name: string;
 	count: number;
 	amount: number;
 }
 
-export interface Donor {
+// Consolidated Analytics Donor interface (renamed to avoid conflict with donation Donor)
+export interface AnalyticsDonor {
 	email: string;
 	count: number;
 	amount: number;
@@ -260,10 +263,10 @@ export interface AnalyticsData {
 	};
 	charts: {
 		monthlyTrends: Trend[];
-		donationsByType: DonationType[];
-		campaignPerformance?: Campaign[];
-		topCauses?: Cause[];
-		topDonors?: Donor[];
+		donationsByType: DonationTypeAnalytics[];
+		campaignPerformance?: AnalyticsCampaign[];
+		topCauses?: AnalyticsCause[];
+		topDonors?: AnalyticsDonor[];
 	};
 	recentActivities: {
 		donations: Activity[];
@@ -371,6 +374,7 @@ export interface LineChartProps {
 	currency?: boolean;
 	dualAxis?: boolean;
 }
+
 export interface OrganizationStats {
 	donations: {
 		totalAmount: number;

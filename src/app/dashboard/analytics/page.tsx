@@ -25,11 +25,13 @@ import DoughnutChart from "@/components/analytics/DoughnutChart";
 import BarChart from "@/components/analytics/BarChart";
 import StatsCard from "@/components/analytics/StatsCard";
 
-// Import specific types for each chart
+// Import DonationType from the correct types file
+import { DonationType } from "@/types/donation";
+
+// Import other types from analytics
 import {
 	AnalyticsData,
 	ProcessedDonationData,
-	DonationType,
 	Trend,
 	StatsCard as StatsCardType,
 	LineChartData,
@@ -151,23 +153,23 @@ const OrganizationAnalyticsPage: React.FC = () => {
 			[key: string]: { amount: number; count: number };
 		} = {};
 
-		data.data.charts.donationsByType.forEach((type: DonationType) => {
-			const typeUpper = type.type.toUpperCase();
+		data.data.charts.donationsByType.forEach((typeData: { type: string; count: number; amount: number }) => {
+			const typeUpper = typeData.type.toUpperCase();
 
 			if (typeUpper === "MONEY") {
 				// Money donations
 				if (!donationsByCategory["MONEY"]) {
 					donationsByCategory["MONEY"] = { amount: 0, count: 0 };
 				}
-				donationsByCategory["MONEY"].amount += type.amount || 0;
-				donationsByCategory["MONEY"].count += type.count || 0;
+				donationsByCategory["MONEY"].amount += typeData.amount || 0;
+				donationsByCategory["MONEY"].count += typeData.count || 0;
 			} else {
 				// Item donations (group all non-money types as items)
 				if (!donationsByCategory["ITEMS"]) {
 					donationsByCategory["ITEMS"] = { amount: 0, count: 0 };
 				}
-				donationsByCategory["ITEMS"].amount += type.amount || 0;
-				donationsByCategory["ITEMS"].count += type.count || 0;
+				donationsByCategory["ITEMS"].amount += typeData.amount || 0;
+				donationsByCategory["ITEMS"].count += typeData.count || 0;
 			}
 		});
 
@@ -218,7 +220,7 @@ const OrganizationAnalyticsPage: React.FC = () => {
 
 		// Filter out only item donations (non-money types)
 		const itemDonations = data.data.charts.donationsByType.filter(
-			(type: DonationType) => type.type.toUpperCase() !== "MONEY"
+			(typeData: { type: string; count: number; amount: number }) => typeData.type.toUpperCase() !== "MONEY"
 		);
 
 		if (itemDonations.length === 0) {

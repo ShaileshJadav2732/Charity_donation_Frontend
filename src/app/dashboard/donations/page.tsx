@@ -25,7 +25,7 @@ interface DonorStatsResponse {
 	totalCauses: number;
 }
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
 	FaBoxOpen,
@@ -35,7 +35,8 @@ import {
 	FaSync,
 } from "react-icons/fa";
 
-export default function DonationsPage() {
+// Separate component to handle search params
+function DonationsContent() {
 	const searchParams = useSearchParams();
 	const [activeTab, setActiveTab] = useState<
 		| "all"
@@ -65,14 +66,14 @@ export default function DonationsPage() {
 			activeTab === "all" || activeTab === "money" || activeTab === "items"
 				? undefined
 				: activeTab === "approved"
-				? "APPROVED"
-				: activeTab === "pending"
-				? "PENDING"
-				: activeTab === "received"
-				? "RECEIVED"
-				: activeTab === "confirmed"
-				? "CONFIRMED"
-				: undefined,
+					? "APPROVED"
+					: activeTab === "pending"
+						? "PENDING"
+						: activeTab === "received"
+							? "RECEIVED"
+							: activeTab === "confirmed"
+								? "CONFIRMED"
+								: undefined,
 		type: activeTab === "money" ? "MONEY" : undefined,
 		page,
 		limit,
@@ -263,74 +264,67 @@ export default function DonationsPage() {
 					<nav className="flex flex-wrap space-x-4 md:space-x-8">
 						<button
 							onClick={() => setActiveTab("all")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "all"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "all"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							All Donations
 						</button>
 
 						<button
 							onClick={() => setActiveTab("money")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
-								activeTab === "money"
+							className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${activeTab === "money"
 									? "border-green-600 text-green-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
-							💰 Money
+							Money
 						</button>
 
 						<button
 							onClick={() => setActiveTab("items")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
-								activeTab === "items"
+							className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${activeTab === "items"
 									? "border-blue-600 text-blue-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
-							📦 Items
+							Items
 						</button>
 
 						<button
 							onClick={() => setActiveTab("pending")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "pending"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "pending"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							Pending
 						</button>
 						<button
 							onClick={() => setActiveTab("received")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "received"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "received"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							Received
 						</button>
 						<button
 							onClick={() => setActiveTab("approved")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "approved"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "approved"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							Approved
 						</button>
 						<button
 							onClick={() => setActiveTab("confirmed")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "confirmed"
+							className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "confirmed"
 									? "border-teal-600 text-teal-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-							}`}
+								}`}
 						>
 							Confirmed
 						</button>
@@ -384,5 +378,38 @@ export default function DonationsPage() {
 				)}
 			</div>
 		</div>
+	);
+}
+
+// Loading component for Suspense fallback
+function DonationsLoading() {
+	return (
+		<div className="max-w-7xl mx-auto">
+			<div className="mt-12 space-y-6">
+				<div className="flex items-center justify-between">
+					<div>
+						<h1 className="text-2xl font-bold text-gray-900">My Donations</h1>
+						<p className="text-gray-600">Loading your donation data...</p>
+					</div>
+				</div>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					{[1, 2, 3].map((i) => (
+						<div key={i} className="bg-white rounded-xl shadow-md p-6 animate-pulse">
+							<div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+							<div className="h-6 bg-gray-200 rounded w-3/4"></div>
+						</div>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+// Main page component with Suspense boundary
+export default function DonationsPage() {
+	return (
+		<Suspense fallback={<DonationsLoading />}>
+			<DonationsContent />
+		</Suspense>
 	);
 }
