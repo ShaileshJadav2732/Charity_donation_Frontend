@@ -42,11 +42,12 @@ export class AuthUtils {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
+
 					},
 					body: JSON.stringify({ idToken }),
 				}
 			);
-
+console.log(response);
 			if (!response.ok) {
 				throw new Error(`Token refresh failed: ${response.status}`);
 			}

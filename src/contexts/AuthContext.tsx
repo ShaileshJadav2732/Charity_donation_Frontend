@@ -1,6 +1,5 @@
 "use client";
-
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
@@ -26,6 +25,7 @@ const PUBLIC_ROUTES = [
 	"/",
 	"/login",
 	"/signup",
+	"/complete-profile",
 	"/select-role",
 	"/about",
 	"/contact",
@@ -38,15 +38,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	const dispatch = useDispatch();
 	const router = useRouter();
 	const pathname = usePathname();
-	const [verifyToken] = useVerifyTokenMutation();
+    const [verifyToken] = useVerifyTokenMutation();
 	const [isInitialized, setIsInitialized] = useState(false);
+    const hasVerifiedRef = useRef(false);
 
 	const { user, token } = useSelector((state: RootState) => state.auth);
 
 	useEffect(() => {
 		let isMounted = true;
 
-		const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
 			if (!isMounted) return;
 
 			// Set loading to true at start
@@ -54,6 +55,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 			try {
 				if (firebaseUser) {
+                    // Prevent repeated verification loops
+                    if (hasVerifiedRef.current) {
+                        dispatch(setLoading(false));
+                        setIsInitialized(true);
+                        return;
+                    }
 					// Check if we already have valid user data for this Firebase user
 					if (user && (user as any).firebaseUid === firebaseUser.uid && token) {
 						// User data is already valid, but still verify token freshness
@@ -72,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 						}
 					}
 
-					// Get fresh token and verify with backend
+                    // Get fresh token and verify with backend
 					try {
 						const idToken = await firebaseUser.getIdToken(true);
 						CookieManager.setAuthToken(idToken);
@@ -102,15 +109,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 								router.push("/select-role");
 							}
 						}
-					} catch (verifyError) {
+                        hasVerifiedRef.current = true;
+                    } catch (verifyError) {
 						console.error("Token verification failed:", verifyError);
 						if (isMounted) {
-							dispatch(clearCredentials());
-							CookieManager.removeAuthToken();
-
-							if (!PUBLIC_ROUTES.includes(pathname)) {
-								router.push("/login");
-							}
+                            // On complete-profile route, do not redirect; allow user to proceed
+                            const allowStay = pathname === "/complete-profile";
+                            if (!allowStay) {
+                                dispatch(clearCredentials());
+                                CookieManager.removeAuthToken();
+                                if (!PUBLIC_ROUTES.includes(pathname)) {
+                                    router.push("/login");
+                                }
+                            }
 						}
 					}
 				} else {

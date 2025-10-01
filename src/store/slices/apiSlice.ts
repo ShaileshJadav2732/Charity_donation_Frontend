@@ -44,6 +44,7 @@ const baseQueryWithAuth: BaseQueryFn<
 				"/",
 				"/login",
 				"/signup",
+				"/complete-profile",
 				"/select-role",
 				"/about",
 				"/contact",

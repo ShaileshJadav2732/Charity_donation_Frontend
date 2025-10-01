@@ -38,7 +38,7 @@ export interface OrganizationsResponse {
 export const organizationApi = createApi({
 	reducerPath: "organizationApi",
 	baseQuery: fetchBaseQuery({
-		baseUrl: process.env.NEXT_PUBLIC_API_URL || "/api",
+		baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
 		prepareHeaders: (headers, { getState }) => {
 			const token = (getState() as RootState).auth.token;
 			if (token) {
