@@ -1,8 +1,29 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup
+
+Before running the application, you need to set up your environment variables:
+
+1. Copy `.env.local.example` to `.env.local`:
+```bash
+cp .env.local.example .env.local
+```
+
+2. Fill in the required environment variables in `.env.local`:
+   - **Firebase Configuration**: Set up your Firebase project credentials
+   - **API URL**: Point to your backend API endpoint
+   - **Cloudinary**: (Optional) For image upload functionality
+   - **Stripe**: (Optional) For payment processing
+
 ## Getting Started
 
-First, run the development server:
+First, install the dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
@@ -29,8 +50,33 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
+
+### Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push your code to a GitHub repository
+2. Import your repository to Vercel
+3. Add the required environment variables in Vercel's project settings
+4. Deploy!
+
+### Environment Variables for Production
+
+Make sure to set these environment variables in your deployment platform:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
+- `NEXT_PUBLIC_API_URL` (your production backend URL)
+
+### Alternative Deployment Platforms
+
+This Next.js app can also be deployed to:
+- **Netlify**: Install the Netlify CLI and run `netlify deploy`
+- **AWS Amplify**: Connect your repository and configure build settings
+- **Railway**: Connect your repository and add environment variables
+- **Render**: Connect your repository and configure as a static site
