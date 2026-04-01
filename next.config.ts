@@ -31,6 +31,8 @@ const nextConfig: NextConfig = {
 		],
 	},
 	reactStrictMode: true,
+	// Disable static optimization for build without env vars
+	output: 'standalone',
 	async rewrites() {
 		return [
 			{
